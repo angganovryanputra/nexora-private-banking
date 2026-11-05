@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-// API Base URL (Default to local backend for emulator 10.0.2.2:5000 or vulnbank.org)
-export let API_BASE = 'http://10.0.2.2:5000';
+// API Base URL (Default to localhost:5000 on iOS / Simulator, 10.0.2.2:5000 on Android emulator)
+export let API_BASE = Platform.OS === 'ios' ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
 
 // Initialize from storage if user saved a custom backend host
 AsyncStorage.getItem('custom_api_base').then((stored) => {
