@@ -66,3 +66,4 @@ jobs:
             release_apks/vulnbank-universal-release.apk
             release_apks/sha256_checksums.txt
           retention-days: 30
+
