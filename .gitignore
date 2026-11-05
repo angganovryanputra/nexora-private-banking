@@ -58,6 +58,12 @@ yarn-error.log
 *.zip
 *.apk
 .superpowers/
+.omc/
+*.png
+!android/**/*.png
+!ios/**/*.png
+!assets/**/*.png
+!src/**/*.png
 
 # Python
 __pycache__/
