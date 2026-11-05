@@ -59,6 +59,14 @@ yarn-error.log
 *.apk
 .superpowers/
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.sqlite3
+backend/vulnbank.db
+
 # Ruby / CocoaPods
 **/Pods/
 /vendor/bundle/

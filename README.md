@@ -17,6 +17,12 @@
 </p>
 
 <p align="center">
+  <!-- CI/CD Badges -->
+  <a href="https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions/workflows/build-android-apk.yml"><img src="https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions/workflows/build-android-apk.yml/badge.svg" alt="Build Android & Wear OS APKs" /></a>
+  <a href="https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions/workflows/build-watchos.yml"><img src="https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions/workflows/build-watchos.yml/badge.svg" alt="Build iOS & Apple WatchOS" /></a>
+</p>
+
+<p align="center">
   <!-- Standards Badges -->
   <img src="https://img.shields.io/badge/Compliance-OJK_POJK_11%2F2022-blue?style=flat-square" alt="OJK POJK 11" />
   <img src="https://img.shields.io/badge/Standards-BI_SNAP_QRIS-red?style=flat-square" alt="SNAP QRIS" />
@@ -200,7 +206,9 @@ Java.perform(function() {
 
 - 📘 **[`PANDUAN-DEMO-PENTEST.md`](PANDUAN-DEMO-PENTEST.md)**: Master demonstration guide for Android & Wear OS Dual-Device testing, with step-by-step reproduction and POC screenshot references (`POC-1A` to `POC-8B`).
 - 🍎 **[`TUTORIAL-SETUP-DAN-WRITEUP-WATCHOS.md`](TUTORIAL-SETUP-DAN-WRITEUP-WATCHOS.md)**: Dedicated setup guide for MacBook Pro 2019 (Intel), Xcode paired simulators, Sideloadly iPhone 11 installation, and 8 Apple watchOS writeups (`POC-AP-1A` to `POC-AP-8B`).
-- ⚡ **[`ADVANCED_SCENARIOS_TENDER.md`](ADVANCED_SCENARIOS_TENDER.md)**: Enterprise assessment pitch and scoring rubric for procurement tenders.
+- ⚡ **[`ADVANCED_SCENARIOS_TENDER.md`](docs/references/ADVANCED_SCENARIOS_TENDER.md)**: Enterprise assessment pitch and scoring rubric for procurement tenders.
+- 🔗 **[`CONNECTIVITY_GUIDE.md`](docs/references/CONNECTIVITY_GUIDE.md)**: Network relay configuration notes for real hardware and Wi-Fi adapters.
+- 📝 **[`README-WEAR.md`](docs/references/README-WEAR.md)**: Engineering notes from initial Wear OS port.
 
 ---
 
