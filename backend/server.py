@@ -37,7 +37,18 @@ if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 app = Flask(__name__)
-DB_PATH = os.path.join(os.path.dirname(__file__), 'nexora_vault.db' if os.path.exists(os.path.join(os.path.dirname(__file__), 'nexora_vault.db')) else 'vulnbank.db')
+DB_NAME = 'nexora_vault.db'
+DB_PATH = os.path.join(os.path.dirname(__file__), DB_NAME)
+LEGACY_DB_PATH = os.path.join(os.path.dirname(__file__), 'vulnbank.db')
+
+# Automatic migration from legacy DB if nexora_vault.db does not exist yet
+if not os.path.exists(DB_PATH) and os.path.exists(LEGACY_DB_PATH):
+    import shutil
+    try:
+        shutil.copy2(LEGACY_DB_PATH, DB_PATH)
+        print(f"📦 Migrated legacy database '{LEGACY_DB_PATH}' -> '{DB_PATH}'")
+    except Exception as e:
+        print(f"⚠️ Database migration notice: {e}")
 
 # Hardcoded valid Master JWT (matches Secrets.java)
 MASTER_JWT = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc0NDk3NjIyM30.yXm-7iN-6sn3kvvXkOiOLVRHXSn6MBSpwbM2VcXVds8"
@@ -48,13 +59,12 @@ MASTER_JWT = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZ
 def get_db():
     """
     Creates a thread-safe, high-concurrency SQLite connection.
-    Enables Write-Ahead Logging (WAL) and 10s busy timeout to eliminate
+    Configured with 30s busy timeout and synchronous=NORMAL to eliminate
     'database is locked' errors during rapid multi-client testing.
     """
     conn = sqlite3.connect(DB_PATH, timeout=30.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA busy_timeout=10000;")
+    conn.execute("PRAGMA busy_timeout=30000;")
     conn.execute("PRAGMA synchronous=NORMAL;")
     return conn
 
@@ -67,6 +77,8 @@ def handle_server_exception(e):
     Prevents abrupt process termination when emulators or devices drop TCP connections.
     """
     if isinstance(e, (ConnectionResetError, BrokenPipeError)):
+        return ('', 204)
+    if isinstance(e, OSError) and getattr(e, 'winerror', None) in (10053, 10054):
         return ('', 204)
     if isinstance(e, HTTPException):
         return e
@@ -87,6 +99,9 @@ def add_cors_headers(response):
 def log_request_info():
     if request.method == 'OPTIONS':
         return jsonify({}), 200
+    # Suppress verbose terminal log for continuous empty event polling to prevent Windows console lockup
+    if request.path.startswith('/api/wearable/events'):
+        return None
     print(f"\n📡 [\033[94m{request.method}\033[0m] {request.path}")
     auth = request.headers.get('Authorization')
     if auth:
@@ -102,6 +117,7 @@ def init_db():
     conn = get_db()
     cur = conn.cursor()
     try:
+        cur.execute("PRAGMA journal_mode=WAL;")
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -284,6 +300,9 @@ def init_db():
             cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', 10000.0, 'pending', datetime('now', '-2 days'))")
 
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -416,6 +435,9 @@ def transfer():
             (from_acct, to_acct, amount, desc)
         )
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -492,6 +514,9 @@ def toggle_card_freeze(card_id):
     try:
         cur.execute("UPDATE virtual_cards SET is_frozen = NOT is_frozen WHERE id = ?", (card_id,))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
     return jsonify({"status": "success", "message": f"Card {card_id} freeze toggled"}), 200
@@ -519,6 +544,9 @@ def create_virtual_card():
         ''', (pan, cvv, exp, card_type, limit))
         card_id = cur.lastrowid
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -551,6 +579,9 @@ def update_card_limit(card_id):
     try:
         cur.execute("UPDATE virtual_cards SET card_limit = ? WHERE id = ?", (new_limit, card_id))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -606,6 +637,9 @@ def qris_checkout():
         ''', (json.dumps({"rrn": rrn, "amount": amount, "merchant": merchant, "qr_payload": qr_payload}),))
 
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -639,6 +673,9 @@ def request_loan():
     try:
         cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', ?, 'pending', datetime('now'))", (amt,))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -686,6 +723,9 @@ def admin_approve_loan(loan_id):
             cur.execute("UPDATE users SET balance = balance + ? WHERE account_number = ?", (loan['amount'], loan['account_number']))
             cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('NEXORA_CREDIT', ?, ?, 'Approved Commercial Loan Disbursement', datetime('now'))", (loan['account_number'], loan['amount']))
             conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -747,6 +787,9 @@ def create_bill_payment():
             VALUES ('ADMIN001', ?, ?, ?, datetime('now'))
         ''', (biller_name, amt, f"Bill Payment - {biller_name} ({ref})"))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -847,6 +890,9 @@ def delete_account(user_id):
     try:
         cur.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
     return jsonify({"status": "success", "message": f"Account {user_id} deleted"}), 200
@@ -927,6 +973,9 @@ def wearable_pair():
                 paired_account=excluded.paired_account
         ''', (device_id, device_type, device_name, pairing_code, account_number, MASTER_JWT))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -984,6 +1033,9 @@ def wearable_dispatch():
         ''', (target_device_id, action, payload_str))
 
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -1000,12 +1052,17 @@ def wearable_dispatch():
 def get_wearable_events(device_id):
     """
     Polls pending events for a specific smartwatch device.
+    Optimized with throttled device heartbeat to prevent continuous database write locks.
     """
     conn = get_db()
     cur = conn.cursor()
     try:
-        # Update last seen
-        cur.execute("UPDATE wearable_devices SET last_seen = datetime('now') WHERE device_id = ?", (device_id,))
+        # Throttled heartbeat: only update last_seen if >15s have elapsed or unset
+        cur.execute("""
+            UPDATE wearable_devices 
+            SET last_seen = datetime('now') 
+            WHERE device_id = ? AND (last_seen IS NULL OR (strftime('%s', 'now') - strftime('%s', last_seen)) > 15)
+        """, (device_id,))
 
         # Fetch pending events (or also events targeted at 'all')
         cur.execute('''
@@ -1015,6 +1072,9 @@ def get_wearable_events(device_id):
         ''', (device_id,))
         rows = cur.fetchall()
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -1034,6 +1094,9 @@ def get_wearable_events(device_id):
             "status": r['status'],
             "created_at": r['created_at']
         })
+
+    if len(events) > 0:
+        print(f"\n📡 [\033[92mWEARABLE EVENT DISPATCHED\033[0m] Sent {len(events)} pending event(s) to {device_id}")
 
     return jsonify({"events": events, "count": len(events)}), 200
 
@@ -1127,6 +1190,9 @@ def resolve_wearable_event():
         ''', (ev['target_device_id'], f"RESOLVE_{ev['action']}", json.dumps({"resolution": resolution, "event_id": event_id})))
 
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -1190,6 +1256,9 @@ def generate_cardless_cash():
         ''', (json.dumps({"token": token, "amount": amount, "account_number": account_number}),))
         
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -1235,6 +1304,9 @@ def verify_cardless_cash():
         ''', (record['account_number'], record['amount']))
 
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -1266,6 +1338,9 @@ def wearable_card_freeze():
             VALUES ('NEXORA_WATCH', 'CARD_PROCESSOR', 'EMERGENCY_CARD_FREEZE_TOGGLED', ?, datetime('now'))
         ''', (json.dumps({"card_id": card_id, "is_frozen": is_frozen}),))
         conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
     finally:
         conn.close()
 
@@ -1325,6 +1400,28 @@ def get_compliance_report():
 # Main Execution
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
+    import socket
+    import signal
+
+    def handle_exit(sig, frame):
+        print("\n🛑 [SHUTDOWN] Nexora Bank Backend stopped cleanly.")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, handle_exit)
+    if hasattr(signal, 'SIGTERM'):
+        signal.signal(signal.SIGTERM, handle_exit)
+
+    # Check if port 5000 is already in use
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(('0.0.0.0', 5000))
+        sock.close()
+    except OSError:
+        print("\n❌ [PORT CONFLICT] Port 5000 is already in use by another running instance!")
+        print("   To terminate background Python instances on Windows PowerShell, run:")
+        print("   Get-Process python | Stop-Process -Force\n")
+        sys.exit(1)
+
     init_db()
     print("""
     ================================================================
