@@ -1,4 +1,5 @@
 import SwiftUI
+import WatchConnectivity
 
 /// [V-AP06] Dynamic QRIS Screen on Apple watchOS
 /// Scaled dynamically across all Apple Watch sizes.
@@ -73,7 +74,41 @@ struct QRISPaymentView: View {
                     .background(WatchTheme.surface)
                     .cornerRadius(8)
                     
-                    Text("[V-AP06] Replay Vulnerability: Static ID")
+                    // 1-Tap POS Scan & Replay Simulation Button (V-AP06)
+                    Button(action: {
+                        let cur = InsecureStorage.shared.getBalance()
+                        InsecureStorage.shared.saveBalance(max(0.0, cur - 75.0))
+                        
+                        let payload: [String: Any] = [
+                            "action": "QRIS_PAYMENT_COMPLETED",
+                            "payload": [
+                                "amount": 75.0,
+                                "merchant": "VULNBANK MERCH 001",
+                                "qr_payload": qrisString
+                            ]
+                        ]
+                        if WatchSessionManager.shared.isReachable {
+                            WCSession.default.sendMessage(payload, replyHandler: nil, errorHandler: nil)
+                        } else {
+                            WCSession.default.transferUserInfo(payload)
+                        }
+                    }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 9))
+                                .foregroundColor(.black)
+                            Text("Simulate POS Scan ($75)")
+                                .font(.system(size: 8.5, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 24)
+                        .background(WatchTheme.emerald)
+                        .cornerRadius(12)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.top, 2)
+                    
+                    Text("[V-AP06] Replay Flaw: Tap multiple times")
                         .font(.system(size: 6.5))
                         .foregroundColor(WatchTheme.ruby)
                         .multilineTextAlignment(.center)

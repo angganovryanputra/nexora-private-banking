@@ -572,6 +572,19 @@ def resolve_wearable_event():
             cur.execute("UPDATE users SET balance = ? WHERE account_number = 'ADMIN001'", (amt,))
         except Exception as e:
             print(f"Error updating balance on resolve: {e}")
+    elif ev['action'] == 'QRIS_PAYMENT_COMPLETED' and resolution == 'APPLIED':
+        try:
+            p = json.loads(ev['payload'])
+            amt = float(p.get('amount', 75.0))
+            merchant = p.get('merchant', 'VULNBANK MERCH 001')
+            cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+            cur.execute('''
+                INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
+                VALUES ('ADMIN001', ?, ?, 'Dynamic SNAP QRIS Wearable Checkout', datetime('now'))
+            ''', (merchant, amt))
+            print(f"   💳 \033[92m[QRIS PAYMENT DEBITED]\033[0m -$ {amt:.2f} at {merchant}")
+        except Exception as e:
+            print(f"Error executing QRIS debit on resolve: {e}")
 
     # Log response packet
     cur.execute('''

@@ -123,6 +123,35 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
     }
   };
 
+  // Simulate Merchant QRIS POS Checkout (V-06 / V-AP06 Replay Attack)
+  const handleSimulateMerchantQRISScan = async () => {
+    setIsLoading(true);
+    try {
+      await watchOSBridge.sendMessageToWatch({
+        action: 'QRIS_PAYMENT_COMPLETED',
+        payload: { amount: 75.0, merchant: 'VULNBANK MERCH 001' },
+      });
+      const res = await dispatchWearableEvent(targetDeviceId, 'QRIS_PAYMENT_COMPLETED', {
+        amount: 75.0,
+        merchant: 'VULNBANK MERCH 001',
+        timestamp: Date.now(),
+      });
+      if (res.ok) {
+        setLastAction(`Executed Merchant QRIS Checkout ($75.00) -> ${targetDeviceId}`);
+        Alert.alert(
+          '💳 Merchant QRIS Scanned (V-06 / V-AP06)',
+          `Simulated POS checkout from Smartwatch:\nDebit: $75.00\nMerchant: VULNBANK MERCH 001\nStatus: APPROVED\n\n[V-06 Replay Attack Demo]: Tap this button again without generating a new QR code on the watch. Notice both transactions succeed because of static transaction ID!`
+        );
+      } else {
+        Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Sniff Raw Wearable Sync Packets (V-B03)
   const handleSniffPackets = async () => {
     try {
@@ -222,6 +251,22 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         <View style={styles.triggerInfo}>
           <Text style={styles.triggerTitle}>Inject Watch Payment</Text>
           <Text style={styles.triggerSub}>V-W06: Unauthorized Quick Pay ($50,000)</Text>
+        </View>
+        <Icon name="chevron-right" size={10} color={COLORS.textLight} />
+      </TouchableOpacity>
+
+      {/* Trigger 3B: Simulate Merchant POS QRIS Checkout & Replay */}
+      <TouchableOpacity
+        style={[styles.triggerCard, { borderColor: 'rgba(0, 229, 153, 0.4)' }]}
+        onPress={handleSimulateMerchantQRISScan}
+        disabled={isLoading}
+      >
+        <View style={[styles.iconCircle, { backgroundColor: COLORS.primary }]}>
+          <Icon name="qrcode" size={12} color={COLORS.black} />
+        </View>
+        <View style={styles.triggerInfo}>
+          <Text style={styles.triggerTitle}>Merchant POS Scan (QRIS Replay)</Text>
+          <Text style={styles.triggerSub}>V-06 / V-AP06: Simulate POS Scan & Replay</Text>
         </View>
         <Icon name="chevron-right" size={10} color={COLORS.textLight} />
       </TouchableOpacity>

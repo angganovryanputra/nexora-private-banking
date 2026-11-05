@@ -82,12 +82,16 @@ public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate 
     public func approvePendingTransaction() {
         guard let tx = pending2FATransaction else { return }
         
+        let amt = tx["amount"] as? Double ?? 50000.0
+        let currentBal = InsecureStorage.shared.getBalance()
+        InsecureStorage.shared.saveBalance(max(0.0, currentBal - amt))
+        
         // VULNERABLE: Sends plaintext approval dictionary back to iPhone without Secure Enclave signature
         let payload: [String: Any] = [
             "action": "RESOLVE_2FA",
             "resolution": "APPROVED",
             "transaction_id": tx["tx_id"] ?? "TX-UNKNOWN",
-            "amount": tx["amount"] ?? 50000.0,
+            "amount": amt,
             "approved_by_device": "Apple Watch Series 9",
             "timestamp": Date().timeIntervalSince1970
         ]

@@ -6,9 +6,12 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
+import { useAuth } from '../contexts/AuthContext';
+import { post } from '../utils/api';
 import theme from '../styles/theme';
 import {
   ROUND_INSET,
@@ -33,8 +36,10 @@ interface QRPayScreenProps {
  *    HMAC signature, allowing shoulder surfers or rogue cameras to replay it.
  */
 const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
+  const { user } = useAuth();
   const [countdown, setCountdown] = useState(60);
   const [tokenCode, setTokenCode] = useState('8839-2144-0192');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -59,9 +64,37 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
       [
         {
           text: 'Authorize',
-          onPress: () => {
-            Alert.alert('Payment Successful', 'Sent $35.50 via Watch Contactless QR Pay.');
-            onNavigate('dashboard');
+          onPress: async () => {
+            setIsProcessing(true);
+            try {
+              const res = await post(
+                '/api/qris/checkout',
+                {
+                  account_number: user?.accountNumber || 'ADMIN001',
+                  amount: 35.50,
+                  merchant_name: 'CyberMart Express',
+                  qr_payload: tokenCode,
+                },
+                user?.token
+              );
+              if (res.ok) {
+                const rrn = res.data?.rrn || 'RRN-992144';
+                Alert.alert(
+                  '💳 Payment Successful (SNAP QRIS)',
+                  `Merchant: CyberMart Express\nAmount: $35.50\nRef / RRN: ${rrn}\nStatus: APPROVED\nRemaining balance deducted on backend.\n\n[V-W15 Replay Attack]: Tap "Simulate Terminal Scan" again to re-debit $35.50 using the same static token!`,
+                  [{ text: 'OK', onPress: () => onNavigate('dashboard') }]
+                );
+              } else {
+                Alert.alert(
+                  'Offline Demo',
+                  `Payment of $35.50 executed locally.\n\n[V-W15] Replayable static token.`
+                );
+              }
+            } catch {
+              Alert.alert('Payment Recorded', 'Payment of $35.50 sent.');
+            } finally {
+              setIsProcessing(false);
+            }
           },
         },
         { text: 'Cancel', style: 'cancel' },

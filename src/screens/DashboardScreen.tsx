@@ -67,13 +67,21 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
               setBalance(`$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
               await resolveWearableEvent(ev.id, 'APPLIED');
               Alert.alert('📶 Remote Sync Received', `Balance updated to $${amt} from Smartphone Companion.`);
-            } else if (ev.action === 'PUSH_2FA') {
+            } else if (ev.action === 'PUSH_2FA' || ev.action === 'TRIGGER_HIGH_VALUE_2FA') {
               setTwoFactorData({
                 eventId: ev.id,
-                amount: ev.payload?.amount || 250.00,
-                merchant: ev.payload?.merchant || 'CyberStore',
+                amount: ev.payload?.amount || 50000.00,
+                merchant: ev.payload?.merchant || ev.payload?.recipient || 'CyberStore Inc.',
               });
               setSim2FAVisible(true);
+            } else if (ev.action === 'QRIS_PAYMENT_COMPLETED') {
+              const debit = Number(ev.payload?.amount || 75.00);
+              await resolveWearableEvent(ev.id, 'APPLIED');
+              Alert.alert(
+                '💳 QRIS Payment Success',
+                `Payment of $${debit}.00 to ${ev.payload?.merchant || 'VULNBANK MERCH 001'} approved.\nRef: SNAP-QRIS-9921\nRemaining Balance Deducted.`
+              );
+              fetchBalance();
             } else if (ev.action === 'QUICK_PAY') {
               await resolveWearableEvent(ev.id, 'APPLIED');
               Alert.alert(

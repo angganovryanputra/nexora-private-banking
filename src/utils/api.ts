@@ -46,7 +46,10 @@ export const ENDPOINTS = {
     createAdmin: '/admin/create_admin',
     deleteAccount: (userId: number | string) => `/admin/delete_account/${userId}`,
     approveLoan: (loanId: number | string) => `/admin/approve_loan/${loanId}`,
-    pendingLoans: '/api/bill-categories',
+    pendingLoans: '/admin/pending_loans',
+  },
+  qris: {
+    checkout: '/api/qris/checkout',
   },
   profile: {
     get: '/profile',
