@@ -114,6 +114,13 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         }), content_type='application/json')
         self.assertEqual(res_reset.status_code, 200)
 
+        # Restore admin password for demo consistency
+        self.client.post('/api/v2/reset-password', data=json.dumps({
+            "username": "admin",
+            "reset_pin": "123",
+            "new_password": "admin123"
+        }), content_type='application/json')
+
     def test_high_value_2fa_resolution_debit(self):
         # Dispatch 2FA
         res_disp = self.client.post('/api/wearable/dispatch', data=json.dumps({
