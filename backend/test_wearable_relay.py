@@ -25,13 +25,13 @@ class TestWearableRelay(unittest.TestCase):
         data = pair_res.get_json()
         self.assertIn('device_id', data)
         device_id = data['device_id']
-        self.assertEqual(data['paired_account'], 'ADMIN001')
+        self.assertEqual(data['paired_account'], 'NX-8492014')
 
         # 2. Dispatch balance update from phone companion
         dispatch_res = self.client.post('/api/wearable/dispatch', json={
             'target_device_id': device_id,
             'action': 'UPDATE_BALANCE',
-            'payload': {'amount': 888888.0, 'currency': 'USD'}
+            'payload': {'amount': 888888.0, 'currency': 'IDR'}
         })
         self.assertEqual(dispatch_res.status_code, 200)
         event_id = dispatch_res.get_json()['event_id']

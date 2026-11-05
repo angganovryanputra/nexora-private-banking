@@ -13,10 +13,10 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         cls.client = app.test_client()
 
     def test_qris_checkout_and_replay(self):
-        # First checkout
+        # First checkout in IDR
         payload = {
-            "account_number": "ADMIN001",
-            "amount": 75.0,
+            "account_number": "NX-8492014",
+            "amount": 75000.0,
             "merchant_name": "NEXORA MERCH 001",
             "qr_payload": "00020101021226610016ID.NEXORA.WWW"
         }
@@ -24,7 +24,8 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         self.assertEqual(res1.status_code, 200)
         data1 = json.loads(res1.data)
         self.assertEqual(data1['status'], 'APPROVED')
-        self.assertEqual(data1['amount'], 75.0)
+        self.assertEqual(data1['amount'], 75000.0)
+        self.assertEqual(data1['currency'], 'IDR')
         self.assertTrue('rrn' in data1)
 
         # Replay checkout with same payload (V-06 / V-W15)
@@ -37,7 +38,7 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         # Create virtual card
         res = self.client.post('/api/virtual-cards/create', data=json.dumps({
             "card_type": "Titanium Wear OS",
-            "card_limit": 3000.0
+            "card_limit": 30000000.0
         }), content_type='application/json')
         self.assertEqual(res.status_code, 201)
         card_data = json.loads(res.data)['card']
@@ -55,19 +56,20 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
 
         # Update limit
         res_limit = self.client.post(f'/api/virtual-cards/{card_id}/update-limit', data=json.dumps({
-            "limit": 8000.0
+            "limit": 80000000.0
         }), content_type='application/json')
         self.assertEqual(res_limit.status_code, 200)
 
     def test_loan_request_and_admin_approval(self):
         # User requests loan
         res = self.client.post('/request_loan', data=json.dumps({
-            "amount": 25000.0
+            "amount": 25000000.0,
+            "account_number": "NX-8492014"
         }), content_type='application/json')
         self.assertEqual(res.status_code, 200)
 
         # Check user loans list
-        res_user_loans = self.client.get('/loans/ADMIN001')
+        res_user_loans = self.client.get('/loans/NX-8492014')
         self.assertEqual(res_user_loans.status_code, 200)
         user_loans = json.loads(res_user_loans.data)['loans']
         self.assertTrue(len(user_loans) > 0)
@@ -96,12 +98,14 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
 
         # Pay Bill
         res_pay = self.client.post('/api/bill-payments/create', data=json.dumps({
-            "amount": 50.0,
+            "amount": 50000.0,
             "biller_name": "PLN Prepaid Token",
             "category_name": "Electricity (PLN)",
-            "payment_method": "balance"
+            "payment_method": "balance",
+            "account_number": "NX-8492014"
         }), content_type='application/json')
         self.assertEqual(res_pay.status_code, 200)
+        self.assertEqual(json.loads(res_pay.data)['currency'], 'IDR')
 
         # History
         res_hist = self.client.get('/api/bill-payments/history')
@@ -111,20 +115,21 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         # Profile
         res_prof = self.client.get('/profile')
         self.assertEqual(res_prof.status_code, 200)
+        self.assertEqual(json.loads(res_prof.data)['accountNumber'], 'NX-8492014')
 
         # Password Reset
         res_reset = self.client.post('/api/v2/reset-password', data=json.dumps({
-            "username": "admin",
+            "username": "alexander.vance",
             "reset_pin": "123",
-            "new_password": "admin123_new"
+            "new_password": "Password123!_new"
         }), content_type='application/json')
         self.assertEqual(res_reset.status_code, 200)
 
-        # Restore admin password for demo consistency
+        # Restore password for demo consistency
         self.client.post('/api/v2/reset-password', data=json.dumps({
-            "username": "admin",
+            "username": "alexander.vance",
             "reset_pin": "123",
-            "new_password": "admin123"
+            "new_password": "Password123!"
         }), content_type='application/json')
 
     def test_high_value_2fa_resolution_debit(self):
@@ -132,7 +137,7 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         res_disp = self.client.post('/api/wearable/dispatch', data=json.dumps({
             "target_device_id": "watch_9201",
             "action": "TRIGGER_HIGH_VALUE_2FA",
-            "payload": {"amount": 50000.0, "recipient": "HACKER_SWIFT_CORP"}
+            "payload": {"amount": 50000000.0, "recipient": "HACKER_SWIFT_CORP", "account_number": "NX-8492014"}
         }), content_type='application/json')
         event_id = json.loads(res_disp.data)['event_id']
 
@@ -144,7 +149,7 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         self.assertEqual(res_res.status_code, 200)
 
         # Check that transaction was logged
-        res_tx = self.client.get('/transactions/ADMIN001')
+        res_tx = self.client.get('/transactions/NX-8492014')
         txs = json.loads(res_tx.data)['transactions']
         descriptions = [t['description'] for t in txs]
         self.assertTrue(any("2FA Wire Transfer" in d for d in descriptions))
@@ -152,7 +157,7 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
     def test_cardless_cash_and_emergency_freeze(self):
         # 1. Generate ATM cardless cash token
         res_gen = self.client.post('/api/atm/cardless-cash/generate', data=json.dumps({
-            "account_number": "ADMIN001",
+            "account_number": "NX-8492014",
             "amount": 250000.0
         }), content_type='application/json')
         self.assertEqual(res_gen.status_code, 200)
@@ -177,6 +182,18 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         self.assertEqual(res_freeze.status_code, 200)
         data_freeze = json.loads(res_freeze.data)
         self.assertEqual(data_freeze['is_frozen'], 1)
+
+    def test_v_b04_authorize_2fa_replay(self):
+        # Skenario V-B04: Replay push 2FA authorization
+        res = self.client.post('/api/wearable/authorize_2fa', data=json.dumps({
+            "tx_id": "TX-REPLAY-9901",
+            "amount": 15000000.0,
+            "account_number": "NX-8492014"
+        }), content_type='application/json')
+        self.assertEqual(res.status_code, 200)
+        data = json.loads(res.data)
+        self.assertEqual(data['status'], 'APPROVED')
+        self.assertEqual(data['currency'], 'IDR')
 
 if __name__ == '__main__':
     unittest.main()

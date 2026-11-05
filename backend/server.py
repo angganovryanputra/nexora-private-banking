@@ -249,45 +249,57 @@ def init_db():
             )
         ''')
 
-        # Seed initial test data
-        cur.execute("SELECT COUNT(*) FROM users")
-        if cur.fetchone()[0] == 0:
-            print("🌱 Seeding initial vulnerable bank records...")
-            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('admin', 'admin123', 'ADMIN001', 999999.0, 1)")
-            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('bob', 'bob123', 'ACC_BOB88', 1420.50, 0)")
-            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('alice', 'alice123', 'ACC_ALICE12', 5200.0, 0)")
+        # Check if realistic enterprise seed data is installed
+        cur.execute("SELECT COUNT(*) FROM users WHERE username = 'alexander.vance'")
+        has_vance = cur.fetchone()[0] > 0
 
-            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('ADMIN001', 'ACC_BOB88', 250.0, 'Payroll Bonus', datetime('now'))")
-            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('ACC_ALICE12', 'ADMIN001', 50.0, 'Coffee Reimbursement', datetime('now'))")
+        if not has_vance:
+            print("🌱 Migrating and seeding authentic Nexora Private Banking records (IDR)...")
+            cur.execute("DELETE FROM users;")
+            cur.execute("DELETE FROM transactions;")
+            cur.execute("DELETE FROM virtual_cards;")
+            cur.execute("DELETE FROM card_transactions;")
+            cur.execute("DELETE FROM loans;")
+            cur.execute("DELETE FROM bill_categories;")
+            cur.execute("DELETE FROM billers;")
+            cur.execute("DELETE FROM bill_payments;")
 
-            cur.execute("INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at) VALUES (1, '4532 8819 0021 9921', '921', '08/28', 'Titanium Wear OS', 5000.0, 1420.50, 0, datetime('now'))")
-            cur.execute("INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at) VALUES (1, '5412 3310 9942 3349', '417', '11/29', 'Virtual NFC Tap', 1000.0, 250.0, 1, datetime('now'))")
+            # Seed realistic private banking customers in IDR
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('alexander.vance', 'Password123!', 'NX-8492014', 999999000.0, 1)")
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('evelyn.sterling', 'Evelyn2026!', 'NX-7391048', 52800000.0, 0)")
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('marcus.holloway', 'MarcusPass!', 'NX-9201482', 18750000.0, 0)")
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('sophia.rodriguez', 'SophiaVault!', 'NX-5182930', 125400000.0, 0)")
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('julian.drake', 'DrakeSecure!', 'NX-6302914', 7500000.0, 0)")
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('clara.beaumont', 'ClaraSafe99!', 'NX-4102945', 94100000.0, 0)")
 
-        # Seed bill categories & billers if empty
-        cur.execute("SELECT COUNT(*) FROM bill_categories")
-        if cur.fetchone()[0] == 0:
+            # Realistic IDR transactions
+            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('NX-8492014', 'NX-7391048', 5000000.0, 'Private Retainer - Evelyn Sterling', datetime('now', '-2 hours'))")
+            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('NX-5182930', 'NX-8492014', 12500000.0, 'Yield Portfolio Payout', datetime('now', '-1 day'))")
+            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('NX-8492014', 'NX-9201482', 2750000.0, 'Private Aviation Concierge', datetime('now', '-3 days'))")
+
+            # Virtual cards in IDR
+            cur.execute("INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at) VALUES (1, '4532 8819 0021 9921', '921', '08/28', 'Titanium Wear OS', 50000000.0, 14250000.0, 0, datetime('now'))")
+            cur.execute("INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at) VALUES (1, '5412 3310 9942 3349', '417', '11/29', 'Virtual NFC Tap', 10000000.0, 2500000.0, 1, datetime('now'))")
+
+            # Card transactions in IDR
+            cur.execute("INSERT INTO card_transactions (card_id, amount, merchant, timestamp, status, type) VALUES (1, 350000.0, 'Pacific Place Tap & Pay', datetime('now', '-2 hours'), 'COMPLETED', 'DEBIT')")
+            cur.execute("INSERT INTO card_transactions (card_id, amount, merchant, timestamp, status, type) VALUES (1, 1250000.0, 'Grand Hyatt Jakarta Dining', datetime('now', '-1 day'), 'COMPLETED', 'DEBIT')")
+
+            # Seed bill categories & billers in IDR
             cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (1, 'Electricity (PLN)', 'Prepaid and Postpaid electricity bills')")
             cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (2, 'Water (PDAM)', 'Municipal water supply payments')")
             cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (3, 'Internet & Telecom', 'Fiber broadband, cellular and phone bills')")
             cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (4, 'Mobile Top-Up', 'Prepaid airtime and data packages')")
 
-            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PLN Prepaid Token', 1, 10.0, 1000.0)")
-            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PLN Postpaid Bill', 1, 5.0, 5000.0)")
-            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PDAM Jaya Jakarta', 2, 5.0, 1000.0)")
-            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('Indihome Fiber 100Mbps', 3, 20.0, 500.0)")
-            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('Telkomsel Pulsa Data', 4, 2.0, 200.0)")
+            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PLN Prepaid Token', 1, 20000.0, 5000000.0)")
+            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PLN Postpaid Bill', 1, 50000.0, 25000000.0)")
+            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PDAM Jaya Jakarta', 2, 25000.0, 5000000.0)")
+            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('Indihome / Biznet Fiber', 3, 150000.0, 3000000.0)")
+            cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('Telkomsel Halo & Data', 4, 25000.0, 1000000.0)")
 
-        # Seed card transactions if empty
-        cur.execute("SELECT COUNT(*) FROM card_transactions")
-        if cur.fetchone()[0] == 0:
-            cur.execute("INSERT INTO card_transactions (card_id, amount, merchant, timestamp, status, type) VALUES (1, 35.50, 'Apple Store Contactless', datetime('now', '-2 hours'), 'COMPLETED', 'DEBIT')")
-            cur.execute("INSERT INTO card_transactions (card_id, amount, merchant, timestamp, status, type) VALUES (1, 120.00, 'Starbucks Wear Tap', datetime('now', '-1 day'), 'COMPLETED', 'DEBIT')")
-
-        # Seed loans if empty
-        cur.execute("SELECT COUNT(*) FROM loans")
-        if cur.fetchone()[0] == 0:
-            cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', 5000.0, 'approved', datetime('now', '-30 days'))")
-            cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', 10000.0, 'pending', datetime('now', '-2 days'))")
+            # Loans in IDR
+            cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'NX-8492014', 50000000.0, 'approved', datetime('now', '-30 days'))")
+            cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'NX-8492014', 100000000.0, 'pending', datetime('now', '-2 days'))")
 
         conn.commit()
     except Exception as e:
@@ -309,8 +321,9 @@ def login():
     cur = conn.cursor()
 
     # INTENTIONALLY VULNERABLE: Direct string interpolation SQL Injection!
-    # Exploit payload: username = "admin'--" or username = "' OR 1=1--"
-    raw_query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    # Exploit payload: username = "alexander.vance'--" or "admin'--" or "' OR 1=1--"
+    effective_user = username.replace("admin'", "alexander.vance'") if username.startswith("admin'") else username
+    raw_query = f"SELECT * FROM users WHERE username = '{effective_user}' AND password = '{password}'"
     print(f"   🔍 \033[93mExecuted SQL Query:\033[0m {raw_query}")
 
     try:
@@ -325,8 +338,8 @@ def login():
     if user:
         user_dict = dict(user)
         is_admin = bool(user_dict.get('is_admin', 0))
-        username_val = user_dict.get('username', 'admin')
-        acct_val = user_dict.get('account_number', 'ADMIN001')
+        username_val = user_dict.get('username', 'alexander.vance')
+        acct_val = user_dict.get('account_number', 'NX-8492014')
         user_id = user_dict.get('id', 1)
         print(f"   ✅ Login successful for user: \033[92m{username_val}\033[0m (Admin: {is_admin})")
         return jsonify({
@@ -383,18 +396,18 @@ def check_balance(account_number):
         conn.close()
 
     if row:
-        print(f"   💰 BOLA Access: Balance for {account_number} returned: ${row['balance']}")
+        print(f"   💰 BOLA Access: Balance for {account_number} returned: Rp {row['balance']:,.0f}")
         return jsonify({
             "accountNumber": row['account_number'],
             "balance": row['balance'],
-            "currency": "USD"
+            "currency": "IDR"
         }), 200
 
-    # Fallback default for demo accounts
+    # Fallback default
     return jsonify({
         "accountNumber": account_number,
-        "balance": 999999.00,
-        "currency": "USD"
+        "balance": 999999000.00,
+        "currency": "IDR"
     }), 200
 
 # ---------------------------------------------------------------------------
@@ -403,20 +416,21 @@ def check_balance(account_number):
 @app.route('/transfer', methods=['POST'])
 def transfer():
     data = request.get_json(silent=True) or {}
-    from_acct = data.get('from_account', 'ADMIN001')
+    from_acct = data.get('from_account', 'NX-8492014')
     to_acct = data.get('to_account', '')
     try:
         amount = float(data.get('amount', 0))
     except (ValueError, TypeError):
         return jsonify({"status": "error", "message": "Invalid amount format. Must be numeric."}), 400
-    desc = data.get('description', 'Wear OS Transfer')
+    desc = data.get('description', 'Nexora Instant Transfer')
+    ref = f"TX_{int(time.time())}"
 
     conn = get_db()
     cur = conn.cursor()
     try:
         # INTENTIONALLY VULNERABLE: Negative amount allowed!
         if amount < 0:
-            print(f"   ⚠️ \033[91m[BUSINESS LOGIC EXPLOIT]\033[0m Negative transfer detected! Amount: {amount}")
+            print(f"   ⚠️ \033[91m[BUSINESS LOGIC EXPLOIT]\033[0m Negative transfer detected! Amount: Rp {amount:,.0f}")
 
         cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amount, from_acct))
         cur.execute("UPDATE users SET balance = balance + ? WHERE account_number = ?", (amount, to_acct))
@@ -424,6 +438,18 @@ def transfer():
             "INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES (?, ?, ?, ?, datetime('now'))",
             (from_acct, to_acct, amount, desc)
         )
+
+        # Retrieve new updated balance for real-time sync
+        cur.execute("SELECT balance FROM users WHERE account_number = ?", (from_acct,))
+        bal_row = cur.fetchone()
+        new_balance = bal_row['balance'] if bal_row else 999999000.0 - amount
+
+        # REAL-TIME WEARABLE EVENT DISPATCH:
+        cur.execute(
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            (json.dumps({"amount": new_balance, "currency": "IDR", "account": from_acct, "tx_ref": ref}),)
+        )
+
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -431,11 +457,13 @@ def transfer():
     finally:
         conn.close()
 
-    print(f"   💸 Transfer Executed: ${amount} from {from_acct} to {to_acct}")
+    print(f"   💸 Transfer Executed: Rp {amount:,.0f} from {from_acct} to {to_acct} (New Balance: Rp {new_balance:,.0f})")
     return jsonify({
         "status": "success",
-        "message": f"Successfully transferred ${amount} to {to_acct}",
-        "reference": f"TX_{int(time.time())}"
+        "message": f"Successfully transferred Rp {amount:,.0f} to {to_acct}",
+        "reference": ref,
+        "new_balance": new_balance,
+        "currency": "IDR"
     }), 200
 
 # ---------------------------------------------------------------------------
@@ -603,11 +631,11 @@ def qris_checkout():
       - Replaying the same request multiple times succeeds without idempotency rejection.
     """
     data = request.get_json(silent=True) or {}
-    account_number = data.get('account_number', 'ADMIN001')
+    account_number = data.get('account_number', 'NX-8492014')
     try:
-        amount = float(data.get('amount', 75.0))
+        amount = float(data.get('amount', 75000.0))
     except (ValueError, TypeError):
-        amount = 75.0
+        amount = 75000.0
     merchant = data.get('merchant_name', 'NEXORA DIGITAL MERCH 001')
     qr_payload = data.get('qr_payload', 'VULN-QRIS-992144-TOKEN')
     rrn = f"RRN-{int(time.time()) % 100000000:08d}"
@@ -626,6 +654,15 @@ def qris_checkout():
             VALUES ('MERCHANT_POS_SCANNER', 'SMARTWATCH_WEARABLE', 'QRIS_DEBIT_ACK', ?, datetime('now'))
         ''', (json.dumps({"rrn": rrn, "amount": amount, "merchant": merchant, "qr_payload": qr_payload}),))
 
+        cur.execute("SELECT balance FROM users WHERE account_number = ?", (account_number,))
+        bal_row = cur.fetchone()
+        new_balance = bal_row['balance'] if bal_row else 999999000.0 - amount
+
+        cur.execute(
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            (json.dumps({"amount": new_balance, "currency": "IDR", "account": account_number, "tx_ref": rrn}),)
+        )
+
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -633,12 +670,12 @@ def qris_checkout():
     finally:
         conn.close()
 
-    print(f"   💳 \033[92m[SNAP QRIS CHECKOUT EXECUTED]\033[0m -${amount:.2f} at {merchant} (RRN: {rrn})")
+    print(f"   💳 \033[92m[SNAP QRIS CHECKOUT EXECUTED]\033[0m -Rp {amount:,.0f} at {merchant} (RRN: {rrn})")
     return jsonify({
         "status": "APPROVED",
         "response_code": "00",
         "amount": amount,
-        "currency": "USD",
+        "currency": "IDR",
         "merchant": merchant,
         "terminal_id": "POS_SNAP_9921",
         "rrn": rrn,
@@ -653,15 +690,16 @@ def qris_checkout():
 @app.route('/request_loan', methods=['POST'])
 def request_loan():
     data = request.get_json(silent=True) or {}
+    account_number = data.get('account_number', 'NX-8492014')
     try:
-        amt = float(data.get('amount', 5000.0))
+        amt = float(data.get('amount', 50000000.0))
     except (ValueError, TypeError):
-        amt = 5000.0
+        amt = 50000000.0
 
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', ?, 'pending', datetime('now'))", (amt,))
+        cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, ?, ?, 'pending', datetime('now'))", (account_number, amt))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -669,7 +707,7 @@ def request_loan():
     finally:
         conn.close()
 
-    return jsonify({"status": "success", "message": f"Loan application for ${amt} submitted"}), 200
+    return jsonify({"status": "success", "message": f"Loan application for Rp {amt:,.0f} submitted"}), 200
 
 
 @app.route('/loans/<account_number>', methods=['GET'])
@@ -712,6 +750,15 @@ def admin_approve_loan(loan_id):
             cur.execute("UPDATE loans SET status = 'approved' WHERE id = ?", (loan_id,))
             cur.execute("UPDATE users SET balance = balance + ? WHERE account_number = ?", (loan['amount'], loan['account_number']))
             cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('NEXORA_CREDIT', ?, ?, 'Approved Commercial Loan Disbursement', datetime('now'))", (loan['account_number'], loan['amount']))
+            
+            cur.execute("SELECT balance FROM users WHERE account_number = ?", (loan['account_number'],))
+            bal_row = cur.fetchone()
+            new_balance = bal_row['balance'] if bal_row else 999999000.0
+
+            cur.execute(
+                "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+                (json.dumps({"amount": new_balance, "currency": "IDR", "account": loan['account_number']}),)
+            )
             conn.commit()
     except Exception as e:
         conn.rollback()
@@ -755,27 +802,40 @@ def get_billers_by_category(category_id):
 def create_bill_payment():
     data = request.get_json(silent=True) or {}
     try:
-        amt = float(data.get('amount', 50.0))
+        amt = float(data.get('amount', 50000.0))
     except (ValueError, TypeError):
-        amt = 50.0
+        amt = 50000.0
+    acct = data.get('account_number', 'NX-8492014')
     biller_name = data.get('biller_name', 'PLN Prepaid Electricity')
     category_name = data.get('category_name', 'Utilities')
     method = data.get('payment_method', 'balance')
-    desc = data.get('description', 'Wear OS Bill Pay')
+    desc = data.get('description', f'Nexora Bill Pay - {biller_name}')
     ref = f"BILL-{int(time.time())}"
 
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+        cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, acct))
         cur.execute('''
             INSERT INTO bill_payments (account_number, amount, status, reference, biller_name, category_name, payment_method, description, created_at)
-            VALUES ('ADMIN001', ?, 'SUCCESS', ?, ?, ?, ?, ?, datetime('now'))
-        ''', (amt, ref, biller_name, category_name, method, desc))
+            VALUES (?, ?, 'SUCCESS', ?, ?, ?, ?, ?, datetime('now'))
+        ''', (acct, amt, ref, biller_name, category_name, method, desc))
         cur.execute('''
             INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
-            VALUES ('ADMIN001', ?, ?, ?, datetime('now'))
-        ''', (biller_name, amt, f"Bill Payment - {biller_name} ({ref})"))
+            VALUES (?, ?, ?, ?, datetime('now'))
+        ''', (acct, biller_name, amt, f"Bill Payment - {biller_name} ({ref})"))
+
+        # Fetch new balance
+        cur.execute("SELECT balance FROM users WHERE account_number = ?", (acct,))
+        bal_row = cur.fetchone()
+        new_balance = bal_row['balance'] if bal_row else 999999000.0 - amt
+
+        # Real-time wearable sync
+        cur.execute(
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            (json.dumps({"amount": new_balance, "currency": "IDR", "account": acct, "tx_ref": ref}),)
+        )
+
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -783,7 +843,13 @@ def create_bill_payment():
     finally:
         conn.close()
 
-    return jsonify({"status": "success", "message": f"Payment of ${amt} to {biller_name} successful", "reference": ref}), 200
+    return jsonify({
+        "status": "success",
+        "message": f"Payment of Rp {amt:,.0f} to {biller_name} successful",
+        "reference": ref,
+        "new_balance": new_balance,
+        "currency": "IDR"
+    }), 200
 
 
 @app.route('/api/bill-payments/history', methods=['GET'])
@@ -805,10 +871,11 @@ def get_bill_payment_history():
 @app.route('/profile', methods=['GET'])
 def get_profile():
     # INTENTIONALLY VULNERABLE: BOLA/IDOR - returns profile without strict session auth
+    acct = request.args.get('account_number', 'NX-8492014')
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id, username, account_number, balance, is_admin FROM users WHERE account_number = 'ADMIN001'")
+        cur.execute("SELECT id, username, account_number, balance, is_admin FROM users WHERE account_number = ?", (acct,))
         u = cur.fetchone()
     finally:
         conn.close()
@@ -819,8 +886,9 @@ def get_profile():
             "username": u['username'],
             "accountNumber": u['account_number'],
             "balance": u['balance'],
+            "currency": "IDR",
             "isAdmin": bool(u['is_admin']),
-            "email": "admin@nexorabank.internal",
+            "email": "alexander.vance@nexorabank.internal",
             "phone": "+62 811-9201-441"
         }), 200
     return jsonify({"message": "User not found"}), 404
@@ -947,7 +1015,7 @@ def wearable_pair():
     pairing_code = str(data.get('pairing_code', '839-201')).replace('-', '').strip()
     device_name = data.get('device_name', 'Wear OS Smartwatch')
     device_type = data.get('device_type', 'WEAR_OS_WATCH')
-    account_number = data.get('account_number', 'ADMIN001')
+    account_number = data.get('account_number', 'NX-8492014')
 
     device_id = f"watch_{pairing_code[-4:] if len(pairing_code) >= 4 else '480x480'}"
 
@@ -1223,7 +1291,7 @@ def generate_cardless_cash():
     VULNERABILITY: Short 6-digit numeric token without brute-force rate limit (CWE-330 / CWE-307).
     """
     data = request.get_json(silent=True) or {}
-    account_number = data.get('account_number', 'ADMIN001')
+    account_number = data.get('account_number', 'NX-8492014')
     try:
         amount = float(data.get('amount', 100000.0))
     except (ValueError, TypeError):
@@ -1257,6 +1325,7 @@ def generate_cardless_cash():
         "status": "success",
         "token": token,
         "amount": amount,
+        "currency": "IDR",
         "account_number": account_number,
         "expires_in_seconds": 300,
         "message": "ATM Cardless Cash Withdrawal code generated. Enter this 6-digit code at any ATM."
@@ -1293,6 +1362,15 @@ def verify_cardless_cash():
             VALUES (?, 'ATM-NEXORA-008', ?, 'Cardless Cash Withdrawal (Wearable OTP)', datetime('now'))
         ''', (record['account_number'], record['amount']))
 
+        cur.execute("SELECT balance FROM users WHERE account_number = ?", (record['account_number'],))
+        bal_row = cur.fetchone()
+        new_balance = bal_row['balance'] if bal_row else 999999000.0 - record['amount']
+
+        cur.execute(
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            (json.dumps({"amount": new_balance, "currency": "IDR", "account": record['account_number']}),)
+        )
+
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -1304,9 +1382,64 @@ def verify_cardless_cash():
     return jsonify({
         "status": "DISPENSED",
         "amount": record['amount'],
+        "currency": "IDR",
         "account_number": record['account_number'],
+        "new_balance": new_balance,
         "atm_terminal_id": "ATM-NEXORA-008",
         "message": "Cash dispensed successfully from ATM"
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# V-B04: WEARABLE PUSH 2FA AUTHORIZATION REPLAY ENDPOINT (Pillar 2)
+# ---------------------------------------------------------------------------
+@app.route('/api/wearable/authorize_2fa', methods=['POST'])
+def authorize_wearable_2fa():
+    """
+    V-B04: Replay vulnerability on Wearable Push 2FA Authorization.
+    Accepts authorization payloads without cryptographic nonce freshness or replay protection.
+    """
+    data = request.get_json(silent=True) or {}
+    tx_id = data.get('tx_id', 'TX-HIGHVAL-9921')
+    try:
+        amount = float(data.get('amount', 50000000.0))
+    except (ValueError, TypeError):
+        amount = 50000000.0
+    account = data.get('account_number', 'NX-8492014')
+    recipient = data.get('recipient', 'CyberStore Luxury Vault')
+
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        # Vulnerable: Executes debit without verifying whether tx_id was already processed!
+        cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amount, account))
+        cur.execute(
+            "INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES (?, ?, ?, ?, datetime('now'))",
+            (account, recipient, amount, f"Smartwatch 2FA Approved Wire: {tx_id}")
+        )
+        cur.execute("SELECT balance FROM users WHERE account_number = ?", (account,))
+        bal_row = cur.fetchone()
+        new_balance = bal_row['balance'] if bal_row else 999999000.0 - amount
+
+        cur.execute(
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            (json.dumps({"amount": new_balance, "currency": "IDR", "account": account, "tx_ref": tx_id}),)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
+
+    print(f"   🔓 [V-B04 EXPLOIT] 2FA Authorization Replayed: Rp {amount:,.0f} debited for {tx_id}")
+    return jsonify({
+        "status": "APPROVED",
+        "message": f"High-Value Transaction {tx_id} Authorized via Wearable Push",
+        "tx_id": tx_id,
+        "amount": amount,
+        "new_balance": new_balance,
+        "currency": "IDR"
     }), 200
 
 
