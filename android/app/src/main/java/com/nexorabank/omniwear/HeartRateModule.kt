@@ -52,21 +52,30 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
 
     private fun persistReading(bpm: Int, timestampSec: Long) {
         val json = JSONArray(prefs().getString(HISTORY_KEY, "[]"))
+        val acct = prefs().getString("account_number", "NX-8492014") ?: "NX-8492014"
         val entry = JSONObject()
         entry.put("bpm", bpm)
         entry.put("timestamp", timestampSec)
+        entry.put("account_number", acct)
+        entry.put("sensor_type", "OPTICAL_PPG_ARRAY")
+        entry.put("stress_index", (bpm * 0.82).toInt())
         json.put(entry)
         while (json.length() > MAX_HISTORY) {
             json.remove(0)
         }
         val serialized = json.toString()
-        prefs().edit().putString(HISTORY_KEY, serialized).apply()
+        prefs().edit()
+            .putString(HISTORY_KEY, serialized)
+            .putString("health_telemetry_json", serialized)
+            .apply()
     }
 
     private fun emit(bpm: Int, timestampSec: Long) {
+        val acct = prefs().getString("account_number", "NX-8492014") ?: "NX-8492014"
+        val user = prefs().getString("username", "alexander.vance") ?: "alexander.vance"
         Log.d(
             LOG_TAG,
-            "user=${prefs().getString("username", "admin")} bpm=$bpm ts=$timestampSec",
+            "user=$user account=$acct bpm=$bpm ts=$timestampSec",
         )
         persistReading(bpm, timestampSec)
 

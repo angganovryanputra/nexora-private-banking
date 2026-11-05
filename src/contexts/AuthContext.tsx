@@ -73,22 +73,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (response.ok && response.data.token) {
         // Determine if user is admin
-        const isAdmin = username.toLowerCase() === 'admin';
+        const isAdmin = Boolean(response.data.isAdmin || username.toLowerCase() === 'alexander.vance' || username.toLowerCase() === 'admin');
+        const acct = response.data.accountNumber || 'NX-8492014';
         
         // Set user state
         const userData = {
-          username,
-          // accountNumber: response.data.accountNumber || 'ADMIN001', // Default if not provided
-          accountNumber: response.data.accountNumber ?? '',
+          username: response.data.username || username,
+          accountNumber: acct,
           isAdmin,
           token: response.data.token,
         };
         setUser(userData);
         
-        // Save to AsyncStorage
+        // Save to AsyncStorage (Insecure Storage OWASP M2)
         await AsyncStorage.setItem('jwt_token', response.data.token);
-        await AsyncStorage.setItem('username', username);
+        await AsyncStorage.setItem('username', userData.username);
         await AsyncStorage.setItem('account_number', userData.accountNumber);
+        await AsyncStorage.setItem('full_name', 'Alexander Vance');
+        await AsyncStorage.setItem('client_tier', 'Private Wealth Ultra HNW');
+        await AsyncStorage.setItem('cached_balance_idr', 'Rp 999.999.000');
         await AsyncStorage.setItem('is_admin', String(isAdmin));
         
         return true;
