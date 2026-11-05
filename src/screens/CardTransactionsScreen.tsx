@@ -142,7 +142,7 @@ const CardTransactionsScreen: React.FC<CardTransactionsScreenProps> = ({ onNavig
           styles.amount, 
           { color: item.type === 'refund' ? COLORS.success : COLORS.white }
         ]}>
-          {item.type === 'refund' ? '+' : '-'}${Math.abs(item.amount).toFixed(2)}
+          {item.type === 'refund' ? '+' : '-'}Rp {Math.abs(item.amount).toLocaleString('id-ID')}
         </Text>
         <View style={[
           styles.statusBadge,
@@ -211,7 +211,7 @@ const CardTransactionsScreen: React.FC<CardTransactionsScreenProps> = ({ onNavig
             )}
           </View>
           <Text style={styles.cardBalance}>
-            Balance: ${cardDetails.balance?.toFixed(2) || '0.00'}
+            Balance: Rp {cardDetails.balance ? Number(cardDetails.balance).toLocaleString('id-ID') : '0'}
           </Text>
         </View>
       )}

@@ -129,18 +129,18 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
     try {
       await watchOSBridge.sendMessageToWatch({
         action: 'QRIS_PAYMENT_COMPLETED',
-        payload: { amount: 75.0, merchant: 'NEXORA DIGITAL MERCH 001' },
+        payload: { amount: 75000.0, merchant: 'NEXORA DIGITAL MERCH 001' },
       });
       const res = await dispatchWearableEvent(targetDeviceId, 'QRIS_PAYMENT_COMPLETED', {
-        amount: 75.0,
+        amount: 75000.0,
         merchant: 'NEXORA DIGITAL MERCH 001',
         timestamp: Date.now(),
       });
       if (res.ok) {
-        setLastAction(`Executed Merchant QRIS Checkout ($75.00) -> ${targetDeviceId}`);
+        setLastAction(`Executed Merchant QRIS Checkout (Rp 75.000) -> ${targetDeviceId}`);
         Alert.alert(
           '💳 Merchant QRIS Scanned (V-06 / V-AP06)',
-          `Simulated POS checkout from Smartwatch:\nDebit: $75.00\nMerchant: NEXORA DIGITAL MERCH 001\nStatus: APPROVED\n\n[V-06 Replay Attack Demo]: Tap this button again without generating a new QR code on the watch. Notice both transactions succeed because of static transaction ID!`
+          `Simulated POS checkout from Smartwatch:\nDebit: Rp 75.000\nMerchant: NEXORA DIGITAL MERCH 001\nStatus: APPROVED\n\n[V-06 Replay Attack Demo]: Tap this button again without generating a new QR code on the watch. Notice both transactions succeed because of static transaction ID!`
         );
       } else {
         Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
@@ -232,7 +232,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
       {/* Trigger 2: Push Standard 2FA */}
       <TouchableOpacity
         style={styles.triggerCard}
-        onPress={() => handlePush2FAToWatch(250.00, 'CyberStore Inc.')}
+        onPress={() => handlePush2FAToWatch(250000.0, 'CyberStore Inc.')}
         disabled={isLoading}
       >
         <View style={[styles.iconCircle, { backgroundColor: COLORS.warning }]}>
@@ -240,7 +240,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         </View>
         <View style={styles.triggerInfo}>
           <Text style={styles.triggerTitle}>Push 2FA Alert to Watch</Text>
-          <Text style={styles.triggerSub}>V-W09: Plaintext OTP snooping ($250.00)</Text>
+          <Text style={styles.triggerSub}>V-W09: Plaintext OTP snooping (Rp 250.000)</Text>
         </View>
         <Icon name="chevron-right" size={10} color={COLORS.textLight} />
       </TouchableOpacity>
@@ -248,14 +248,14 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
       {/* Trigger 2B: High-Value OOB 2FA Approval ($50,000 / Rp 50 Juta) */}
       <TouchableOpacity
         style={[styles.triggerCard, { borderColor: 'rgba(255, 68, 68, 0.5)' }]}
-        onPress={() => handlePush2FAToWatch(50000.00, 'Offshore Escrow Ltd.')}
+        onPress={() => handlePush2FAToWatch(50000000.0, 'Offshore Escrow Ltd.')}
         disabled={isLoading}
       >
         <View style={[styles.iconCircle, { backgroundColor: COLORS.danger }]}>
           <Icon name="shield" size={12} color={COLORS.white} />
         </View>
         <View style={styles.triggerInfo}>
-          <Text style={styles.triggerTitle}>High-Value 2FA ($50,000 OOB)</Text>
+          <Text style={styles.triggerTitle}>High-Value 2FA (Rp 50 Juta OOB)</Text>
           <Text style={styles.triggerSub}>Enterprise Out-of-Band Auth without Nonce</Text>
         </View>
         <Icon name="chevron-right" size={10} color={COLORS.textLight} />

@@ -446,7 +446,7 @@ def transfer():
 
         # REAL-TIME WEARABLE EVENT DISPATCH:
         cur.execute(
-            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('all', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
             (json.dumps({"amount": new_balance, "currency": "IDR", "account": from_acct, "tx_ref": ref}),)
         )
 
@@ -659,7 +659,7 @@ def qris_checkout():
         new_balance = bal_row['balance'] if bal_row else 999999000.0 - amount
 
         cur.execute(
-            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('all', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
             (json.dumps({"amount": new_balance, "currency": "IDR", "account": account_number, "tx_ref": rrn}),)
         )
 
@@ -756,7 +756,7 @@ def admin_approve_loan(loan_id):
             new_balance = bal_row['balance'] if bal_row else 999999000.0
 
             cur.execute(
-                "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+                "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('all', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
                 (json.dumps({"amount": new_balance, "currency": "IDR", "account": loan['account_number']}),)
             )
             conn.commit()
@@ -832,7 +832,7 @@ def create_bill_payment():
 
         # Real-time wearable sync
         cur.execute(
-            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('all', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
             (json.dumps({"amount": new_balance, "currency": "IDR", "account": acct, "tx_ref": ref}),)
         )
 
@@ -1194,8 +1194,8 @@ def resolve_wearable_event():
         except Exception:
             p = {"raw": ev['payload']}
 
-        # Target account for deduction
-        target_acct = p.get('account_number', 'ADMIN001') if isinstance(p, dict) else 'ADMIN001'
+        # Target account for deduction (supports both 'account_number' and 'account' keys)
+        target_acct = (p.get('account_number') or p.get('account') or 'NX-8492014') if isinstance(p, dict) else 'NX-8492014'
 
         # If action was UPDATE_BALANCE, also update the database balance
         if ev['action'] == 'UPDATE_BALANCE' and resolution == 'APPLIED':
@@ -1206,38 +1206,38 @@ def resolve_wearable_event():
                 print(f"Error updating balance on resolve: {e}")
         elif ev['action'] in ('PUSH_2FA', 'TRIGGER_HIGH_VALUE_2FA') and resolution == 'APPLIED':
             try:
-                amt = float(p.get('amount', 50000.0)) if isinstance(p, dict) else 50000.0
-                recipient = (p.get('recipient') or p.get('merchant') or 'HACKER_CORP') if isinstance(p, dict) else 'HACKER_CORP'
+                amt = float(p.get('amount', 50000000.0)) if isinstance(p, dict) else 50000000.0
+                recipient = (p.get('recipient') or p.get('merchant') or 'CyberStore Vault') if isinstance(p, dict) else 'CyberStore Vault'
                 cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, target_acct))
                 cur.execute('''
                     INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
                     VALUES (?, ?, ?, 'OOB 2FA Wire Transfer Authorization (Watch Approved)', datetime('now'))
                 ''', (target_acct, recipient, amt))
-                print(f"   💸 \033[92m[2FA HIGH-VALUE TRANSFER DEBITED]\033[0m -$ {amt:.2f} to {recipient}")
+                print(f"   💸 \033[92m[2FA HIGH-VALUE TRANSFER DEBITED]\033[0m -Rp {amt:,.0f} to {recipient}")
             except Exception as e:
                 print(f"Error executing 2FA debit on resolve: {e}")
         elif ev['action'] == 'QRIS_PAYMENT_COMPLETED' and resolution == 'APPLIED':
             try:
-                amt = float(p.get('amount', 75.0)) if isinstance(p, dict) else 75.0
+                amt = float(p.get('amount', 75000.0)) if isinstance(p, dict) else 75000.0
                 merchant = p.get('merchant', 'NEXORA DIGITAL MERCH 001') if isinstance(p, dict) else 'NEXORA DIGITAL MERCH 001'
                 cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, target_acct))
                 cur.execute('''
                     INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
                     VALUES (?, ?, ?, 'Dynamic SNAP QRIS Wearable Checkout', datetime('now'))
                 ''', (target_acct, merchant, amt))
-                print(f"   💳 \033[92m[QRIS PAYMENT DEBITED]\033[0m -$ {amt:.2f} at {merchant}")
+                print(f"   💳 \033[92m[QRIS PAYMENT DEBITED]\033[0m -Rp {amt:,.0f} at {merchant}")
             except Exception as e:
                 print(f"Error executing QRIS debit on resolve: {e}")
         elif ev['action'] == 'QUICK_PAY' and resolution == 'APPLIED':
             try:
-                amt = float(p.get('amount', 50000.0)) if isinstance(p, dict) else 50000.0
-                recipient = p.get('recipient', 'HACKER_CORP') if isinstance(p, dict) else 'HACKER_CORP'
+                amt = float(p.get('amount', 50000000.0)) if isinstance(p, dict) else 50000000.0
+                recipient = p.get('recipient', 'CyberStore Vault') if isinstance(p, dict) else 'CyberStore Vault'
                 cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, target_acct))
                 cur.execute('''
                     INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
                     VALUES (?, ?, ?, 'Quick Pay Direct Injection (Unauthenticated)', datetime('now'))
                 ''', (target_acct, recipient, amt))
-                print(f"   ⚡ \033[92m[QUICK PAY DEBITED]\033[0m -$ {amt:.2f} to {recipient}")
+                print(f"   ⚡ \033[92m[QUICK PAY DEBITED]\033[0m -Rp {amt:,.0f} to {recipient}")
             except Exception as e:
                 print(f"Error executing Quick Pay debit on resolve: {e}")
 
@@ -1355,6 +1355,10 @@ def verify_cardless_cash():
         if not record:
             return jsonify({"message": "Invalid or expired ATM cash token"}), 400
 
+        # V-L04: Intentional Race Condition window (CWE-362 / TOCTOU)
+        # Non-atomic verification without row-level lock allows concurrent requests to double dispense
+        time.sleep(0.06)
+
         cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (record['amount'], record['account_number']))
         cur.execute("UPDATE cardless_cash_tokens SET status = 'DISPENSED' WHERE id = ?", (record['id'],))
         cur.execute('''
@@ -1367,7 +1371,7 @@ def verify_cardless_cash():
         new_balance = bal_row['balance'] if bal_row else 999999000.0 - record['amount']
 
         cur.execute(
-            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('all', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
             (json.dumps({"amount": new_balance, "currency": "IDR", "account": record['account_number']}),)
         )
 
@@ -1422,7 +1426,7 @@ def authorize_wearable_2fa():
         new_balance = bal_row['balance'] if bal_row else 999999000.0 - amount
 
         cur.execute(
-            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('watch_9201', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
+            "INSERT INTO wearable_events (target_device_id, action, payload, status, created_at) VALUES ('all', 'UPDATE_BALANCE', ?, 'PENDING', datetime('now'))",
             (json.dumps({"amount": new_balance, "currency": "IDR", "account": account, "tx_ref": tx_id}),)
         )
         conn.commit()

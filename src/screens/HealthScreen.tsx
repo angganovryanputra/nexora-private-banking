@@ -113,8 +113,8 @@ const HealthScreen: React.FC<HeartRateScreenProps> = () => {
     setSyncStatus('Syncing...');
     try {
       const payload = {
-        username: user?.username || 'admin',
-        account_number: user?.accountNumber || 'ADMIN001',
+        username: user?.username || 'alexander.vance',
+        account_number: user?.accountNumber || 'NX-8492014',
         readings: history,
       };
       const res = await post('/debug/heart', payload);

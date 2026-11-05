@@ -116,12 +116,12 @@ const CreateCardScreen: React.FC<CreateCardScreenProps> = ({ onNavigate }) => {
         
         <Text style={styles.sectionTitle}>Card Limit</Text>
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Set your card spending limit ($)</Text>
+          <Text style={styles.label}>Set your card spending limit (Rp)</Text>
           <View style={styles.amountInputContainer}>
-            <Text style={styles.currencySymbol}>$</Text>
+            <Text style={styles.currencySymbol}>Rp</Text>
             <TextInput
               style={[globalStyles.input, styles.amountInput]}
-              placeholder="0.00"
+              placeholder="50000000"
               placeholderTextColor={COLORS.textLight}
               value={cardLimit}
               onChangeText={setCardLimit}
@@ -130,8 +130,8 @@ const CreateCardScreen: React.FC<CreateCardScreenProps> = ({ onNavigate }) => {
           </View>
           <Text style={styles.limitHint}>
             {cardType === 'premium' 
-              ? 'Premium cards can have higher limits (up to $50,000)' 
-              : 'Standard cards typically have limits up to $10,000'}
+              ? 'Premium cards can have higher limits (up to Rp 500.000.000)' 
+              : 'Standard cards typically have limits up to Rp 100.000.000'}
           </Text>
         </View>
         
@@ -158,7 +158,7 @@ const CreateCardScreen: React.FC<CreateCardScreenProps> = ({ onNavigate }) => {
               <View>
                 <Text style={styles.cardPreviewLabel}>LIMIT</Text>
                 <Text style={styles.cardPreviewValue}>
-                  ${cardLimit ? parseFloat(cardLimit).toFixed(2) : '0.00'}
+                  Rp {cardLimit ? parseFloat(cardLimit).toLocaleString('id-ID') : '0'}
                 </Text>
               </View>
               <View>

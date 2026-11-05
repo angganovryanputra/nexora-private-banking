@@ -5,6 +5,7 @@ import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import { ENDPOINTS, get, pollWearableEvents, resolveWearableEvent, generateCardlessCash } from '../utils/api';
 import { watchOSBridge } from '../utils/watchOSBridge';
+import { formatIDR } from '../utils/format';
 import theme from '../styles/theme';
 import {
   ROUND_INSET,
@@ -126,7 +127,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
 
   const handleOpenAtmCash = async () => {
     try {
-      const res = await generateCardlessCash(user?.accountNumber || 'ADMIN001', 250000.0);
+      const res = await generateCardlessCash(user?.accountNumber || 'NX-8492014', 250000.0);
       if (res.ok && res.data?.token) {
         setAtmCashToken(res.data.token);
         setAtmCashCountdown(300);
@@ -184,7 +185,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
       await resolveWearableEvent(twoFactorData.eventId, approved ? 'APPLIED' : 'REJECTED');
     }
     if (approved) {
-      Alert.alert('2FA Approved', `Payment of $${twoFactorData?.amount || 250}.00 to ${twoFactorData?.merchant || 'CyberStore'} approved from watch.`);
+      const amt = Number(twoFactorData?.amount || 50000000);
+      Alert.alert('2FA Approved', `Payment of Rp ${amt.toLocaleString('id-ID')} to ${twoFactorData?.merchant || 'CyberStore'} approved from watch.`);
     } else {
       Alert.alert('2FA Rejected', 'Payment authorization was rejected.');
     }
@@ -234,7 +236,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
           {hideBalance ? '••••••••••••' : balance}
         </Text>
         <Text style={styles.accountNumber} numberOfLines={1}>
-          Acct: {user?.accountNumber || 'ADMIN001'} • Nexora Premier
+          Acct: {user?.accountNumber || 'NX-8492014'} • Nexora Premier
         </Text>
       </View>
 
@@ -269,7 +271,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
             <Text style={styles.twoFactorTitle}>Out-of-Band 2FA Authorization</Text>
           </View>
           <Text style={styles.twoFactorDesc}>
-            Authorize high-value debit of {twoFactorData?.amount ? `$${twoFactorData.amount.toFixed(2)}` : '$50,000.00'} to {twoFactorData?.merchant || 'OFFSHORE-CORP'}?
+            Authorize high-value debit of {twoFactorData?.amount ? `Rp ${Number(twoFactorData.amount).toLocaleString('id-ID')}` : 'Rp 50.000.000'} to {twoFactorData?.merchant || 'OFFSHORE-CORP'}?
           </Text>
           <View style={styles.twoFactorActions}>
             <TouchableOpacity

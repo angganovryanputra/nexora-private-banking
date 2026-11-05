@@ -53,9 +53,23 @@ class QuickPayReceiver : BroadcastReceiver() {
         val txStr = txJson.toString()
         prefs.edit().putString("recent_transactions", txStr).apply()
 
+        // V-W06: actually move money. The unauthenticated broadcast triggers a
+        // real debit on the backend ledger (visible in GET /transactions), not
+        // just a local note — matching the documented impact.
+        val victim = prefs.getString("account_number", "NX-8492014") ?: "NX-8492014"
+        NexoraHttp.postJsonAsync(
+            "/transfer",
+            JSONObject().apply {
+                put("from_account", victim)
+                put("to_account", recipient)
+                put("amount", amount.toDouble())
+                put("description", "Quick Pay Injection via exported receiver (V-W06, no PIN)")
+            }.toString()
+        )
+
         Toast.makeText(
             context,
-            "💸 [V-W06 Exploit] Sent $$amount to $recipient without PIN!",
+            "💸 [V-W06 Exploit] Sent Rp ${amount.toLong()} to $recipient without PIN!",
             Toast.LENGTH_LONG
         ).show()
     }

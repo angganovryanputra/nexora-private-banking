@@ -12,7 +12,8 @@ class HeartRatePackage : ReactPackage {
         listOf(
             HeartRateModule(reactContext),
             SecurityCheckModule(reactContext),
-            BluetoothSyncModule(reactContext)
+            BluetoothSyncModule(reactContext),
+            PinnedNetworkModule(reactContext)
         )
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<View, ReactShadowNode<*>>> =

@@ -186,12 +186,12 @@ const CardDetailsScreen: React.FC<CardDetailsScreenProps> = ({ onNavigate, param
           
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Card Balance</Text>
-            <Text style={styles.detailValue}>${card.balance.toFixed(2)}</Text>
+            <Text style={styles.detailValue}>Rp {Number(card.balance).toLocaleString('id-ID')}</Text>
           </View>
           
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Card Limit</Text>
-            <Text style={styles.detailValue}>${card.limit.toFixed(2)}</Text>
+            <Text style={styles.detailValue}>Rp {Number(card.limit).toLocaleString('id-ID')}</Text>
           </View>
           
           <View style={styles.detailRow}>

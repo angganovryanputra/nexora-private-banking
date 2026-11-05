@@ -54,6 +54,11 @@ android {
 dependencies {
     implementation("com.facebook.react:react-android")
 
+    // Explicit OkHttp (same 4.x line React Native already bundles) so the real
+    // CertificatePinner in PinnedNetworkModule (V-08 SSL-pinning demo) always
+    // resolves at compile time regardless of transitive exposure.
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

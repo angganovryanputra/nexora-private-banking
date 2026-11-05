@@ -136,7 +136,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
           style={styles.autofillButton}
           onPress={handleAutoFillAdmin}
         >
-          <Text style={styles.autofillText}>Fill Demo Credentials (admin)</Text>
+          <Text style={styles.autofillText}>Fill Client Credentials (alexander.vance)</Text>
         </TouchableOpacity>
 
         {loading ? (

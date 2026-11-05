@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import org.json.JSONObject
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -20,14 +21,8 @@ class MainActivity : ReactActivity() {
     // V-04: Log the hardcoded JWT to system logcat
     Log.d("NEXORA_SECRETS", Secrets.HARDCODED_ADMIN_JWT)
 
-    // V-03: Store plaintext secrets in SharedPreferences
-    val prefs = getSharedPreferences("NexoraVaultPrefs", Context.MODE_PRIVATE)
-    val editor = prefs.edit()
-    editor.putString("username", "admin")
-    editor.putString("password", "admin123")
-    editor.putString("balance", "Rp 99.999.000")
-    editor.putString("debug_flag", "FLAG{NexoraVault_HardcodedSecrets_CWE312}")
-    editor.apply()
+    // V-03: Store plaintext authentic enterprise secrets in SharedPreferences
+    PrefsHelper.storeSecrets(this)
 
     // V-W10: Quick-PIN stored as weak unsalted MD5 hash ('1234' = 81dc9bdb52d04dc20036dbd8313ed055)
     val pinPrefs = getSharedPreferences("quick_pin", Context.MODE_PRIVATE)
@@ -56,9 +51,25 @@ class MainActivity : ReactActivity() {
       val auto = data.getQueryParameter("auto") == "true"
 
       Log.w("NEXORA_DEEPLINK", "⚠️ EXPLOIT DETECTED (V-W07): Deep link triggered transfer to $to amount $amount (auto=$auto)")
+
+      // V-W07: the unvalidated deep link actually executes the wire on the
+      // backend (no session / signature check on the calling app), so an
+      // attacker's `am start` genuinely debits the victim — not just a Toast.
+      val victim = getSharedPreferences("NexoraVaultPrefs", Context.MODE_PRIVATE)
+        .getString("account_number", "NX-8492014") ?: "NX-8492014"
+      NexoraHttp.postJsonAsync(
+        "/transfer",
+        JSONObject().apply {
+          put("from_account", victim)
+          put("to_account", to)
+          put("amount", amount.toDoubleOrNull() ?: 0.0)
+          put("description", "Deep Link CSRF transfer (V-W07, unvalidated nexorabank://transfer)")
+        }.toString()
+      )
+
       Toast.makeText(
         this,
-        "⚡ [V-W07 Deep Link] Wire transfer to $to ($$amount) triggered!",
+        "⚡ [V-W07 Deep Link] Wire transfer of Rp $amount to $to triggered!",
         Toast.LENGTH_LONG
       ).show()
     }

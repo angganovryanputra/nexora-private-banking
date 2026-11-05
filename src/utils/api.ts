@@ -20,6 +20,44 @@ export const setApiBase = async (url: string) => {
 
 export const getApiBase = () => API_BASE;
 
+/**
+ * Health-check the backend relay. Used by the Pentest Lab "Test Connection"
+ * button and the Companion screen so researchers can confirm/fix the target URL
+ * instead of only seeing a generic "backend unreachable" popup.
+ */
+export const pingBackend = async (
+  base?: string,
+  timeoutMs = 4000,
+): Promise<{ ok: boolean; status: number; base: string; message: string }> => {
+  const target = (base || getApiBase()).replace(/\/+$/, '');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${target}/api/compliance/report`, {
+      method: 'GET',
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    return {
+      ok: res.ok,
+      status: res.status,
+      base: target,
+      message: res.ok ? 'Backend reachable ✓' : `Reached host but got HTTP ${res.status}`,
+    };
+  } catch (e: any) {
+    clearTimeout(timer);
+    const aborted = e?.name === 'AbortError';
+    return {
+      ok: false,
+      status: 0,
+      base: target,
+      message: aborted
+        ? 'Timeout — no response from host'
+        : 'Unreachable — check the IP/port and that python backend/server.py is running',
+    };
+  }
+};
+
 // API Endpoints
 export const ENDPOINTS = {
   login: '/login',
@@ -189,7 +227,7 @@ export const getComplianceReport = () => {
   return get(ENDPOINTS.compliance);
 };
 
-export const generateCardlessCash = (accountNumber = 'ADMIN001', amount = 100000.0) => {
+export const generateCardlessCash = (accountNumber = 'NX-8492014', amount = 100000.0) => {
   return post(ENDPOINTS.atm.generateCashToken, {
     account_number: accountNumber,
     amount,

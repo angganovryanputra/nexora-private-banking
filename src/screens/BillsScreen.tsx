@@ -461,7 +461,7 @@ const BillsScreen: React.FC<BillsScreenProps> = ({ onNavigate }) => {
                 <View style={styles.formGroup}>
                   <Text style={styles.label}>Amount</Text>
                   <View style={styles.amountContainer}>
-                    <Text style={styles.currencySymbol}>$</Text>
+                    <Text style={styles.currencySymbol}>Rp</Text>
                     <TextInput
                       style={[globalStyles.input, styles.amountInput]}
                       placeholder="0.00"
@@ -473,12 +473,12 @@ const BillsScreen: React.FC<BillsScreenProps> = ({ onNavigate }) => {
                   </View>
                   {selectedBiller.minimum_amount > 0 && (
                     <Text style={styles.inputHint}>
-                      Minimum amount: ${selectedBiller.minimum_amount}
+                      Minimum amount: Rp {selectedBiller.minimum_amount.toLocaleString('id-ID')}
                     </Text>
                   )}
                   {selectedBiller.maximum_amount && (
                     <Text style={styles.inputHint}>
-                      Maximum amount: ${selectedBiller.maximum_amount}
+                      Maximum amount: Rp {selectedBiller.maximum_amount.toLocaleString('id-ID')}
                     </Text>
                   )}
                 </View>
@@ -545,7 +545,7 @@ const BillsScreen: React.FC<BillsScreenProps> = ({ onNavigate }) => {
                             **** **** **** {card.card_number.slice(-4)}
                           </Text>
                           <Text style={styles.cardBalance}>
-                            Balance: ${card.balance.toFixed(2)}
+                            Balance: Rp {Number(card.balance).toLocaleString('id-ID')}
                           </Text>
                         </View>
                         {selectedCard === card.id && (

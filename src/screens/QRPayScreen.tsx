@@ -71,7 +71,7 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
                 '/api/qris/checkout',
                 {
                   account_number: user?.accountNumber || 'NX-8492014',
-                  amount: 75.00,
+                  amount: 75000.0,
                   merchant_name: 'NEXORA DIGITAL MERCH 001',
                   qr_payload: `00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2`,
                 },

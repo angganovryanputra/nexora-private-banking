@@ -118,4 +118,49 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
         }
         promise.resolve(map)
     }
+
+    // ------------------------------------------- 5. REAL QUICK-PIN BRUTE FORCE
+    /**
+     * V-W10: genuinely brute-forces the stored unsalted MD5 Quick-PIN hash by
+     * iterating the entire 0000–9999 keyspace and comparing MD5 digests. This is
+     * NOT a simulation — it reads the real hash from quick_pin.xml and recovers
+     * the PIN, demonstrating why reversible/unsalted PIN storage plus no
+     * rate-limiting is catastrophic (CWE-312 + CWE-307).
+     */
+    @ReactMethod
+    fun bruteForcePin(promise: Promise) {
+        Thread {
+            val prefs = reactContext.getSharedPreferences("quick_pin", Context.MODE_PRIVATE)
+            val target = (prefs.getString("pin_hash", "81dc9bdb52d04dc20036dbd8313ed055") ?: "")
+                .trim().lowercase()
+            val start = System.currentTimeMillis()
+            var found: String? = null
+            var attempts = 0
+            for (i in 0..9999) {
+                attempts++
+                val candidate = String.format("%04d", i)
+                if (md5Hex(candidate) == target) {
+                    found = candidate
+                    break
+                }
+            }
+            val elapsed = System.currentTimeMillis() - start
+            Log.w(
+                LOG_TAG,
+                "V-W10 brute-force complete: cracked=${found ?: "NONE"} attempts=$attempts time=${elapsed}ms"
+            )
+            promise.resolve(Arguments.createMap().apply {
+                putString("targetHash", target)
+                putString("crackedPin", found ?: "NOT_FOUND")
+                putInt("attempts", attempts)
+                putDouble("elapsedMs", elapsed.toDouble())
+                putBoolean("success", found != null)
+            })
+        }.start()
+    }
+
+    private fun md5Hex(input: String): String {
+        val digest = java.security.MessageDigest.getInstance("MD5").digest(input.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
 }

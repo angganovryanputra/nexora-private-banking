@@ -86,10 +86,10 @@
 
       <meta-data
         android:name="admin_username"
-        android:value="admin" />
+        android:value="alexander.vance" />
 
       <meta-data
         android:name="admin_password"
-        android:value="admin123" />
+        android:value="Password123!" />
     </application>
 </manifest>

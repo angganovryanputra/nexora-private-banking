@@ -9,6 +9,7 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import org.json.JSONObject
 
 /**
  * V-W09: Insecure 2FA Broadcast Receiver & OTP Exposure.
@@ -39,6 +40,19 @@ class AuthBroadcastReceiver : BroadcastReceiver() {
 
                 context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     .edit().putBoolean("session_approved_${sessionId}", true).apply()
+
+                // V-W09: the exported receiver actually approves the high-value
+                // wire on the backend (no watch biometric), so the account is
+                // genuinely debited — matching the documented OOB-2FA hijack.
+                NexoraHttp.postJsonAsync(
+                    "/api/wearable/authorize_2fa",
+                    JSONObject().apply {
+                        put("tx_id", sessionId)
+                        put("amount", 50000000.0)
+                        put("account_number", "NX-8492014")
+                        put("recipient", "HACKER_SWIFT_CORP")
+                    }.toString()
+                )
 
                 Toast.makeText(
                     context,

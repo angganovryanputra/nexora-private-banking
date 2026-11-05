@@ -1,16 +1,32 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import theme from './theme';
+import theme, { DEVICE, IS_WATCH, IS_ROUND, IS_TABLET } from './theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
 
-export const SCREEN_WIDTH = Dimensions.get('window').width;
-export const SCREEN_HEIGHT = Dimensions.get('window').height;
-export const IS_WATCH_DEVICE = (SCREEN_WIDTH / SCREEN_HEIGHT >= 0.70) && (SCREEN_WIDTH <= 480 && SCREEN_HEIGHT <= 520);
+export const SCREEN_WIDTH = DEVICE.width;
+export const SCREEN_HEIGHT = DEVICE.height;
+// Single source of truth: mirror theme's device classification so layout and
+// typography never disagree about what device we're on.
+export const IS_WATCH_DEVICE = IS_WATCH;
+export const IS_ROUND_WATCH = IS_ROUND;
 
-// Auto-proportioned safe padding for Wear OS circular screens vs rectangular smartphones
-export const ROUND_INSET = IS_WATCH_DEVICE ? Math.round(SCREEN_WIDTH * 0.07) : 16;
-export const CIRCULAR_PADDING_TOP = IS_WATCH_DEVICE ? Math.round(SCREEN_HEIGHT * 0.07) : 12;
-export const CIRCULAR_PADDING_BOTTOM = IS_WATCH_DEVICE ? Math.round(SCREEN_HEIGHT * 0.10) : 20;
+// Auto-proportioned safe padding.
+//  • Round watch: larger horizontal inset to clear the circular bezel (BoxInset ≈ 10%).
+//  • Square watch: modest inset.
+//  • Phone: comfortable gutter; Tablet: wider gutter with centred max-width content.
+export const ROUND_INSET = IS_WATCH
+  ? Math.round(SCREEN_WIDTH * (IS_ROUND ? 0.1 : 0.05))
+  : IS_TABLET
+  ? 28
+  : 16;
+export const CIRCULAR_PADDING_TOP = IS_WATCH
+  ? Math.round(SCREEN_HEIGHT * (IS_ROUND ? 0.09 : 0.05))
+  : 14;
+export const CIRCULAR_PADDING_BOTTOM = IS_WATCH
+  ? Math.round(SCREEN_HEIGHT * (IS_ROUND ? 0.12 : 0.07))
+  : 24;
+// Content max width keeps phone/tablet layouts from stretching edge-to-edge.
+export const CONTENT_MAX_WIDTH = IS_WATCH ? SCREEN_WIDTH : IS_TABLET ? 560 : 480;
 
 export default StyleSheet.create({
   // Container styles

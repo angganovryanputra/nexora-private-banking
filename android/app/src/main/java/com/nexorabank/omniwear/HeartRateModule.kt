@@ -42,8 +42,14 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
 
     private var sensorManager: SensorManager? = null
     private var heartSensor: Sensor? = null
+    private var offBodySensor: Sensor? = null
     private var simHandler: Handler? = null
     private var simBpm = 72
+
+    // V-W11: client-side-only "is the watch on the wrist?" state. There is NO
+    // hardware attestation to the backend, so this boolean is trivially spoofed
+    // with a one-line Frida hook on isWristDetected().
+    @Volatile private var wristPresent = true
 
     override fun getName() = NAME
 
@@ -93,8 +99,37 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        val bpm = event?.values?.firstOrNull()?.toInt() ?: return
-        handleReading(bpm)
+        event ?: return
+        when (event.sensor?.type) {
+            Sensor.TYPE_LOW_LATENCY_OFFBODY_DETECT -> {
+                // 1.0 = on body, 0.0 = off body.
+                val onBody = (event.values.firstOrNull() ?: 1f) >= 1f
+                updateWrist(onBody)
+            }
+            Sensor.TYPE_HEART_RATE -> {
+                val bpm = event.values.firstOrNull()?.toInt() ?: return
+                // A 0 BPM reading from the PPG array is the classic off-wrist signal.
+                updateWrist(bpm > 0)
+                if (bpm > 0) handleReading(bpm)
+            }
+            else -> {
+                val bpm = event.values.firstOrNull()?.toInt() ?: return
+                handleReading(bpm)
+            }
+        }
+    }
+
+    private fun updateWrist(onBody: Boolean) {
+        if (wristPresent == onBody) return
+        wristPresent = onBody
+        emitWristState()
+    }
+
+    private fun emitWristState() {
+        val params = Arguments.createMap().apply { putBoolean("wristPresent", wristPresent) }
+        reactContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+            ?.emit("WristStateChanged", params)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
@@ -112,6 +147,12 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
         stop()
         sensorManager = reactContext.getSystemService(SensorManager::class.java)
         heartSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+        // Off-body / wrist-detect sensor (V-W11). Present on most real Wear OS
+        // hardware; absent on emulators (handled by the simulator path).
+        offBodySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_LOW_LATENCY_OFFBODY_DETECT)
+        offBodySensor?.let {
+            sensorManager?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
         if (heartSensor != null) {
             sensorManager?.registerListener(
                 this, heartSensor, SensorManager.SENSOR_DELAY_NORMAL,
@@ -129,8 +170,34 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
         sensorManager?.unregisterListener(this)
         sensorManager = null
         heartSensor = null
+        offBodySensor = null
         simHandler?.removeCallbacks(simRunnable)
         simHandler = null
+    }
+
+    // ------------------------------------------------------- V-W11 WRIST STATE
+    /**
+     * Client-side wrist-on check with NO backend attestation. This is the method
+     * the pentest guide's Frida script hooks to defeat the "wrist-off lockout":
+     *   HeartRateModule.isWristDetected.implementation = function() { return true; }
+     */
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    fun isWristDetected(): Boolean {
+        if (prefs().getBoolean("force_wrist_present", false)) return true
+        return wristPresent
+    }
+
+    @ReactMethod
+    fun getWristState(promise: Promise) {
+        promise.resolve(isWristDetected())
+    }
+
+    @ReactMethod
+    fun setWristPresent(present: Boolean, promise: Promise) {
+        // Lab helper for emulators that lack a hardware off-body sensor:
+        // lets a tester simulate taking the watch off the wrist.
+        updateWrist(present)
+        promise.resolve(wristPresent)
     }
 
     @ReactMethod

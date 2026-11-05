@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,6 +36,7 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ onNavigate, par
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   
   const accountNumber = user?.accountNumber || '';
   const filterType = params?.filterByType;
@@ -101,7 +102,11 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ onNavigate, par
     const formattedDate = new Date(item.timestamp).toLocaleString();
     
     return (
-      <View style={styles.transactionCard}>
+      <TouchableOpacity 
+        style={styles.transactionCard}
+        onPress={() => setSelectedTx(item)}
+        activeOpacity={0.7}
+      >
         <View style={styles.transactionIconContainer}>
           <Icon 
             name={isSender ? "arrow-up" : "arrow-down"} 
@@ -128,9 +133,9 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ onNavigate, par
           styles.transactionAmount,
           isSender ? styles.amountSent : styles.amountReceived
         ]}>
-          {isSender ? '-' : '+'}${Math.abs(item.amount).toFixed(2)}
+          {isSender ? '-' : '+'}Rp {Math.abs(item.amount).toLocaleString('id-ID')}
         </Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -201,6 +206,74 @@ const TransactionsScreen: React.FC<TransactionsScreenProps> = ({ onNavigate, par
           }
         />
       )}
+
+      {/* Official Transaction Advice / E-Receipt Modal */}
+      <Modal
+        visible={!!selectedTx}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedTx(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.receiptCard}>
+            <View style={styles.receiptHeader}>
+              <Icon name="university" size={14} color={COLORS.accentGold} />
+              <Text style={styles.receiptBank}>NEXORA PRIVATE BANKING</Text>
+            </View>
+            <Text style={styles.receiptTagline}>OFFICIAL TRANSACTION ADVICE</Text>
+            <View style={styles.receiptDivider} />
+
+            <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Reference No</Text>
+                <Text style={styles.receiptValue}>TX-92014-{selectedTx?.id}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Status</Text>
+                <Text style={[styles.receiptValue, { color: COLORS.primary }]}>SETTLED (SUCCESS)</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Amount (IDR)</Text>
+                <Text style={[styles.receiptValue, { fontWeight: 'bold' }]}>
+                  Rp {selectedTx ? Math.abs(selectedTx.amount).toLocaleString('id-ID') : '0'}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>From Account</Text>
+                <Text style={styles.receiptValue}>{selectedTx?.from_account}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>To Account</Text>
+                <Text style={styles.receiptValue}>{selectedTx?.to_account}</Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Date & Time</Text>
+                <Text style={styles.receiptValue}>
+                  {selectedTx ? new Date(selectedTx.timestamp).toLocaleString('id-ID') : ''}
+                </Text>
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Description</Text>
+                <Text style={styles.receiptValue}>{selectedTx?.description || 'Interbank Transfer'}</Text>
+              </View>
+
+              <View style={styles.hashContainer}>
+                <Text style={styles.hashLabel}>Client Verification Stamp (Unsigned):</Text>
+                <Text style={styles.hashText}>
+                  SHA256: 8a4f9102c918{selectedTx?.id}bf190e29401a
+                </Text>
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity 
+              style={styles.closeReceiptBtn}
+              onPress={() => setSelectedTx(null)}
+            >
+              <Text style={styles.closeReceiptBtnText}>Dismiss Receipt</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -327,6 +400,95 @@ const styles = StyleSheet.create({
   },
   amountReceived: {
     color: COLORS.success,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SIZES.spacing.md,
+  },
+  receiptCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#0F121C',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.35)',
+    padding: SIZES.spacing.md,
+    alignItems: 'center',
+  },
+  receiptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  receiptBank: {
+    fontSize: SIZES.small,
+    fontWeight: 'bold',
+    color: COLORS.accentGold,
+    marginLeft: 6,
+    letterSpacing: 1,
+  },
+  receiptTagline: {
+    fontSize: 9,
+    color: COLORS.textMuted,
+    letterSpacing: 0.8,
+  },
+  receiptDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: SIZES.spacing.sm,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginVertical: 3,
+  },
+  receiptLabel: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+  },
+  receiptValue: {
+    fontSize: 10,
+    color: COLORS.white,
+    fontWeight: '500',
+    maxWidth: 160,
+    textAlign: 'right',
+  },
+  hashContainer: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 6,
+    padding: 6,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  hashLabel: {
+    fontSize: 8,
+    color: COLORS.textMuted,
+  },
+  hashText: {
+    fontSize: 8,
+    color: COLORS.primary,
+    fontFamily: 'monospace',
+    marginTop: 2,
+  },
+  closeReceiptBtn: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  closeReceiptBtnText: {
+    color: COLORS.white,
+    fontSize: SIZES.small,
+    fontWeight: '600',
   },
 });
 
