@@ -61,3 +61,4 @@ class WatchOSBridgeService {
 
 export const watchOSBridge = new WatchOSBridgeService();
 export default watchOSBridge;
+

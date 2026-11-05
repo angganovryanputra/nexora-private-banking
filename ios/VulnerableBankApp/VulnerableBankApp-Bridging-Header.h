@@ -6,3 +6,4 @@
 #import <React/RCTViewManager.h>
 
 #endif /* VulnerableBankApp_Bridging_Header_h */
+

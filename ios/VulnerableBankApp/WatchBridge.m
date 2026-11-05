@@ -21,3 +21,4 @@ RCT_EXTERN_METHOD(updateWatchContext:(NSDictionary *)context
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 @end
+

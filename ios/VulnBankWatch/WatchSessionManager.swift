@@ -109,3 +109,4 @@ public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate 
         self.statusMessage = "Transaction Rejected"
     }
 }
+

@@ -1,71 +1,83 @@
 import SwiftUI
 
-/// [V-AP04] High-Value $50,000 2FA Push Notification Approval Modal
-/// Vulnerability: Authorizes wire transfers without hardware cryptographic proof (Secure Enclave).
-/// Clicking "APPROVE" transmits an unauthenticated dictionary packet back to the iPhone or API relay.
+/// [V-AP04] High-Value $50,000 Out-of-Band 2FA Approval Modal
+/// Responsive modal adapting to small (40mm) and large (49mm Ultra) Apple Watches.
+/// Vulnerability: Approves wire transfer without biometric verification or Secure Enclave signature.
 struct TwoFactorApprovalView: View {
     @ObservedObject var sessionManager = WatchSessionManager.shared
     
     var body: some View {
         if let tx = sessionManager.pending2FATransaction {
-            ScrollView {
-                VStack(spacing: 5) {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
-                        Text("HIGH-VALUE 2FA")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.red)
-                    }
-                    
-                    VStack(spacing: 2) {
-                        Text("Authorize Wire Transfer?")
-                            .font(.system(size: 9))
-                            .foregroundColor(.gray)
-                        
-                        Text("$\(String(format: "%.2f", tx["amount"] as? Double ?? 50000.0))")
-                            .font(.system(size: 16, weight: .heavy))
-                            .foregroundColor(.yellow)
-                        
-                        Text("To: \(tx["recipient"] as? String ?? "OFFSHORE-SWIFT-991")")
-                            .font(.system(size: 8, design: .monospaced))
-                            .foregroundColor(.white)
-                    }
-                    .padding(4)
-                    .background(Color.red.opacity(0.15))
-                    .cornerRadius(8)
-                    
-                    HStack(spacing: 6) {
-                        Button(action: {
-                            sessionManager.approvePendingTransaction()
-                        }) {
-                            Text("APPROVE")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(maxWidth: .infinity, minHeight: 26)
-                                .background(Color.green)
-                                .foregroundColor(.black)
-                                .cornerRadius(13)
+            GeometryReader { geometry in
+                let isSmallWatch = geometry.size.height < 210
+                let actionBtnHeight: CGFloat = isSmallWatch ? 24 : 28
+                
+                ScrollView {
+                    VStack(spacing: 4) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(WatchTheme.ruby)
+                                .font(.system(size: 10))
+                            Text("HIGH-VALUE 2FA")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(WatchTheme.ruby)
                         }
-                        .buttonStyle(PlainButtonStyle())
                         
-                        Button(action: {
-                            sessionManager.rejectPendingTransaction()
-                        }) {
-                            Text("REJECT")
-                                .font(.system(size: 9, weight: .bold))
-                                .frame(maxWidth: .infinity, minHeight: 26)
-                                .background(Color.gray.opacity(0.4))
+                        VStack(spacing: 2) {
+                            Text("Wire Transfer Request")
+                                .font(.system(size: 8))
+                                .foregroundColor(WatchTheme.textMuted)
+                            
+                            Text("$\(String(format: "%.2f", tx["amount"] as? Double ?? 50000.0))")
+                                .font(.system(size: isSmallWatch ? 15 : 18, weight: .heavy, design: .rounded))
+                                .foregroundColor(WatchTheme.gold)
+                            
+                            Text("To: \(tx["recipient"] as? String ?? "OFFSHORE-SWIFT-991")")
+                                .font(.system(size: 7, design: .monospaced))
                                 .foregroundColor(.white)
-                                .cornerRadius(13)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .frame(maxWidth: .infinity)
+                        .padding(5)
+                        .background(WatchTheme.surface)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(WatchTheme.ruby.opacity(0.5), lineWidth: 1)
+                        )
+                        
+                        // Action Buttons
+                        HStack(spacing: 5) {
+                            Button(action: {
+                                sessionManager.approvePendingTransaction()
+                            }) {
+                                Text("APPROVE")
+                                    .font(.system(size: 8.5, weight: .heavy))
+                                    .frame(maxWidth: .infinity, minHeight: actionBtnHeight)
+                                    .background(WatchTheme.emerald)
+                                    .foregroundColor(.black)
+                                    .cornerRadius(actionBtnHeight / 2)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Button(action: {
+                                sessionManager.rejectPendingTransaction()
+                            }) {
+                                Text("REJECT")
+                                    .font(.system(size: 8.5, weight: .bold))
+                                    .frame(maxWidth: .infinity, minHeight: actionBtnHeight)
+                                    .background(WatchTheme.surfaceElevated)
+                                    .foregroundColor(WatchTheme.textMuted)
+                                    .cornerRadius(actionBtnHeight / 2)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        Text("[V-AP04] Missing Biometric Challenge")
+                            .font(.system(size: 6.5))
+                            .foregroundColor(WatchTheme.textMuted)
                     }
-                    
-                    Text("[V-AP04] No Cryptographic Biometric Challenge")
-                        .font(.system(size: 7))
-                        .foregroundColor(.gray)
+                    .padding(.horizontal, 4)
                 }
-                .padding(.horizontal, 4)
             }
         }
     }

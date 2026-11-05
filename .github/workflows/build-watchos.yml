@@ -64,3 +64,4 @@ jobs:
         with:
           name: vulnbank-watchos-suite
           path: build_output/VulnBank-watchOS-Bundle.zip
+

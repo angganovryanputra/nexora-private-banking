@@ -7,10 +7,12 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { dispatchWearableEvent, getWearablePackets, pairWearable } from '../utils/api';
+import { watchOSBridge } from '../utils/watchOSBridge';
 import theme from '../styles/theme';
 import {
   ROUND_INSET,
@@ -36,6 +38,11 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
   const handleSyncBalanceToWatch = async () => {
     setIsLoading(true);
     try {
+      // Dispatches via backend relay and native WatchConnectivity bridge (Apple Watch & Wear OS)
+      await watchOSBridge.sendMessageToWatch({
+        action: 'UPDATE_BALANCE',
+        payload: { amount: 888888.0, currency: 'USD' },
+      });
       const res = await dispatchWearableEvent(targetDeviceId, 'UPDATE_BALANCE', {
         amount: 888888.0,
         currency: 'USD',
@@ -44,8 +51,8 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
       if (res.ok) {
         setLastAction(`Transmitted UPDATE_BALANCE ($888,888) -> ${targetDeviceId}`);
         Alert.alert(
-          '📶 BLE Sync Dispatched (V-B01)',
-          `Transmitted to backend wearable relay & smartwatch:\nTarget: ${targetDeviceId}\nAction: UPDATE_BALANCE\nAmount: $888,888.00\n\n[V-B01] No HMAC signature or timestamp freshness check. Watch balance will update in real time!`
+          '📶 BLE & WCSession Sync Dispatched (V-B01)',
+          `Transmitted to wearable bridge & backend relay:\nTarget: ${targetDeviceId}\nAction: UPDATE_BALANCE\nAmount: $888,888.00\n\n[V-B01] No HMAC signature or timestamp freshness check. Watch balance will update in real time!`
         );
       } else {
         Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
@@ -57,10 +64,14 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
     }
   };
 
-  // Push 2FA Alert to Watch (V-W09)
+  // Push 2FA Alert to Watch (V-W09 / V-AP04)
   const handlePush2FAToWatch = async (amount = 250.00, merchant = 'CyberStore Inc.') => {
     setIsLoading(true);
     try {
+      await watchOSBridge.sendMessageToWatch({
+        action: 'TRIGGER_HIGH_VALUE_2FA',
+        payload: { tx_id: 'TX-HIGHVAL-9921', amount, recipient: merchant },
+      });
       const res = await dispatchWearableEvent(targetDeviceId, 'PUSH_2FA', {
         amount,
         merchant,
@@ -70,7 +81,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
       if (res.ok) {
         setLastAction(`Pushed 2FA Authorization ($${amount.toLocaleString()}) -> ${targetDeviceId}`);
         Alert.alert(
-          '🔔 Push 2FA Sent to Watch (V-W09)',
+          '🔔 Push 2FA Sent to Watch (V-W09 / V-AP04)',
           `Broadcast sent to smartwatch:\nTarget: ${targetDeviceId}\nMerchant: ${merchant}\nDebit: $${amount.toLocaleString()}\nOTP: 992104\n\n[V-W09] Plaintext authorization card will pop up on the watch screen in real time!`
         );
       } else {
@@ -87,6 +98,10 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
   const handleInjectTransfer = async () => {
     setIsLoading(true);
     try {
+      await watchOSBridge.sendMessageToWatch({
+        action: 'QUICK_PAY',
+        payload: { amount: 50000.0, recipient: 'HACKER_CORP' },
+      });
       const res = await dispatchWearableEvent(targetDeviceId, 'QUICK_PAY', {
         amount: 50000.0,
         recipient: 'HACKER_CORP',
@@ -252,8 +267,8 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: IS_WATCH_DEVICE ? ROUND_INSET : 16,
-    paddingTop: IS_WATCH_DEVICE ? CIRCULAR_PADDING_TOP : 20,
-    paddingBottom: IS_WATCH_DEVICE ? CIRCULAR_PADDING_BOTTOM : 32,
+    paddingTop: IS_WATCH_DEVICE ? CIRCULAR_PADDING_TOP : (Platform.OS === 'ios' ? 48 : 20),
+    paddingBottom: IS_WATCH_DEVICE ? CIRCULAR_PADDING_BOTTOM : (Platform.OS === 'ios' ? 36 : 32),
   },
   header: {
     alignItems: 'center',

@@ -18,3 +18,4 @@ class ExtensionDelegate: NSObject, WKApplicationDelegate {
         _ = WristSensorManager.shared
     }
 }
+
