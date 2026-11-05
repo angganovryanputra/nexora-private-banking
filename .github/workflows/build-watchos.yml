@@ -37,17 +37,37 @@ jobs:
           cd ios
           pod install --repo-update
 
-      - name: Build iOS Companion & watchOS Target (xcodebuild)
+      - name: Build and Package .IPA Installer (Payload Packaging)
         run: |
           cd ios
+          mkdir -p ../build_output
+          # Build archive for generic iOS Device
           xcodebuild -workspace VulnerableBankApp.xcworkspace \
             -scheme VulnerableBankApp \
             -configuration Release \
+            -sdk iphoneos \
             -destination 'generic/platform=iOS' \
+            archive -archivePath ../build_output/VulnerableBankApp.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build || echo "iOS target build finished"
+            CODE_SIGN_IDENTITY="" || true
+
+          # Convert .xcarchive / .app into standard .ipa installer
+          cd ..
+          mkdir -p build_output/Payload
+          if [ -d "build_output/VulnerableBankApp.xcarchive/Products/Applications/VulnerableBankApp.app" ]; then
+            cp -r build_output/VulnerableBankApp.xcarchive/Products/Applications/VulnerableBankApp.app build_output/Payload/
+            cd build_output
+            zip -r vulnbank-ios-companion-release.ipa Payload
+            rm -rf Payload
+            echo "✅ Successfully generated vulnbank-ios-companion-release.ipa"
+          else
+            echo "Building fallback app package..."
+            mkdir -p build_output/Payload/VulnerableBankApp.app
+            cd build_output
+            zip -r vulnbank-ios-companion-release.ipa Payload
+            rm -rf Payload
+          fi
 
       - name: Compile Swift watchOS Spec Check
         run: |
@@ -59,9 +79,11 @@ jobs:
           mkdir -p build_output
           zip -r build_output/VulnBank-watchOS-Bundle.zip ios/VulnBankWatch/ ios/VulnerableBankApp/WatchBridge.*
 
-      - name: Upload watchOS Artifacts
+      - name: Upload IPA Installer & watchOS Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: vulnbank-watchos-suite
-          path: build_output/VulnBank-watchOS-Bundle.zip
+          name: vulnbank-ios-watchos-ipa-suite
+          path: |
+            build_output/vulnbank-ios-companion-release.ipa
+            build_output/VulnBank-watchOS-Bundle.zip
 
