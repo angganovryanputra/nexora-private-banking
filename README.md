@@ -81,16 +81,18 @@ All traffic, bridge events, and device synchronization are routed through your l
 
 ---
 
-## 📦 Ready-to-Test Releases (No Build Required)
+## 📦 Official Multi-Platform Releases (Instant Download)
 
-For immediate testing, pre-compiled release packages are available directly in this repository:
+Pre-compiled release packages are published directly to the repository's [**Releases**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases) section:
 
-| Platform / Target | Package Name | Architecture | Download Link |
+| Platform / Target | Package Name | Target Hardware | 1-Click Download |
 |---|---|---|---|
-| **Smartwatch Wear OS** | `vulnbank-wear-release.apk` | Universal (`arm64-v8a`, `x86_64`, `armeabi-v7a`, `x86`) | [Download APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/raw/main/vulnbank-wear-release.apk) |
-| **Android Smartphone** | `vulnbank-mobile-companion-release.apk` | Universal (`arm64-v8a`, `x86_64`) | [Download APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/raw/main/vulnbank-mobile-companion-release.apk) |
-| **Universal Android** | `vulnbank-universal-release.apk` | Universal (Single-Device / Tablet) | [Download APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/raw/main/vulnbank-universal-release.apk) |
-| **Apple iOS & watchOS** | `vulnbank-ios-companion-release.ipa` | iOS 15.1+ & watchOS 9.0+ | [Download from GitHub Actions Artifacts](https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions) |
+| **Smartwatch Wear OS** | `vulnbank-wear-release.apk` | Galaxy Watch, Pixel Watch, Wear OS 3+ (`arm64-v8a`, `x86_64`) | [📥 Download Wear APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/vulnbank-wear-release.apk) |
+| **Android Smartphone** | `vulnbank-mobile-companion-release.apk` | Android 10+ Physical Phone & Emulator | [📥 Download Companion APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/vulnbank-mobile-companion-release.apk) |
+| **Universal Android** | `vulnbank-universal-release.apk` | Universal Phone & Smartwatch Hybrid | [📥 Download Universal APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/vulnbank-universal-release.apk) |
+| **Apple iOS (iPhone 11)** | `vulnbank-ios-companion-release.ipa` | iPhone 11 / iOS 15.1+ (Sideload via AltStore / Sideloadly) | [🍏 Download iOS IPA](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/vulnbank-ios-companion-release.ipa) |
+| **Apple Watch (watchOS)** | `VulnBank-watchOS-Bundle.zip` | Apple Watch Series 9, Ultra (watchOS 9.0+) Native SwiftUI | [⌚ Download watchOS Bundle](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/VulnBank-watchOS-Bundle.zip) |
+| **Integrity Verification** | `SHA256SUMS.txt` | Cryptographic SHA-256 Checksums | [🔒 Download SHA-256 Checksums](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/SHA256SUMS.txt) |
 
 ---
 

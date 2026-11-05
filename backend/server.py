@@ -141,6 +141,63 @@ def init_db():
         )
     ''')
 
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS card_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            card_id INTEGER,
+            amount REAL,
+            merchant TEXT,
+            timestamp TEXT,
+            status TEXT DEFAULT 'COMPLETED',
+            type TEXT DEFAULT 'DEBIT'
+        )
+    ''')
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS loans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            account_number TEXT,
+            amount REAL,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT
+        )
+    ''')
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS bill_categories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            description TEXT
+        )
+    ''')
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS billers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            category_id INTEGER,
+            minimum_amount REAL,
+            maximum_amount REAL
+        )
+    ''')
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS bill_payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_number TEXT,
+            amount REAL,
+            status TEXT DEFAULT 'SUCCESS',
+            reference TEXT,
+            biller_name TEXT,
+            category_name TEXT,
+            payment_method TEXT,
+            card_number TEXT,
+            description TEXT,
+            created_at TEXT
+        )
+    ''')
+
     # Seed initial test data
     cur.execute("SELECT COUNT(*) FROM users")
     if cur.fetchone()[0] == 0:
@@ -156,6 +213,32 @@ def init_db():
         # Initial virtual cards
         cur.execute("INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at) VALUES (1, '4532 8819 0021 9921', '921', '08/28', 'Titanium Wear OS', 5000.0, 1420.50, 0, datetime('now'))")
         cur.execute("INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at) VALUES (1, '5412 3310 9942 3349', '417', '11/29', 'Virtual NFC Tap', 1000.0, 250.0, 1, datetime('now'))")
+
+    # Seed bill categories & billers if empty
+    cur.execute("SELECT COUNT(*) FROM bill_categories")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (1, 'Electricity (PLN)', 'Prepaid and Postpaid electricity bills')")
+        cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (2, 'Water (PDAM)', 'Municipal water supply payments')")
+        cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (3, 'Internet & Telecom', 'Fiber broadband, cellular and phone bills')")
+        cur.execute("INSERT INTO bill_categories (id, name, description) VALUES (4, 'Mobile Top-Up', 'Prepaid airtime and data packages')")
+
+        cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PLN Prepaid Token', 1, 10.0, 1000.0)")
+        cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PLN Postpaid Bill', 1, 5.0, 5000.0)")
+        cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('PDAM Jaya Jakarta', 2, 5.0, 1000.0)")
+        cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('Indihome Fiber 100Mbps', 3, 20.0, 500.0)")
+        cur.execute("INSERT INTO billers (name, category_id, minimum_amount, maximum_amount) VALUES ('Telkomsel Pulsa Data', 4, 2.0, 200.0)")
+
+    # Seed card transactions if empty
+    cur.execute("SELECT COUNT(*) FROM card_transactions")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO card_transactions (card_id, amount, merchant, timestamp, status, type) VALUES (1, 35.50, 'Apple Store Contactless', datetime('now', '-2 hours'), 'COMPLETED', 'DEBIT')")
+        cur.execute("INSERT INTO card_transactions (card_id, amount, merchant, timestamp, status, type) VALUES (1, 120.00, 'Starbucks Wear Tap', datetime('now', '-1 day'), 'COMPLETED', 'DEBIT')")
+
+    # Seed loans if empty
+    cur.execute("SELECT COUNT(*) FROM loans")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', 5000.0, 'approved', datetime('now', '-30 days'))")
+        cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', 10000.0, 'pending', datetime('now', '-2 days'))")
 
         conn.commit()
     conn.close()
@@ -358,6 +441,297 @@ def toggle_card_freeze(card_id):
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "message": f"Card {card_id} freeze toggled"}), 200
+
+
+@app.route('/api/virtual-cards/create', methods=['POST'])
+def create_virtual_card():
+    import random
+    data = request.get_json() or {}
+    card_type = data.get('card_type', 'Titanium Wear OS')
+    limit = float(data.get('card_limit', 5000.0))
+    pan = f"4532 {random.randint(1000, 9999)} {random.randint(1000, 9999)} {random.randint(1000, 9999)}"
+    cvv = f"{random.randint(100, 999)}"
+    exp = "12/29"
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO virtual_cards (user_id, card_number, cvv, expiry_date, card_type, card_limit, balance, is_frozen, created_at)
+        VALUES (1, ?, ?, ?, ?, ?, 0.0, 0, datetime('now'))
+    ''', (pan, cvv, exp, card_type, limit))
+    card_id = cur.lastrowid
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "status": "success",
+        "message": "Virtual card created successfully",
+        "card": {
+            "id": card_id,
+            "card_number": pan,
+            "cvv": cvv,
+            "expiry_date": exp,
+            "card_type": card_type,
+            "limit": limit,
+            "balance": 0.0,
+            "is_frozen": False
+        }
+    }), 201
+
+
+@app.route('/api/virtual-cards/<int:card_id>/update-limit', methods=['POST'])
+def update_card_limit(card_id):
+    data = request.get_json() or {}
+    new_limit = float(data.get('limit', 5000.0))
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("UPDATE virtual_cards SET card_limit = ? WHERE id = ?", (new_limit, card_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": f"Card limit updated to ${new_limit}"}), 200
+
+
+@app.route('/api/virtual-cards/<int:card_id>/transactions', methods=['GET'])
+def get_card_transactions(card_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM card_transactions WHERE card_id = ? ORDER BY id DESC", (card_id,))
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify({"transactions": [dict(r) for r in rows]}), 200
+
+
+# ---------------------------------------------------------------------------
+# 5B. SNAP QRIS MERCHANT CHECKOUT (V-06 / V-W15 / V-AP06 REPLAY VULNERABILITY)
+# ---------------------------------------------------------------------------
+@app.route('/api/qris/checkout', methods=['POST'])
+def qris_checkout():
+    """
+    Bank Indonesia SNAP QRIS Merchant Terminal Checkout.
+    INTENTIONALLY VULNERABLE (V-06 / V-W15 / V-AP06):
+      - Accepts static QR token without freshness nonce / TOTP verification.
+      - Replaying the same request multiple times succeeds without idempotency rejection.
+    """
+    data = request.get_json() or {}
+    account_number = data.get('account_number', 'ADMIN001')
+    amount = float(data.get('amount', 75.0))
+    merchant = data.get('merchant_name', 'VULNBANK MERCH 001')
+    qr_payload = data.get('qr_payload', 'VULN-QRIS-992144-TOKEN')
+    rrn = f"RRN-{int(time.time()) % 100000000:08d}"
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amount, account_number))
+    cur.execute('''
+        INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
+        VALUES (?, ?, ?, ?, datetime('now'))
+    ''', (account_number, merchant, amount, f"Dynamic SNAP QRIS Checkout ({merchant} / {rrn})"))
+
+    cur.execute('''
+        INSERT INTO wearable_packets (source_device, target_device, action, payload, timestamp)
+        VALUES ('MERCHANT_POS_SCANNER', 'SMARTWATCH_WEARABLE', 'QRIS_DEBIT_ACK', ?, datetime('now'))
+    ''', (json.dumps({"rrn": rrn, "amount": amount, "merchant": merchant, "qr_payload": qr_payload}),))
+
+    conn.commit()
+    conn.close()
+
+    print(f"   💳 \033[92m[SNAP QRIS CHECKOUT EXECUTED]\033[0m -${amount:.2f} at {merchant} (RRN: {rrn})")
+    return jsonify({
+        "status": "APPROVED",
+        "response_code": "00",
+        "amount": amount,
+        "currency": "USD",
+        "merchant": merchant,
+        "terminal_id": "POS_SNAP_9921",
+        "rrn": rrn,
+        "message": "Payment Approved by Issuer",
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    }), 200
+
+
+# ---------------------------------------------------------------------------
+# 5C. COMMERCIAL & PERSONAL LOANS API (BOLA / BUSINESS LOGIC)
+# ---------------------------------------------------------------------------
+@app.route('/request_loan', methods=['POST'])
+def request_loan():
+    data = request.get_json() or {}
+    amt = float(data.get('amount', 5000.0))
+    # INTENTIONALLY VULNERABLE: No credit check or negative amount check!
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("INSERT INTO loans (user_id, account_number, amount, status, created_at) VALUES (1, 'ADMIN001', ?, 'pending', datetime('now'))", (amt,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": f"Loan application for ${amt} submitted"}), 200
+
+
+@app.route('/admin/pending_loans', methods=['GET'])
+def admin_pending_loans():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM loans WHERE status = 'pending' ORDER BY id DESC")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify({"loans": [dict(r) for r in rows]}), 200
+
+
+@app.route('/admin/approve_loan/<int:loan_id>', methods=['POST'])
+def admin_approve_loan(loan_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM loans WHERE id = ?", (loan_id,))
+    loan = cur.fetchone()
+    if loan:
+        cur.execute("UPDATE loans SET status = 'approved' WHERE id = ?", (loan_id,))
+        cur.execute("UPDATE users SET balance = balance + ? WHERE account_number = ?", (loan['amount'], loan['account_number']))
+        cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('VULNBANK_CREDIT', ?, ?, 'Approved Commercial Loan Disbursement', datetime('now'))", (loan['account_number'], loan['amount']))
+        conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": f"Loan #{loan_id} approved and disbursed"}), 200
+
+
+# ---------------------------------------------------------------------------
+# 5D. UTILITY BILL PAYMENTS API
+# ---------------------------------------------------------------------------
+@app.route('/api/bill-categories', methods=['GET'])
+def get_bill_categories():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM bill_categories")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify({"categories": [dict(r) for r in rows]}), 200
+
+
+@app.route('/api/billers/by-category/<int:category_id>', methods=['GET'])
+def get_billers_by_category(category_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM billers WHERE category_id = ?", (category_id,))
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify({"billers": [dict(r) for r in rows]}), 200
+
+
+@app.route('/api/bill-payments/create', methods=['POST'])
+def create_bill_payment():
+    data = request.get_json() or {}
+    amt = float(data.get('amount', 50.0))
+    biller_name = data.get('biller_name', 'PLN Prepaid Electricity')
+    category_name = data.get('category_name', 'Utilities')
+    method = data.get('payment_method', 'balance')
+    desc = data.get('description', 'Wear OS Bill Pay')
+    ref = f"BILL-{int(time.time())}"
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+    cur.execute('''
+        INSERT INTO bill_payments (account_number, amount, status, reference, biller_name, category_name, payment_method, description, created_at)
+        VALUES ('ADMIN001', ?, 'SUCCESS', ?, ?, ?, ?, ?, datetime('now'))
+    ''', (amt, ref, biller_name, category_name, method, desc))
+    cur.execute('''
+        INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
+        VALUES ('ADMIN001', ?, ?, ?, datetime('now'))
+    ''', (biller_name, amt, f"Bill Payment - {biller_name} ({ref})"))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": f"Payment of ${amt} to {biller_name} successful", "reference": ref}), 200
+
+
+@app.route('/api/bill-payments/history', methods=['GET'])
+def get_bill_payment_history():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM bill_payments ORDER BY id DESC LIMIT 20")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify({"payments": [dict(r) for r in rows]}), 200
+
+
+# ---------------------------------------------------------------------------
+# 5E. PROFILE, ADMIN & RECOVERY API
+# ---------------------------------------------------------------------------
+@app.route('/profile', methods=['GET'])
+def get_profile():
+    # INTENTIONALLY VULNERABLE: BOLA/IDOR - returns profile without strict session auth
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    cur.execute("SELECT id, username, account_number, balance, is_admin FROM users WHERE account_number = 'ADMIN001'")
+    u = cur.fetchone()
+    conn.close()
+    if u:
+        return jsonify({
+            "id": u['id'],
+            "username": u['username'],
+            "accountNumber": u['account_number'],
+            "balance": u['balance'],
+            "isAdmin": bool(u['is_admin']),
+            "email": "admin@vulnbank.internal",
+            "phone": "+62 811-9201-441"
+        }), 200
+    return jsonify({"message": "User not found"}), 404
+
+
+@app.route('/profile/update', methods=['POST'])
+def update_profile():
+    data = request.get_json() or {}
+    return jsonify({"status": "success", "message": "Profile updated successfully", "data": data}), 200
+
+
+@app.route('/api/v2/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json() or {}
+    username = data.get('username')
+    reset_pin = data.get('reset_pin')
+    new_password = data.get('new_password')
+    # Vulnerability: Accepts any 3-digit PIN or "123"
+    if reset_pin in ('123', '000', '999') or (reset_pin and len(reset_pin) == 3):
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET password = ? WHERE username = ?", (new_password, username))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": "Password reset successfully"}), 200
+    return jsonify({"message": "Invalid reset PIN"}), 400
+
+
+@app.route('/admin/create_admin', methods=['POST'])
+def create_admin():
+    data = request.get_json() or {}
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return jsonify({"message": "Username and password required"}), 400
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO users (username, password, account_number, balance, is_admin) VALUES (?, ?, ?, 500000.0, 1)",
+            (username, password, f"ADM_{username.upper()[:4]}")
+        )
+        conn.commit()
+        return jsonify({"status": "success", "message": f"Administrator {username} created"}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"message": "User already exists"}), 409
+    finally:
+        conn.close()
+
+
+@app.route('/admin/delete_account/<int:user_id>', methods=['DELETE'])
+def delete_account(user_id):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": f"Account {user_id} deleted"}), 200
 
 # ---------------------------------------------------------------------------
 # 6. WEARABLE HEALTH DATA EXFILTRATION (V-W04)
@@ -572,6 +946,19 @@ def resolve_wearable_event():
             cur.execute("UPDATE users SET balance = ? WHERE account_number = 'ADMIN001'", (amt,))
         except Exception as e:
             print(f"Error updating balance on resolve: {e}")
+    elif ev['action'] in ('PUSH_2FA', 'TRIGGER_HIGH_VALUE_2FA') and resolution == 'APPLIED':
+        try:
+            p = json.loads(ev['payload'])
+            amt = float(p.get('amount', 50000.0))
+            recipient = p.get('recipient') or p.get('merchant') or 'HACKER_CORP'
+            cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+            cur.execute('''
+                INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
+                VALUES ('ADMIN001', ?, ?, 'OOB 2FA Wire Transfer Authorization (Watch Approved)', datetime('now'))
+            ''', (recipient, amt))
+            print(f"   💸 \033[92m[2FA HIGH-VALUE TRANSFER DEBITED]\033[0m -$ {amt:.2f} to {recipient}")
+        except Exception as e:
+            print(f"Error executing 2FA debit on resolve: {e}")
     elif ev['action'] == 'QRIS_PAYMENT_COMPLETED' and resolution == 'APPLIED':
         try:
             p = json.loads(ev['payload'])
@@ -585,6 +972,19 @@ def resolve_wearable_event():
             print(f"   💳 \033[92m[QRIS PAYMENT DEBITED]\033[0m -$ {amt:.2f} at {merchant}")
         except Exception as e:
             print(f"Error executing QRIS debit on resolve: {e}")
+    elif ev['action'] == 'QUICK_PAY' and resolution == 'APPLIED':
+        try:
+            p = json.loads(ev['payload'])
+            amt = float(p.get('amount', 50000.0))
+            recipient = p.get('recipient', 'HACKER_CORP')
+            cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+            cur.execute('''
+                INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
+                VALUES ('ADMIN001', ?, ?, 'Quick Pay Direct Injection (Unauthenticated)', datetime('now'))
+            ''', (recipient, amt))
+            print(f"   ⚡ \033[92m[QUICK PAY DEBITED]\033[0m -$ {amt:.2f} to {recipient}")
+        except Exception as e:
+            print(f"Error executing Quick Pay debit on resolve: {e}")
 
     # Log response packet
     cur.execute('''

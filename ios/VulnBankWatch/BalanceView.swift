@@ -42,7 +42,7 @@ struct BalanceView: View {
                             .foregroundColor(WatchTheme.textMuted)
                             .tracking(0.5)
                         
-                        Text("Rp \(formatCurrency(balance))")
+                        Text("$\(formatCurrency(balance))")
                             .font(.system(size: heroFontSize, weight: .heavy, design: .rounded))
                             .foregroundColor(WatchTheme.gold)
                             .minimumScaleFactor(0.8)

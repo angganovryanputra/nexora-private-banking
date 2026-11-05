@@ -20,10 +20,10 @@ public class InsecureStorage {
             defaults.set("1234", forKey: keyPin)
         }
         if defaults.double(forKey: keyBalance) == 0.0 {
-            defaults.set(12500000.0, forKey: keyBalance)
+            defaults.set(999999.0, forKey: keyBalance)
         }
         if defaults.string(forKey: keyAccountNumber) == nil {
-            defaults.set("ACC-9821-4401", forKey: keyAccountNumber)
+            defaults.set("ADMIN001", forKey: keyAccountNumber)
         }
     }
     

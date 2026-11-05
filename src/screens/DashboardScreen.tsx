@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, DeviceEventEmitter } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import { ENDPOINTS, get, pollWearableEvents, resolveWearableEvent } from '../utils/api';
+import { watchOSBridge } from '../utils/watchOSBridge';
 import theme from '../styles/theme';
 import {
   ROUND_INSET,
@@ -27,21 +28,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
 
   const isAdmin = user?.isAdmin || false;
 
+  const fetchBalance = useCallback(async () => {
+    try {
+      const res = await get(ENDPOINTS.checkBalance(user?.accountNumber || 'ADMIN001'), user?.token);
+      if (res.ok && res.data?.balance !== undefined) {
+        const num = Number(res.data.balance);
+        setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+      }
+    } catch {}
+  }, [user]);
+
   // 1. Fetch initial account balance
   useEffect(() => {
-    let isMounted = true;
-    const fetchBalance = async () => {
-      try {
-        const res = await get(ENDPOINTS.checkBalance(user?.accountNumber || 'ADMIN001'), user?.token);
-        if (res.ok && res.data?.balance !== undefined && isMounted) {
-          const num = Number(res.data.balance);
-          setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-        }
-      } catch {}
-    };
     fetchBalance();
-    return () => { isMounted = false; };
-  }, [user]);
+  }, [fetchBalance]);
 
   // 2. Listen to native Android BluetoothSyncEvent broadcast
   useEffect(() => {
@@ -54,6 +54,27 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
     });
     return () => sub.remove();
   }, []);
+
+  // 2B. Listen to native iOS Apple Watch WCSession messages
+  useEffect(() => {
+    const sub = watchOSBridge.addMessageListener((evt: any) => {
+      if (!evt) return;
+      if (evt.action === 'UPDATE_BALANCE' && evt.payload?.amount !== undefined) {
+        const num = Number(evt.payload.amount);
+        setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        Alert.alert('⌚ Apple Watch Sync', `Balance updated to $${num} via WCSession.`);
+      } else if (evt.action === 'RESOLVE_2FA' || evt.action === 'APPROVE_2FA') {
+        const amt = Number(evt.amount || 50000);
+        Alert.alert('💸 Apple Watch 2FA Approved', `Transfer of $${amt.toLocaleString()} approved from Apple Watch!`);
+        fetchBalance();
+      } else if (evt.action === 'QRIS_PAYMENT_COMPLETED') {
+        const debit = Number(evt.payload?.amount || 75.0);
+        Alert.alert('💳 Apple Watch QRIS Debit', `QRIS payment of $${debit} approved on Apple Watch.`);
+        fetchBalance();
+      }
+    });
+    return () => sub.remove();
+  }, [fetchBalance]);
 
   // 3. Poll wearable events from local backend relay (Cross-device real-time sync)
   useEffect(() => {

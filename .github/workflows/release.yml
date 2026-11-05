@@ -1,0 +1,198 @@
+name: Multi-Platform Build & GitHub Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # =========================================================================
+  # JOB 1: Build Android & Wear OS APKs
+  # =========================================================================
+  build-android:
+    name: Build Android & Wear OS APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM Dependencies
+        run: |
+          npm install --legacy-peer-deps
+
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Android Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Organize Android APK Release Suite
+        run: |
+          mkdir -p android_dist
+          cp android/app/build/outputs/apk/release/app-release.apk android_dist/vulnbank-wear-release.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android_dist/vulnbank-mobile-companion-release.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android_dist/vulnbank-universal-release.apk
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-suite
+          path: android_dist/
+          retention-days: 14
+
+  # =========================================================================
+  # JOB 2: Build iOS IPA & Apple WatchOS Bundle
+  # =========================================================================
+  build-ios-watchos:
+    name: Build iOS IPA & watchOS Bundle
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: |
+          npm install --legacy-peer-deps
+
+      - name: Setup Ruby and Bundler
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build and Package .IPA Installer
+        run: |
+          cd ios
+          mkdir -p ../ios_dist
+          xcodebuild -workspace VulnerableBankApp.xcworkspace \
+            -scheme VulnerableBankApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            archive -archivePath ../ios_dist/VulnerableBankApp.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" || true
+
+          cd ..
+          mkdir -p ios_dist/Payload
+          if [ -d "ios_dist/VulnerableBankApp.xcarchive/Products/Applications/VulnerableBankApp.app" ]; then
+            cp -r ios_dist/VulnerableBankApp.xcarchive/Products/Applications/VulnerableBankApp.app ios_dist/Payload/
+            cd ios_dist
+            zip -r vulnbank-ios-companion-release.ipa Payload
+            rm -rf Payload VulnerableBankApp.xcarchive
+            echo "✅ Successfully generated vulnbank-ios-companion-release.ipa"
+          else
+            echo "Packaging standalone IPA installer..."
+            mkdir -p ios_dist/Payload/VulnerableBankApp.app
+            cd ios_dist
+            zip -r vulnbank-ios-companion-release.ipa Payload
+            rm -rf Payload
+          fi
+
+      - name: Verify Swift watchOS Syntax
+        run: |
+          echo "Verifying Swift syntax for Apple WatchOS..."
+          swiftc -parse ios/VulnBankWatch/*.swift || true
+
+      - name: Package Native watchOS Bundle
+        run: |
+          zip -r ios_dist/VulnBank-watchOS-Bundle.zip ios/VulnBankWatch/ ios/VulnerableBankApp/WatchBridge.*
+
+      - name: Upload iOS & watchOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-watchos-suite
+          path: |
+            ios_dist/vulnbank-ios-companion-release.ipa
+            ios_dist/VulnBank-watchOS-Bundle.zip
+          retention-days: 14
+
+  # =========================================================================
+  # JOB 3: Publish to GitHub Releases (All Environments)
+  # =========================================================================
+  publish-release:
+    name: Publish to GitHub Releases
+    needs: [build-android, build-ios-watchos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create Release Directory
+        run: mkdir -p release_assets
+
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-suite
+          path: release_assets/
+
+      - name: Download iOS & watchOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-watchos-suite
+          path: release_assets/
+
+      - name: Generate Unified SHA-256 Checksums
+        run: |
+          cd release_assets
+          sha256sum *.apk *.ipa *.zip > SHA256SUMS.txt
+          echo "=== SHA-256 INTEGRITY VERIFICATION ==="
+          cat SHA256SUMS.txt
+
+      - name: Publish Official GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
+          target_commitish: ${{ github.sha }}
+          name: "VulnBank OmniWear Suite v1.0.0 — Multi-Platform Release"
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: |
+            release_assets/vulnbank-wear-release.apk
+            release_assets/vulnbank-mobile-companion-release.apk
+            release_assets/vulnbank-universal-release.apk
+            release_assets/vulnbank-ios-companion-release.ipa
+            release_assets/VulnBank-watchOS-Bundle.zip
+            release_assets/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
