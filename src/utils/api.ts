@@ -58,6 +58,53 @@ export const pingBackend = async (
   }
 };
 
+/**
+ * Probe the likely backend URLs and switch to the first reachable one.
+ *
+ * This is what makes the app connect without manual setup on BOTH targets:
+ *  - Wear OS / Android emulator → http://10.0.2.2:5000 (host loopback alias)
+ *  - Physical phone over USB    → http://localhost:5000 via `adb reverse tcp:5000 tcp:5000`
+ *  - Physical phone over Wi-Fi  → a saved LAN URL (set in Pentest Lab → API)
+ *
+ * It also self-heals a stale saved URL: if the previously-saved target is no
+ * longer reachable, it falls through to the next candidate instead of leaving
+ * the user stuck on "backend unreachable".
+ */
+export const autoDetectBackend = async (): Promise<string | null> => {
+  const platformDefault = Platform.OS === 'ios' ? 'http://localhost:5000' : 'http://10.0.2.2:5000';
+  let stored: string | null = null;
+  try {
+    stored = await AsyncStorage.getItem('custom_api_base');
+  } catch {}
+
+  const candidates = [stored, platformDefault, 'http://localhost:5000', 'http://10.0.2.2:5000']
+    .filter((v): v is string => !!v)
+    .map((v) => v.replace(/\/+$/, ''))
+    .filter((v, i, arr) => arr.indexOf(v) === i);
+
+  for (const candidate of candidates) {
+    const r = await pingBackend(candidate, 2000);
+    if (!r.ok) continue;
+
+    if (candidate === stored) {
+      // The user's saved target still works — keep it; nothing to persist.
+      API_BASE = candidate;
+    } else if (stored) {
+      // A user-set target exists but is unreachable right now (e.g. the LAN
+      // backend on a different network). Use the reachable fallback in-memory
+      // ONLY — do NOT overwrite the user's saved URL, so it returns next launch
+      // on the correct network.
+      API_BASE = candidate;
+    } else {
+      // No user-set target yet: safe to persist the detected default
+      // (single-sourced through setApiBase).
+      await setApiBase(candidate);
+    }
+    return candidate;
+  }
+  return null;
+};
+
 // API Endpoints
 export const ENDPOINTS = {
   login: '/login',

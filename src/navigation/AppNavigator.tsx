@@ -104,7 +104,11 @@ const AppNavigator: React.FC<Props> = ({ initialScreen = 'welcome' }) => {
 
   const renderScreen = () => {
     // If not authenticated, only show auth screens
-    if (!isAuthenticated && !['welcome', 'login', 'register', 'forgotPassword', 'resetPassword', 'companionPairing'].includes(currentScreen)) {
+    // NOTE: 'pentestLab' is intentionally reachable while unauthenticated so the
+    // "Security Research Lab & Compliance" entry on the Welcome screen works and
+    // researchers can fix the backend URL (API pillar → Test Connection) before
+    // signing in. Without it, the tap silently bounced back to Welcome.
+    if (!isAuthenticated && !['welcome', 'login', 'register', 'forgotPassword', 'resetPassword', 'companionPairing', 'pentestLab'].includes(currentScreen)) {
       return <WelcomeScreen onNavigate={navigate} />;
     }
 

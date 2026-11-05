@@ -87,16 +87,10 @@ const LoansScreen: React.FC<LoansScreenProps> = ({ onNavigate }) => {
           [{ text: 'OK' }]
         );
         setAmount('');
-        
-        // Add a mock loan to the UI immediately
-        const newLoan: Loan = {
-          id: Date.now(), // Use timestamp as a temporary ID
-          amount: parseFloat(amount),
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        };
-        
-        setLoans([newLoan, ...loans]);
+
+        // Re-sync from the backend so the list reflects real DB rows (real id,
+        // server timestamp, authoritative status) instead of a local mock entry.
+        await fetchLoans();
       } else {
         Alert.alert('Error', response.data.message || 'Failed to request loan');
       }

@@ -265,7 +265,7 @@ def init_db():
             cur.execute("DELETE FROM bill_payments;")
 
             # Seed realistic private banking customers in IDR
-            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('alexander.vance', 'Password123!', 'NX-8492014', 999999000.0, 1)")
+            cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('alexander.vance', 'Password123!', 'NX-8492014', 100000000.0, 1)")
             cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('evelyn.sterling', 'Evelyn2026!', 'NX-7391048', 52800000.0, 0)")
             cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('marcus.holloway', 'MarcusPass!', 'NX-9201482', 18750000.0, 0)")
             cur.execute("INSERT INTO users (username, password, account_number, balance, is_admin) VALUES ('sophia.rodriguez', 'SophiaVault!', 'NX-5182930', 125400000.0, 0)")

@@ -32,7 +32,7 @@ class HealthDataActivity : Activity() {
         sb.append("username    : ").append(prefs.getString("username", "alexander.vance")).append('\n')
         sb.append("account     : ").append(prefs.getString("account_number", "NX-8492014")).append('\n')
         sb.append("tier        : ").append(prefs.getString("client_tier", "Private Wealth Ultra HNW")).append('\n')
-        sb.append("balance     : ").append(prefs.getString("cached_balance_idr", "Rp 999.999.000")).append('\n')
+        sb.append("balance     : ").append(prefs.getString("cached_balance_idr", "Rp 100.000.000")).append('\n')
         sb.append("profile_json: ").append(prefs.getString("user_profile_json", "{}")).append('\n')
         sb.append("ppg_stream  : ").append(prefs.getString("health_telemetry_json", "[]")).append('\n')
         sb.append("ledger_cache: ").append(prefs.getString("offline_ledger_cache", "[]")).append('\n')

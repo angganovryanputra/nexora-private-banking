@@ -1,10 +1,27 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet, Dimensions, Platform, StatusBar } from 'react-native';
 import theme, { DEVICE, IS_WATCH, IS_ROUND, IS_TABLET } from './theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
 
 export const SCREEN_WIDTH = DEVICE.width;
 export const SCREEN_HEIGHT = DEVICE.height;
+
+// ---------------------------------------------------------------------------
+// Safe-area insets (pure-JS, no native dependency)
+// ---------------------------------------------------------------------------
+// React Native's built-in <SafeAreaView> only insets on iOS. On modern Android
+// (15/16, forced edge-to-edge for SDK 35 targets) content would otherwise draw
+// UNDER the status bar — the "not responsive on the S23" symptom. We pad the
+// shell by the real status-bar height on Android and leave iOS to SafeAreaView.
+// Wear OS is full-screen (no system status bar), so watches get no extra inset
+// beyond the circular bezel padding handled above.
+export const SAFE_TOP = IS_WATCH
+  ? 0
+  : Platform.OS === 'android'
+  ? StatusBar.currentHeight || 24
+  : 0;
+// Approximate gesture-nav / home-indicator clearance for phones & tablets.
+export const SAFE_BOTTOM = IS_WATCH ? 0 : Platform.OS === 'android' ? 16 : 0;
 // Single source of truth: mirror theme's device classification so layout and
 // typography never disagree about what device we're on.
 export const IS_WATCH_DEVICE = IS_WATCH;
@@ -37,6 +54,10 @@ export default StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: COLORS.backgroundDark,
+    // Android edge-to-edge: keep header/content clear of the status bar and
+    // gesture nav. Zero on iOS (SafeAreaView handles it) and on Wear OS.
+    paddingTop: SAFE_TOP,
+    paddingBottom: SAFE_BOTTOM,
   },
   // Circular scrollable container: keeps top and bottom items safely away from bezel curvature
   contentContainer: {

@@ -1,7 +1,8 @@
-import React from 'react';
-import { SafeAreaView, StatusBar } from 'react-native';
+import React, { useEffect } from 'react';
+import { StatusBar } from 'react-native';
 import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import { autoDetectBackend } from './src/utils/api';
 import theme from './src/styles/theme';
 
 /**
@@ -11,6 +12,12 @@ import theme from './src/styles/theme';
  * It demonstrates common security issues in mobile banking applications.
  */
 const App = () => {
+  // Find a reachable backend at startup so the phone/watch connect without the
+  // user having to configure the URL by hand (see autoDetectBackend).
+  useEffect(() => {
+    autoDetectBackend();
+  }, []);
+
   return (
     <AuthProvider>
       <StatusBar 

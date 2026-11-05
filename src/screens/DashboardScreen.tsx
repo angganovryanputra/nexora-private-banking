@@ -23,14 +23,17 @@ interface DashboardScreenProps {
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [hideBalance, setHideBalance] = useState(false);
-  const [balance, setBalance] = useState('Rp 999.999.000');
+  // Default mirrors the backend seed for alexander.vance (NX-8492014); the real
+  // value is fetched from GET /check_balance on mount so the display stays
+  // consistent with the backend ledger.
+  const [balance, setBalance] = useState('Rp 100.000.000');
   const [currencyMode, setCurrencyMode] = useState<'IDR' | 'USD'>('IDR');
   const [sim2FAVisible, setSim2FAVisible] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState<{ eventId?: number; amount: number; merchant: string } | null>(null);
   
   // ATM Cardless Cash Modal State
   const [atmModalVisible, setAtmModalVisible] = useState(false);
-  const [atmCashToken, setAtmCashToken] = useState('839201');
+  const [atmCashToken, setAtmCashToken] = useState('');
   const [atmCashCountdown, setAtmCashCountdown] = useState(300);
 
   const isAdmin = user?.isAdmin || false;
@@ -126,21 +129,25 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
   }, [fetchBalance]);
 
   const handleOpenAtmCash = async () => {
+    // Always derive the cardless-cash code from the backend so the token shown is
+    // a real, redeemable row in the DB — never a hardcoded placeholder.
     try {
       const res = await generateCardlessCash(user?.accountNumber || 'NX-8492014', 250000.0);
       if (res.ok && res.data?.token) {
         setAtmCashToken(res.data.token);
-        setAtmCashCountdown(300);
+        setAtmCashCountdown(res.data.expires_in_seconds || 300);
         setAtmModalVisible(true);
       } else {
-        setAtmCashToken('839201');
-        setAtmCashCountdown(300);
-        setAtmModalVisible(true);
+        Alert.alert(
+          'ATM Cardless Cash Unavailable',
+          'Could not generate a withdrawal code from the backend. Ensure the relay is reachable, then try again.'
+        );
       }
     } catch {
-      setAtmCashToken('839201');
-      setAtmCashCountdown(300);
-      setAtmModalVisible(true);
+      Alert.alert(
+        'Backend Unreachable',
+        'Could not reach the banking backend to generate a real withdrawal code. Check the backend URL in Security Research Lab → API.'
+      );
     }
   };
 

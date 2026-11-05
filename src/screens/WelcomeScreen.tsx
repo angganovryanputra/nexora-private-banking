@@ -9,9 +9,14 @@ import globalStyles, {
   CIRCULAR_PADDING_BOTTOM,
   IS_WATCH_DEVICE,
 } from '../styles/globalStyles';
-import theme from '../styles/theme';
+import theme, { scaleFont, scaleSpace } from '../styles/theme';
 
 const { COLORS, SIZES } = theme;
+
+// Continuous, device-derived sizes so the hero fits every Wear OS size
+// (small round 1.2" → large square) and scales up cleanly on phones/tablets.
+const EMBLEM = scaleSpace(58);
+const EMBLEM_ICON = EMBLEM * 0.5;
 
 interface WelcomeScreenProps {
   onNavigate: (screen: ScreenType) => void;
@@ -26,7 +31,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
     >
       <View style={styles.logoContainer}>
         <View style={styles.iconEmblem}>
-          <Icon name="shield" size={SIZES.xxLarge * 1.3} color={COLORS.primary} />
+          <Icon name="shield" size={EMBLEM_ICON} color={COLORS.primary} />
         </View>
         <Text style={styles.appName}>Nexora Bank</Text>
         <Text style={styles.tagline}>
@@ -58,7 +63,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
         onPress={() => onNavigate('pentestLab')}
         hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
       >
-        <Icon name="lock" size={11} color={COLORS.textMuted} />
+        <Icon name="lock" size={scaleFont(11)} color={COLORS.textMuted} />
         <Text style={styles.auditorFooterText}>Security Research Lab & Compliance</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -83,9 +88,9 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.spacing.md,
   },
   iconEmblem: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: EMBLEM,
+    height: EMBLEM,
+    borderRadius: EMBLEM / 2,
     backgroundColor: 'rgba(0, 229, 153, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -130,7 +135,7 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.spacing.md,
   },
   auditorFooterText: {
-    fontSize: 10,
+    fontSize: scaleFont(10),
     color: COLORS.textMuted,
     fontWeight: '500',
   },

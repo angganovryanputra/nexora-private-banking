@@ -13,7 +13,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { dispatchWearableEvent, getWearablePackets, pairWearable, verifyCardlessCash, generateCardlessCash, getApiBase, pingBackend } from '../utils/api';
 import { watchOSBridge } from '../utils/watchOSBridge';
-import theme from '../styles/theme';
+import theme, { scaleFont } from '../styles/theme';
 import {
   ROUND_INSET,
   CIRCULAR_PADDING_TOP,
@@ -242,7 +242,10 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         <Text style={styles.statusText}>{watchSyncStatus}</Text>
       </View>
 
-      <Text style={styles.backendStatusText} numberOfLines={1}>{backendStatus}</Text>
+      <TouchableOpacity onPress={() => onNavigate('pentestLab')} activeOpacity={0.7}>
+        <Text style={styles.backendStatusText} numberOfLines={1}>{backendStatus}</Text>
+        <Text style={styles.backendHintText} numberOfLines={1}>Tap to set / test backend URL →</Text>
+      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Cross-Device Pentest Triggers</Text>
 
@@ -428,8 +431,14 @@ const styles = StyleSheet.create({
     fontSize: IS_WATCH_DEVICE ? 8 : 11,
     color: COLORS.textLight,
     textAlign: 'center',
-    marginBottom: IS_WATCH_DEVICE ? 4 : 10,
+    marginBottom: IS_WATCH_DEVICE ? 1 : 2,
     fontFamily: 'monospace',
+  },
+  backendHintText: {
+    fontSize: scaleFont(10),
+    color: COLORS.secondary,
+    textAlign: 'center',
+    marginBottom: SIZES.spacing.sm,
   },
   sectionTitle: {
     fontSize: IS_WATCH_DEVICE ? 9 : 13,
