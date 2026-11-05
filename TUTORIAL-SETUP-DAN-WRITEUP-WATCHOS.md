@@ -61,27 +61,167 @@
 
 ## ⚡ 2. Tutorial Setup Lingkungan Pengujian (3 Metode Praktis)
 
-### Metode A: Setup via Xcode Simulator (macOS)
+### Metode A: Setup via Xcode Simulator (Panduan Lengkap MacBook Pro 2019 Intel)
 
-1. **Clone Repository:**
+Panduan ini disusun secara bertahap khusus untuk pengguna **macOS (MacBook Pro 2019 berbasis Intel x86_64)** mulai dari instalasi prasyarat hingga menjalankan dua simulator berdampingan (**iPhone Simulator 📱 + Apple Watch Simulator ⌚**).
+
+#### 🛠️ Langkah 0: Verifikasi & Instalasi Prasyarat Toolchain (Terminal macOS)
+
+Buka aplikasi **Terminal** di MacBook Pro dan pastikan komponen berikut telah terpasang:
+
+1. **Install Xcode Command Line Tools:**
    ```bash
-   git clone https://github.com/angganovryanputra/vulnbank-omniwear-suite.git
-   cd vulnbank-omniwear-suite/ios
+   xcode-select --install
    ```
-2. **Install CocoaPods Dependencies:**
+   *(Jika sudah terpasang, terminal akan menampilkan pesan bahwa tool sudah up-to-date).*
+
+2. **Pastikan Node.js (v18 atau v20 LTS) & Python 3 Terpasang:**
    ```bash
-   pod install --repo-update
+   node -v     # Rekomendasi: v18.x.x atau v20.x.x
+   npm -v      # Rekomendasi: v9.x.x atau v10.x.x
+   python3 -v  # Rekomendasi: Python 3.9+
    ```
-3. **Buka Workspace di Xcode:**
+   *Jika belum terpasang, pasang cepat via Homebrew:*
    ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   brew install node python
+   ```
+
+3. **Install CocoaPods (Manajer Dependensi iOS/watchOS):**
+   ```bash
+   sudo gem install cocoapods
+   # atau via Homebrew:
+   brew install cocoapods
+   ```
+
+---
+
+#### 📥 Langkah 1: Clone Repository GitHub
+
+Jalankan perintah berikut di Terminal untuk mengunduh source code lengkap:
+
+```bash
+cd ~/Desktop
+git clone https://github.com/angganovryanputra/vulnbank-omniwear-suite.git
+cd vulnbank-omniwear-suite
+```
+
+---
+
+#### 📦 Langkah 2: Install Dependensi NPM & CocoaPods
+
+Karena MacBook Pro 2019 menggunakan prosesor **Intel (x86_64)**, instalasi CocoaPods berjalan sangat stabil tanpa perlu konfigurasi Rosetta atau exclusion flag arsitektur:
+
+```bash
+# 1. Install dependensi React Native (Companion)
+npm install --legacy-peer-deps
+
+# 2. Masuk ke folder ios dan install pods
+cd ios
+pod install --repo-update
+cd ..
+```
+
+> **Hasil yang Diharapkan:** Terminal menampilkan `Pod installation complete! There are X dependencies from the Podfile and Y total pods installed.`
+
+---
+
+#### ⌚ Langkah 3: PENTING — Unduh watchOS Simulator Runtime di Xcode
+
+Secara default pada Xcode 15 dan 16, Apple **tidak menyertakan runtime watchOS** untuk menghemat ukuran instalasi awal. Jika langkah ini dilewati, simulator Apple Watch tidak akan muncul di daftar pilihan Xcode.
+
+1. Buka aplikasi **Xcode**.
+2. Di menu bar atas, klik **Xcode > Settings...** (atau tekan `Cmd + ,`).
+3. Pilih tab **Platforms** (di samping Locations).
+4. Cek apakah ada **watchOS 10.x** (atau watchOS 9.x):
+   - Jika belum ada, klik tombol **`+`** (di pojok kiri bawah) > pilih **watchOS**.
+   - Klik **Download & Install**.
+   - *Alternatif via Terminal:*
+     ```bash
+     xcodebuild -downloadPlatform watchOS
+     ```
+5. Tunggu hingga proses unduhan selesai (sekitar 3–5 GB).
+
+---
+
+#### 🔗 Langkah 4: Membuat & Memverifikasi "Paired Simulator" (iPhone + Apple Watch)
+
+Simulator iPhone dan Apple Watch harus berstatus "Paired" agar komunikasi `WCSession` dan Bluetooth simulasi bekerja:
+
+1. Di Xcode, buka menu **Window > Devices and Simulators** (atau tekan `Cmd + Shift + 2`).
+2. Klik tab **Simulators** di bagian atas.
+3. Di panel sebelah kiri, pilih salah satu simulator iPhone (misalnya **iPhone 15** atau **iPhone 11**):
+   - Periksa bagian **Paired Watch**:
+   - Jika sudah tertulis misalnya *Apple Watch Series 9 (45mm)*, berarti sudah terpasang (*paired*).
+   - Jika belum ada (*None*), klik tombol **`+`** di bawah panel Paired Watches > beri nama watch baru (misal: *VulnBank Apple Watch*) > pilih Watch Model (*Apple Watch Series 9*) dan OS (*watchOS 10*) > klik **Pair**.
+4. Tutup jendela Devices and Simulators.
+
+---
+
+#### 🖥️ Langkah 5: Jalankan Backend Relay & Metro Bundler (Buka 2 Tab Terminal)
+
+Agar skenario transfer uang, push 2FA, dan injeksi saldo bekerja secara real-time, jalankan backend lokal terlebih dahulu:
+
+- **Tab Terminal 1 (Backend Flask Relay):**
+  ```bash
+  cd ~/Desktop/vulnbank-omniwear-suite
+  python3 backend/server.py
+  ```
+  *Output:* `* Running on all addresses (0.0.0.0:5000)`
+
+- **Tab Terminal 2 (React Native Metro Bundler):**
+  ```bash
+  cd ~/Desktop/vulnbank-omniwear-suite
+  npm start
+  ```
+  *Output:* `Welcome to Metro v0.82.1... Type 'i' to run on iOS`
+
+---
+
+#### 🚀 Langkah 6: Buka Workspace di Xcode & Eksekusi Build
+
+> ⚠️ **PERINGATAN PENTING:** Selalu buka file berakhiran **`.xcworkspace`**, JANGAN membuka `.xcodeproj`!
+
+1. Jalankan perintah ini di terminal (atau double click file via Finder):
+   ```bash
+   cd ~/Desktop/vulnbank-omniwear-suite/ios
    open VulnerableBankApp.xcworkspace
    ```
-4. **Pilih Paired Simulator (iPhone 15 + Apple Watch Series 9):**
-   - Di toolbar atas Xcode, klik dropdown skema tujuan build.
-   - Pilih **`VulnerableBankApp`** dengan target device **`iPhone 15 + Apple Watch Series 9`**.
-5. **Jalankan Aplikasi:**
-   - Tekan tombol **Run (Cmd + R)**.
-   - Xcode akan mem-build kedua target dan membuka dua jendela simulator berdampingan (iPhone di kiri dan Apple Watch di kanan).
+2. Tunggu hingga proses indexing Xcode selesai (bar indikator di tengah atas Xcode menampilkan status *Ready*).
+3. **Pilih Skema & Target Perangkat:**
+   - Di toolbar bagian atas Xcode, klik pemilih skema (di sebelah tombol Play ▶️).
+   - Pastikan skema yang dipilih adalah **`VulnerableBankApp`**.
+   - Di bagian target device (di sebelah kanan skema), klik dan pilih simulator pasangan yang sudah kita buat tadi, misalnya:
+     **`iPhone 15 + Apple Watch Series 9 (45mm)`** (atau `iPhone 11 + Apple Watch`).
+4. **Tekan Tombol Build & Run:**
+   - Tekan tombol **Play ▶️** (atau shortcut keyboard **`Cmd + R`**).
+5. **Xcode akan secara otomatis:**
+   - Mem-build aplikasi iOS Companion dan menginstalnya ke Simulator iPhone.
+   - Mem-build aplikasi SwiftUI watchOS dan menginstalnya ke Simulator Apple Watch.
+   - Membuka **DUA JENDELA SIMULATOR** berdampingan di layar Mac teman Anda!
+
+---
+
+#### 💡 Langkah 7: Tips Kinerja Khusus MacBook Pro 2019 (Intel Core i7/i9)
+
+1. **Penggunaan Memori (RAM):**
+   - Menjalankan 2 simulator sekaligus (iOS + watchOS) memakan memori sekitar 3–4 GB RAM.
+   - Tutup tab browser Chrome yang berat atau aplikasi editing video sebelum menekan `Cmd + R` agar simulator berjalan mulus 60 FPS.
+2. **Thermal & Kipas Intel:**
+   - Pada MacBook Pro 2019 Intel, saat build pertama kali (*clean build*), kipas Mac wajar akan berputar kencang selama 1–2 menit karena CPU mengompilasi ratusan file C++/Swift secara paralel di seluruh core Intel. Setelah aplikasi terinstal di simulator, penggunaan CPU akan kembali normal (idle ~3-5%).
+3. **Ukuran Simulator di Layar Mac:**
+   - Untuk mengatur ukuran simulator agar pas berdampingan di layar MacBook Pro 15/16 inci:
+   - Klik jendela simulator iPhone > tekan **`Cmd + 2`** (Skala 75%) atau **`Cmd + 3`** (Skala 50%).
+   - Klik jendela simulator Apple Watch > geser ke sebelah kanan layar iPhone.
+
+---
+
+#### ✅ Checklist Verifikasi: Memastikan Kedua Simulator Terhubung
+
+1. Di Simulator Apple Watch: Aplikasi menampilkan layar **Quick-PIN Dial**. Masukkan PIN `1234` atau tekan tombol **1234**. Saldo `Rp 12.500.000` akan muncul dengan indikator hijau `Linked`.
+2. Di Simulator iPhone: Buka menu **Phone Companion Screen**.
+3. Di iPhone, tap tombol **Sync Balance to Watch (V-B01)**.
+4. Perhatikan layar Apple Watch di sebelahnya: Saldo di Apple Watch akan langsung berubah secara instan menjadi **$888,888**! Ini membuktikan koneksi `WCSession` dual-device telah aktif 100%.
 
 ---
 
@@ -326,3 +466,4 @@ if (ObjC.available) {
 | **V-AP04** | **OJK POJK 11/2022 Pasal 22** | Transfer dana bernilai tinggi disetujui tanpa pembuktian identitas sah. | Wajibkan otentikasi **LocalAuthentication (FaceID/Passcode)** dan penandatanganan payload transaksi menggunakan kunci privat Secure Enclave. |
 | **V-AP05** | **OJK POJK 11/2022 Pasal 20** | Jam tangan yang dicuri dari korban tetap dapat mengakses saldo perbankan. | Gabungkan deteksi wrist-off dengan verifikasi biometrik berulang dan invalidasi sesi server secara seketika saat sensor lepas. |
 | **V-AP06** | **Bank Indonesia SNAP QRIS Bab IV** | Kerugian finansial akibat duplikasi kode bayar QRIS yang ditangkap foto. | Terapkan validasi **Nonce Sekali Pakai** dan validasi masa berlaku (maksimal 60 detik) terikat server timestamp. |
+
