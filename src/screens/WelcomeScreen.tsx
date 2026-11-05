@@ -1,9 +1,14 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import CustomButton from '../components/CustomButton';
 import { ScreenType } from '../navigation/types';
-import globalStyles from '../styles/globalStyles';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 import theme from '../styles/theme';
 
 const { COLORS, SIZES } = theme;
@@ -14,10 +19,14 @@ interface WelcomeScreenProps {
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.logoContainer}>
         <View style={styles.iconEmblem}>
-          <Icon name="shield" size={SIZES.xxLarge * 1.4} color={COLORS.primary} />
+          <Icon name="shield" size={SIZES.xxLarge * 1.3} color={COLORS.primary} />
         </View>
         <Text style={styles.appName}>Nexora Bank</Text>
         <Text style={styles.tagline}>
@@ -52,32 +61,37 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
         <Icon name="lock" size={11} color={COLORS.textMuted} />
         <Text style={styles.auditorFooterText}>Security Research Lab & Compliance</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SIZES.spacing.lg,
     backgroundColor: COLORS.backgroundDark,
+  },
+  contentContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: IS_WATCH_DEVICE ? ROUND_INSET : SIZES.spacing.lg,
+    paddingTop: IS_WATCH_DEVICE ? CIRCULAR_PADDING_TOP : SIZES.spacing.xl,
+    paddingBottom: IS_WATCH_DEVICE ? CIRCULAR_PADDING_BOTTOM + 24 : SIZES.spacing.xl,
+    minHeight: '100%',
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: SIZES.spacing.md,
   },
   iconEmblem: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: 'rgba(0, 229, 153, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(0, 229, 153, 0.3)',
-    marginBottom: SIZES.spacing.md,
+    marginBottom: SIZES.spacing.sm,
   },
   appName: {
     fontSize: SIZES.xxLarge,
@@ -98,12 +112,12 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: SIZES.spacing.xl,
-    paddingHorizontal: SIZES.spacing.md,
+    marginBottom: SIZES.spacing.lg,
+    paddingHorizontal: SIZES.spacing.sm,
   },
   buttonContainer: {
     width: '100%',
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: SIZES.spacing.md,
   },
   auditorFooter: {
     flexDirection: 'row',
@@ -113,6 +127,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    marginBottom: SIZES.spacing.md,
   },
   auditorFooterText: {
     fontSize: 10,
