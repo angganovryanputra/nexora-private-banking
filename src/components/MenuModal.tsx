@@ -21,21 +21,21 @@ const MenuModal: React.FC<MenuModalProps> = ({
   onLogout 
 }) => {
   const menuItems = [
-    { key: 'pentestLab', label: '🛡️ Pentest Lab (Demo)', highlight: true },
-    { key: 'dashboard', label: '🏠 Dashboard' },
-    { key: 'qrPay', label: '⚡ Contactless QR Pay' },
-    { key: 'balance', label: '💰 Check Balance' },
-    { key: 'transfer', label: '💸 Money Transfer' },
-    { key: 'companionManager', label: '📱 Phone Companion Bridge' },
+    { key: 'dashboard', label: '🏠 Nexora Dashboard' },
+    { key: 'qrPay', label: '⚡ Contactless SNAP QRIS' },
+    { key: 'balance', label: '💰 Account Balance' },
+    { key: 'transfer', label: '💸 Wire & Peer Transfer' },
+    { key: 'cards', label: '💳 Cards & Emergency Kill-Switch' },
+    { key: 'companionManager', label: '📱 Companion Watch Sync' },
     { key: 'lockout', label: '🔒 Test Wrist-Off Lock' },
-    { key: 'cards', label: '💳 Virtual Cards' },
-    { key: 'transactions', label: '📜 History' },
-    { key: 'health', label: '❤️ Health Monitor' },
-    { key: 'profile', label: '👤 Profile' },
+    { key: 'transactions', label: '📜 Transaction History' },
+    { key: 'health', label: '❤️ Health & Biometrics' },
+    { key: 'profile', label: '👤 Client Profile' },
+    { key: 'pentestLab', label: '🛡️ Security Diagnostics (Pentest)', highlight: true },
   ];
 
   if (isAdmin) {
-    menuItems.push({ key: 'admin', label: '🔐 Admin Panel', highlight: false });
+    menuItems.push({ key: 'admin', label: '🔐 Executive Admin', highlight: false });
   }
 
   return (

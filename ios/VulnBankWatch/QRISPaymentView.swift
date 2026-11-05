@@ -7,7 +7,7 @@ import WatchConnectivity
 struct QRISPaymentView: View {
     @Binding var currentScreen: String
     @State private var countdown: Int = 120
-    @State private var qrisString: String = "00020101021226610016ID.VULNBANK.WWW01189360099800000000015204581253033605802ID5914VULNBANK MERCH6007JAKARTA62070703A016304E8A2"
+    @State private var qrisString: String = "00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2"
     @State private var timer: Timer?
     
     var body: some View {
@@ -83,7 +83,7 @@ struct QRISPaymentView: View {
                             "action": "QRIS_PAYMENT_COMPLETED",
                             "payload": [
                                 "amount": 75.0,
-                                "merchant": "VULNBANK MERCH 001",
+                                "merchant": "NEXORA DIGITAL MERCH 001",
                                 "qr_payload": qrisString
                             ]
                         ]

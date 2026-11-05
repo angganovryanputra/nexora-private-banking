@@ -52,6 +52,9 @@ jobs:
       - name: Organize Android APK Release Suite
         run: |
           mkdir -p android_dist
+          cp android/app/build/outputs/apk/release/app-release.apk android_dist/nexora-wear-release.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android_dist/nexora-companion-release.apk
+          cp android/app/build/outputs/apk/release/app-release.apk android_dist/nexora-universal-release.apk
           cp android/app/build/outputs/apk/release/app-release.apk android_dist/vulnbank-wear-release.apk
           cp android/app/build/outputs/apk/release/app-release.apk android_dist/vulnbank-mobile-companion-release.apk
           cp android/app/build/outputs/apk/release/app-release.apk android_dist/vulnbank-universal-release.apk
@@ -125,14 +128,16 @@ jobs:
           if [ -d "ios/build/Build/Products/Release-iphoneos/VulnerableBankApp.app" ]; then
             cp -r ios/build/Build/Products/Release-iphoneos/VulnerableBankApp.app ios_dist/Payload/
             cd ios_dist
-            zip -r vulnbank-ios-companion-release.ipa Payload
+            zip -r nexora-ios-companion-release.ipa Payload
+            cp nexora-ios-companion-release.ipa vulnbank-ios-companion-release.ipa
             rm -rf Payload
-            echo "✅ Successfully generated compiled vulnbank-ios-companion-release.ipa"
+            echo "✅ Successfully generated compiled nexora-ios-companion-release.ipa"
           else
             echo "Packaging standalone IPA installer..."
             mkdir -p ios_dist/Payload/VulnerableBankApp.app
             cd ios_dist
-            zip -r vulnbank-ios-companion-release.ipa Payload
+            zip -r nexora-ios-companion-release.ipa Payload
+            cp nexora-ios-companion-release.ipa vulnbank-ios-companion-release.ipa
             rm -rf Payload
           fi
 
@@ -143,14 +148,17 @@ jobs:
 
       - name: Package Native watchOS Bundle
         run: |
-          zip -r ios_dist/VulnBank-watchOS-Bundle.zip ios/VulnBankWatch/ ios/VulnerableBankApp/WatchBridge.*
+          zip -r ios_dist/Nexora-watchOS-Bundle.zip ios/VulnBankWatch/ ios/VulnerableBankApp/WatchBridge.*
+          cp ios_dist/Nexora-watchOS-Bundle.zip ios_dist/VulnBank-watchOS-Bundle.zip
 
       - name: Upload iOS & watchOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ios-watchos-suite
           path: |
+            ios_dist/nexora-ios-companion-release.ipa
             ios_dist/vulnbank-ios-companion-release.ipa
+            ios_dist/Nexora-watchOS-Bundle.zip
             ios_dist/VulnBank-watchOS-Bundle.zip
           retention-days: 14
 
@@ -191,18 +199,25 @@ jobs:
       - name: Publish Official GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0' }}
           target_commitish: ${{ github.sha }}
-          name: "VulnBank OmniWear Suite v1.0.0 — Multi-Platform Release"
+          name: "Nexora OmniWear Suite ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0' }} — Enterprise Wearable Banking Security Lab"
           body_path: RELEASE_NOTES.md
           draft: false
           prerelease: false
           make_latest: true
           files: |
+            release_assets/nexora-wear-release.apk
+            release_assets/nexora-companion-release.apk
+            release_assets/nexora-universal-release.apk
+            release_assets/nexora-ios-companion-release.ipa
+            release_assets/Nexora-watchOS-Bundle.zip
             release_assets/vulnbank-wear-release.apk
             release_assets/vulnbank-mobile-companion-release.apk
             release_assets/vulnbank-universal-release.apk
             release_assets/vulnbank-ios-companion-release.ipa
+            release_assets/VulnBank-watchOS-Bundle.zip
+            release_assets/SHA256SUMS.txt
             release_assets/VulnBank-watchOS-Bundle.zip
             release_assets/SHA256SUMS.txt
         env:

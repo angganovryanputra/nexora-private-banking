@@ -9,11 +9,11 @@ public class InsecureStorage {
     
     private let defaults = UserDefaults.standard
     
-    private let keyToken = "vulnbank_auth_token"
-    private let keyBalance = "vulnbank_cached_balance"
-    private let keyAccountNumber = "vulnbank_account_number"
-    private let keyPin = "vulnbank_quick_pin"
-    private let keyPairingCode = "vulnbank_pairing_code"
+    private let keyToken = "nexora_auth_token"
+    private let keyBalance = "nexora_cached_balance"
+    private let keyAccountNumber = "nexora_account_number"
+    private let keyPin = "nexora_quick_pin"
+    private let keyPairingCode = "nexora_pairing_code"
     
     private init() {
         if defaults.string(forKey: keyPin) == nil {

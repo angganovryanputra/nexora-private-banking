@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import CustomButton from '../components/CustomButton';
 import { ScreenType } from '../navigation/types';
 import globalStyles from '../styles/globalStyles';
@@ -15,33 +16,42 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
   return (
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>🏦</Text>
-        <Text style={styles.appName}>Vulnerable Bank</Text>
+        <View style={styles.iconEmblem}>
+          <Icon name="shield" size={SIZES.xxLarge * 1.4} color={COLORS.primary} />
+        </View>
+        <Text style={styles.appName}>Nexora Bank</Text>
+        <Text style={styles.tagline}>
+          Next-Gen Autonomous Digital Banking
+        </Text>
       </View>
       
-      <Text style={styles.tagline}>
-        Banking Made Simple & InSecure
-      </Text>
-      
       <Text style={styles.description}>
-      This is an Intentionally vulnerable application, designed for everyone to practice application security.
+        Seamless contactless payments, glanceable wrist balances, and high-value biometric authorization across your phone and smartwatch.
       </Text>
       
       <View style={styles.buttonContainer}>
-        
         <CustomButton 
-          title="  Login  " 
+          title="Sign In" 
           onPress={() => onNavigate('login')} 
           isFullWidth 
         />
-        {/* <View style={{ height: 2 }} /> */}
+        <View style={{ height: 10 }} />
         <CustomButton 
-          title="Register" 
+          title="Open New Account" 
           onPress={() => onNavigate('register')} 
           isFullWidth 
-          // variant="outline"
+          variant="outline"
         />
       </View>
+
+      <TouchableOpacity 
+        style={styles.auditorFooter}
+        onPress={() => onNavigate('pentestLab')}
+        hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+      >
+        <Icon name="lock" size={11} color={COLORS.textMuted} />
+        <Text style={styles.auditorFooterText}>Security Research Lab & Compliance</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -52,37 +62,62 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: SIZES.spacing.lg,
+    backgroundColor: COLORS.backgroundDark,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: SIZES.spacing.xxl,
+    marginBottom: SIZES.spacing.lg,
   },
-  logoText: {
-    fontSize: SIZES.xxLarge * 2.5,
+  iconEmblem: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0, 229, 153, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 153, 0.3)',
     marginBottom: SIZES.spacing.md,
   },
   appName: {
     fontSize: SIZES.xxLarge,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: COLORS.white,
-    marginBottom: SIZES.spacing.md,
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   tagline: {
-    fontSize: SIZES.large,
-    fontWeight: 'bold',
+    fontSize: SIZES.small,
+    fontWeight: '600',
     color: COLORS.primary,
-    marginBottom: SIZES.spacing.md,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   description: {
-    fontSize: SIZES.medium,
+    fontSize: SIZES.small,
     color: COLORS.textLight,
     textAlign: 'center',
+    lineHeight: 18,
     marginBottom: SIZES.spacing.xl,
+    paddingHorizontal: SIZES.spacing.md,
   },
   buttonContainer: {
     width: '100%',
-    marginTop: SIZES.spacing.lg,
+    marginBottom: SIZES.spacing.lg,
+  },
+  auditorFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  auditorFooterText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    fontWeight: '500',
   },
 });
 

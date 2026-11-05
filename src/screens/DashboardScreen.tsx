@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, DeviceEventEmitter } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, DeviceEventEmitter, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
-import { ENDPOINTS, get, pollWearableEvents, resolveWearableEvent } from '../utils/api';
+import { ENDPOINTS, get, pollWearableEvents, resolveWearableEvent, generateCardlessCash } from '../utils/api';
 import { watchOSBridge } from '../utils/watchOSBridge';
 import theme from '../styles/theme';
 import {
@@ -22,9 +22,15 @@ interface DashboardScreenProps {
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [hideBalance, setHideBalance] = useState(false);
-  const [balance, setBalance] = useState('$999,999.00');
+  const [balance, setBalance] = useState('Rp 99.999.000');
+  const [currencyMode, setCurrencyMode] = useState<'IDR' | 'USD'>('IDR');
   const [sim2FAVisible, setSim2FAVisible] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState<{ eventId?: number; amount: number; merchant: string } | null>(null);
+  
+  // ATM Cardless Cash Modal State
+  const [atmModalVisible, setAtmModalVisible] = useState(false);
+  const [atmCashToken, setAtmCashToken] = useState('839201');
+  const [atmCashCountdown, setAtmCashCountdown] = useState(300);
 
   const isAdmin = user?.isAdmin || false;
 
@@ -33,10 +39,14 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
       const res = await get(ENDPOINTS.checkBalance(user?.accountNumber || 'ADMIN001'), user?.token);
       if (res.ok && res.data?.balance !== undefined) {
         const num = Number(res.data.balance);
-        setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        if (currencyMode === 'IDR') {
+          setBalance(`Rp ${num.toLocaleString('id-ID', { minimumFractionDigits: 0 })}`);
+        } else {
+          setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        }
       }
     } catch {}
-  }, [user]);
+  }, [user, currencyMode]);
 
   // 1. Fetch initial account balance
   useEffect(() => {
@@ -48,12 +58,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
     const sub = DeviceEventEmitter.addListener('BluetoothSyncEvent', (evt: any) => {
       if (evt && evt.action === 'UPDATE_BALANCE' && evt.amount !== undefined) {
         const num = Number(evt.amount);
-        setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-        Alert.alert('📶 BLE Sync Injected', `Watch balance updated to $${num} via BluetoothSync.`);
+        setBalance(currencyMode === 'IDR' ? `Rp ${num.toLocaleString('id-ID')}` : `$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        Alert.alert('📶 Wear OS BLE Sync', `Watch balance synced to ${num} via Bluetooth LE.`);
       }
     });
     return () => sub.remove();
-  }, []);
+  }, [currencyMode]);
 
   // 2B. Listen to native iOS Apple Watch WCSession messages
   useEffect(() => {
@@ -61,20 +71,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
       if (!evt) return;
       if (evt.action === 'UPDATE_BALANCE' && evt.payload?.amount !== undefined) {
         const num = Number(evt.payload.amount);
-        setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-        Alert.alert('⌚ Apple Watch Sync', `Balance updated to $${num} via WCSession.`);
+        setBalance(currencyMode === 'IDR' ? `Rp ${num.toLocaleString('id-ID')}` : `$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        Alert.alert('⌚ Apple Watch Sync', `Balance updated via WCSession dictionary.`);
       } else if (evt.action === 'RESOLVE_2FA' || evt.action === 'APPROVE_2FA') {
         const amt = Number(evt.amount || 50000);
-        Alert.alert('💸 Apple Watch 2FA Approved', `Transfer of $${amt.toLocaleString()} approved from Apple Watch!`);
+        Alert.alert('💸 Apple Watch 2FA Approved', `Wire transfer of $${amt.toLocaleString()} authorized from Apple Watch!`);
         fetchBalance();
       } else if (evt.action === 'QRIS_PAYMENT_COMPLETED') {
         const debit = Number(evt.payload?.amount || 75.0);
-        Alert.alert('💳 Apple Watch QRIS Debit', `QRIS payment of $${debit} approved on Apple Watch.`);
+        Alert.alert('💳 Apple Watch QRIS Debit', `SNAP QRIS payment of ${debit} approved on Apple Watch.`);
         fetchBalance();
       }
     });
     return () => sub.remove();
-  }, [fetchBalance]);
+  }, [fetchBalance, currencyMode]);
 
   // 3. Poll wearable events from local backend relay (Cross-device real-time sync)
   useEffect(() => {
@@ -85,9 +95,9 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
           for (const ev of res.data.events) {
             if (ev.action === 'UPDATE_BALANCE') {
               const amt = Number(ev.payload?.amount || 0);
-              setBalance(`$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+              setBalance(currencyMode === 'IDR' ? `Rp ${amt.toLocaleString('id-ID')}` : `$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
               await resolveWearableEvent(ev.id, 'APPLIED');
-              Alert.alert('📶 Remote Sync Received', `Balance updated to $${amt} from Smartphone Companion.`);
+              Alert.alert('📶 Remote Sync Received', `Balance updated to ${amt} from Smartphone Companion.`);
             } else if (ev.action === 'PUSH_2FA' || ev.action === 'TRIGGER_HIGH_VALUE_2FA') {
               setTwoFactorData({
                 eventId: ev.id,
@@ -99,15 +109,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
               const debit = Number(ev.payload?.amount || 75.00);
               await resolveWearableEvent(ev.id, 'APPLIED');
               Alert.alert(
-                '💳 QRIS Payment Success',
-                `Payment of $${debit}.00 to ${ev.payload?.merchant || 'VULNBANK MERCH 001'} approved.\nRef: SNAP-QRIS-9921\nRemaining Balance Deducted.`
+                '💳 SNAP QRIS Payment Success',
+                `Payment of ${debit} to ${ev.payload?.merchant || 'NEXORA MERCH 001'} approved.\nRef: SNAP-QRIS-9921\nRemaining Balance Deducted.`
               );
               fetchBalance();
             } else if (ev.action === 'QUICK_PAY') {
               await resolveWearableEvent(ev.id, 'APPLIED');
               Alert.alert(
                 '⚡ Quick Pay Injected',
-                `Transfer of $${ev.payload?.amount || 50000} to ${ev.payload?.recipient || 'HACKER_CORP'} executed without PIN!`
+                `Transfer of ${ev.payload?.amount || 50000} to ${ev.payload?.recipient || 'HACKER_CORP'} executed without PIN!`
               );
             }
           }
@@ -116,17 +126,34 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
     }, 2500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [currencyMode]);
+
+  const handleOpenAtmCash = async () => {
+    try {
+      const res = await generateCardlessCash(user?.accountNumber || 'ADMIN001', 250000.0);
+      if (res.ok && res.data?.token) {
+        setAtmCashToken(res.data.token);
+        setAtmCashCountdown(300);
+        setAtmModalVisible(true);
+      } else {
+        setAtmCashToken('839201');
+        setAtmModalVisible(true);
+      }
+    } catch {
+      setAtmCashToken('839201');
+      setAtmModalVisible(true);
+    }
+  };
 
   const quickPills = [
-    { title: 'QR Pay', icon: 'qrcode', screen: 'qrPay', color: COLORS.primary },
+    { title: 'SNAP QRIS', icon: 'qrcode', screen: 'qrPay', color: COLORS.primary },
     { title: 'Transfer', icon: 'paper-plane', screen: 'transfer', color: COLORS.secondary },
-    { title: 'Cards', icon: 'credit-card', screen: 'cards', color: '#00C2FF' },
-    { title: 'Balance', icon: 'database', screen: 'balance', color: COLORS.accentGold },
-    { title: 'Phone Bridge', icon: 'mobile', screen: 'companionManager', color: '#B388FF' },
+    { title: 'ATM Cash-Out', icon: 'money', action: handleOpenAtmCash, color: COLORS.accentGold },
+    { title: 'Virtual Cards', icon: 'credit-card', screen: 'cards', color: '#00D2FF' },
     { title: 'History', icon: 'history', screen: 'transactions', color: '#80D8FF' },
-    { title: 'Health', icon: 'heartbeat', screen: 'health', color: '#FF4081' },
-    { title: 'Loans', icon: 'bank', screen: 'loans', color: COLORS.warning },
+    { title: 'Bills (PLN)', icon: 'bolt', screen: 'bills', color: '#FFD700' },
+    { title: 'Phone Bridge', icon: 'exchange', screen: 'companionManager', color: '#B388FF' },
+    { title: 'Biometrics', icon: 'heartbeat', screen: 'health', color: '#FF334B' },
   ];
 
   if (isAdmin) {
@@ -151,54 +178,62 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
-      {/* Pentest Lab Banner */}
-      <TouchableOpacity
-        style={styles.pentestBanner}
-        onPress={() => onNavigate('pentestLab')}
-      >
-        <View style={styles.pentestBadge}>
-          <Icon name="bug" size={11} color={COLORS.black} />
-          <Text style={styles.pentestBadgeText}>PENTEST LAB</Text>
-        </View>
-        <Text style={styles.pentestTitle}>14 Active Exploit Vectors</Text>
-        <Icon name="chevron-right" size={10} color={COLORS.warning} />
-      </TouchableOpacity>
-
       {/* Glanceable Balance Hero Card */}
       <View style={styles.heroCard}>
         <View style={styles.heroHeader}>
-          <Text style={styles.userGreeting} numberOfLines={1}>
-            Hi, {user?.username || 'Admin'}
-          </Text>
-          <TouchableOpacity
-            style={styles.eyeBtn}
-            onPress={() => setHideBalance(!hideBalance)}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Icon
-              name={hideBalance ? 'eye-slash' : 'eye'}
-              size={SIZES.small}
-              color={COLORS.textLight}
-            />
-          </TouchableOpacity>
+          <View style={styles.vipBadge}>
+            <Icon name="diamond" size={9} color={COLORS.accentGold} />
+            <Text style={styles.vipBadgeText}>PLATINUM PRIVATE</Text>
+          </View>
+          <View style={styles.headerControls}>
+            <TouchableOpacity 
+              style={styles.currencyToggle} 
+              onPress={() => {
+                setCurrencyMode(currencyMode === 'IDR' ? 'USD' : 'IDR');
+              }}
+            >
+              <Text style={styles.currencyToggleText}>{currencyMode}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.eyeBtn}
+              onPress={() => setHideBalance(!hideBalance)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Icon
+                name={hideBalance ? 'eye-slash' : 'eye'}
+                size={SIZES.small}
+                color={COLORS.textLight}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
+        <Text style={styles.userGreeting} numberOfLines={1}>
+          Welcome, {user?.username || 'Client'}
+        </Text>
+
         <Text style={styles.balanceAmount}>
-          {hideBalance ? '••••••••' : balance}
+          {hideBalance ? '••••••••••••' : balance}
         </Text>
         <Text style={styles.accountNumber} numberOfLines={1}>
-          Acct: {user?.accountNumber || 'ADMIN001'}
+          Acct: {user?.accountNumber || 'ADMIN001'} • Nexora Premier
         </Text>
       </View>
 
       {/* Quick Action Grid (Pills with Min 48dp Touch Targets) */}
-      <Text style={styles.sectionHeader}>Quick Actions</Text>
+      <Text style={styles.sectionHeader}>Quick Services</Text>
       <View style={styles.pillGrid}>
         {quickPills.map((item, idx) => (
           <TouchableOpacity
             key={idx}
             style={styles.pillButton}
-            onPress={() => onNavigate(item.screen as ScreenType)}
+            onPress={() => {
+              if (item.action) {
+                item.action();
+              } else if (item.screen) {
+                onNavigate(item.screen as ScreenType);
+              }
+            }}
           >
             <View style={[styles.pillIconCircle, { backgroundColor: item.color }]}>
               <Icon name={item.icon} size={14} color={COLORS.black} />
@@ -213,37 +248,78 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
         <View style={styles.twoFactorCard}>
           <View style={styles.twoFactorHeader}>
             <Icon name="bell" size={12} color={COLORS.warning} />
-            <Text style={styles.twoFactorTitle}>Push 2FA Approval</Text>
+            <Text style={styles.twoFactorTitle}>Out-of-Band 2FA Authorization</Text>
           </View>
           <Text style={styles.twoFactorDesc}>
-            Authorize {twoFactorData?.amount ? `$${twoFactorData.amount.toFixed(2)}` : '$250.00'} debit to {twoFactorData?.merchant || 'CyberStore'}?
+            Authorize high-value debit of {twoFactorData?.amount ? `$${twoFactorData.amount.toFixed(2)}` : '$50,000.00'} to {twoFactorData?.merchant || 'OFFSHORE-CORP'}?
           </Text>
           <View style={styles.twoFactorActions}>
             <TouchableOpacity
               style={[styles.twoFactorBtn, styles.twoFactorDeny]}
               onPress={() => handle2FAAction(false)}
             >
-              <Text style={styles.twoFactorBtnText}>Deny</Text>
+              <Text style={styles.twoFactorBtnText}>Decline</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.twoFactorBtn, styles.twoFactorApprove]}
               onPress={() => handle2FAAction(true)}
             >
-              <Text style={styles.twoFactorBtnText}>Approve</Text>
+              <Text style={styles.twoFactorBtnText}>Authorize</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* Profile Link */}
+      {/* Auditor & Security Telemetry Portal Card */}
       <TouchableOpacity
-        style={styles.profileLink}
-        onPress={() => onNavigate('profile')}
+        style={styles.pentestBanner}
+        onPress={() => onNavigate('pentestLab')}
       >
-        <Icon name="user-circle" size={16} color={COLORS.primary} />
-        <Text style={styles.profileText}>Account Profile</Text>
-        <Icon name="chevron-right" size={12} color={COLORS.textLight} />
+        <View style={styles.pentestBadge}>
+          <Icon name="shield" size={10} color={COLORS.black} />
+          <Text style={styles.pentestBadgeText}>AUDIT MODE</Text>
+        </View>
+        <Text style={styles.pentestTitle}>Security Research & Exploit Lab</Text>
+        <Icon name="chevron-right" size={10} color={COLORS.warning} />
       </TouchableOpacity>
+
+      {/* ATM Cardless Cash Modal */}
+      <Modal
+        visible={atmModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAtmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.atmModalCard}>
+            <View style={styles.atmModalHeader}>
+              <Icon name="university" size={18} color={COLORS.accentGold} />
+              <Text style={styles.atmModalTitle}>ATM Cardless Cash</Text>
+            </View>
+            
+            <Text style={styles.atmModalDesc}>
+              Enter this 6-digit dynamic code at any Nexora ATM terminal within 5 minutes:
+            </Text>
+
+            <View style={styles.otpBox}>
+              <Text style={styles.otpText}>
+                {atmCashToken.slice(0, 3)} {atmCashToken.slice(3)}
+              </Text>
+            </View>
+
+            <Text style={styles.atmExpiryText}>
+              Valid for: Rp 250.000 • Expires in 04:59
+            </Text>
+
+            <TouchableOpacity
+              style={styles.closeAtmBtn}
+              onPress={() => setAtmModalVisible(false)}
+            >
+              <Text style={styles.closeAtmBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -257,39 +333,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: ROUND_INSET,
     paddingTop: CIRCULAR_PADDING_TOP,
     paddingBottom: CIRCULAR_PADDING_BOTTOM,
-  },
-  pentestBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 176, 32, 0.12)',
-    borderRadius: SIZES.radius.round,
-    paddingHorizontal: IS_WATCH_DEVICE ? 6 : 12,
-    paddingVertical: IS_WATCH_DEVICE ? 3 : 8,
-    marginBottom: IS_WATCH_DEVICE ? 4 : 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 176, 32, 0.3)',
-  },
-  pentestBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.warning,
-    borderRadius: SIZES.radius.round,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    marginRight: 4,
-  },
-  pentestBadgeText: {
-    fontSize: IS_WATCH_DEVICE ? 8 : 11,
-    fontWeight: 'bold',
-    color: COLORS.black,
-    marginLeft: 2,
-  },
-  pentestTitle: {
-    flex: 1,
-    fontSize: IS_WATCH_DEVICE ? 9 : 13,
-    color: COLORS.warning,
-    fontWeight: '600',
   },
   heroCard: {
     backgroundColor: COLORS.surface,
@@ -306,30 +349,64 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
-    marginBottom: 2,
+    marginBottom: 4,
+  },
+  vipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.25)',
+  },
+  vipBadgeText: {
+    fontSize: IS_WATCH_DEVICE ? 7 : 9,
+    fontWeight: '700',
+    color: COLORS.accentGold,
+    letterSpacing: 0.5,
+  },
+  headerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  currencyToggle: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  currencyToggleText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.primary,
   },
   userGreeting: {
-    fontSize: IS_WATCH_DEVICE ? 10 : 14,
+    fontSize: IS_WATCH_DEVICE ? 10 : 13,
     color: COLORS.textLight,
     fontWeight: '500',
+    marginTop: 2,
   },
   eyeBtn: {
     padding: 3,
   },
   balanceAmount: {
-    fontSize: IS_WATCH_DEVICE ? 16 : 26,
+    fontSize: IS_WATCH_DEVICE ? 16 : 24,
     fontWeight: 'bold',
     color: COLORS.primary,
     letterSpacing: 0.5,
+    marginVertical: 2,
   },
   accountNumber: {
-    fontSize: IS_WATCH_DEVICE ? 9 : 12,
+    fontSize: IS_WATCH_DEVICE ? 8 : 11,
     color: COLORS.textMuted,
-    marginTop: 1,
   },
   sectionHeader: {
-    fontSize: IS_WATCH_DEVICE ? 9 : 13,
-    fontWeight: 'bold',
+    fontSize: IS_WATCH_DEVICE ? 9 : 12,
+    fontWeight: '700',
     color: COLORS.textLight,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -364,7 +441,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   pillLabel: {
-    fontSize: IS_WATCH_DEVICE ? 10 : 13,
+    fontSize: IS_WATCH_DEVICE ? 9 : 12,
     fontWeight: '600',
     color: COLORS.white,
     flex: 1,
@@ -383,7 +460,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   twoFactorTitle: {
-    fontSize: IS_WATCH_DEVICE ? 10 : 14,
+    fontSize: IS_WATCH_DEVICE ? 10 : 13,
     fontWeight: 'bold',
     color: COLORS.warning,
     marginLeft: 4,
@@ -411,27 +488,108 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   twoFactorBtnText: {
-    fontSize: IS_WATCH_DEVICE ? 9 : 13,
+    fontSize: IS_WATCH_DEVICE ? 9 : 12,
     fontWeight: 'bold',
     color: COLORS.white,
   },
-  profileLink: {
+  pentestBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 176, 32, 0.08)',
     borderRadius: SIZES.radius.md,
-    paddingVertical: IS_WATCH_DEVICE ? 6 : 12,
-    paddingHorizontal: IS_WATCH_DEVICE ? 8 : 16,
+    paddingHorizontal: IS_WATCH_DEVICE ? 6 : 12,
+    paddingVertical: IS_WATCH_DEVICE ? 5 : 10,
+    marginTop: IS_WATCH_DEVICE ? 2 : 6,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: SIZES.touchTarget,
+    borderColor: 'rgba(255, 176, 32, 0.25)',
   },
-  profileText: {
+  pentestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.warning,
+    borderRadius: SIZES.radius.round,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    marginRight: 6,
+  },
+  pentestBadgeText: {
+    fontSize: IS_WATCH_DEVICE ? 7 : 10,
+    fontWeight: 'bold',
+    color: COLORS.black,
+    marginLeft: 2,
+  },
+  pentestTitle: {
     flex: 1,
-    fontSize: IS_WATCH_DEVICE ? 10 : 14,
+    fontSize: IS_WATCH_DEVICE ? 8 : 12,
+    color: COLORS.warning,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  atmModalCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.accentGold,
+  },
+  atmModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  atmModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.white,
-    marginLeft: 6,
-    fontWeight: '500',
+  },
+  atmModalDesc: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    lineHeight: 16,
+    marginBottom: 12,
+  },
+  otpBox: {
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.accentGold,
+    marginBottom: 8,
+  },
+  otpText: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: COLORS.accentGold,
+    letterSpacing: 4,
+  },
+  atmExpiryText: {
+    fontSize: 10,
+    color: COLORS.textMuted,
+    marginBottom: 14,
+  },
+  closeAtmBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 20,
+  },
+  closeAtmBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.black,
   },
 });
 

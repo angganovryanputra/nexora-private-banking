@@ -59,11 +59,11 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
 
   const handleSimulateScan = () => {
     Alert.alert(
-      'Payment Terminal Detected',
-      `Merchant: CyberMart Express\nAmount: $35.50\nToken: ${tokenCode}\n\n[V-W15] Token verified without client HMAC signature.`,
+      'SNAP QRIS Terminal Detected',
+      `Merchant: NEXORA DIGITAL MERCH 001\nNMID: ID1020029988112\nAmount: Rp 75.000 ($35.50)\nToken: ${tokenCode}\n\n[V-W15] SNAP QRIS verified without cryptographic HMAC timestamp freshness.`,
       [
         {
-          text: 'Authorize',
+          text: 'Authorize Payment',
           onPress: async () => {
             setIsProcessing(true);
             try {
@@ -71,9 +71,9 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
                 '/api/qris/checkout',
                 {
                   account_number: user?.accountNumber || 'ADMIN001',
-                  amount: 35.50,
-                  merchant_name: 'CyberMart Express',
-                  qr_payload: tokenCode,
+                  amount: 75.00,
+                  merchant_name: 'NEXORA DIGITAL MERCH 001',
+                  qr_payload: `00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2`,
                 },
                 user?.token
               );
@@ -81,17 +81,17 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
                 const rrn = res.data?.rrn || 'RRN-992144';
                 Alert.alert(
                   '💳 Payment Successful (SNAP QRIS)',
-                  `Merchant: CyberMart Express\nAmount: $35.50\nRef / RRN: ${rrn}\nStatus: APPROVED\nRemaining balance deducted on backend.\n\n[V-W15 Replay Attack]: Tap "Simulate Terminal Scan" again to re-debit $35.50 using the same static token!`,
+                  `Merchant: NEXORA DIGITAL MERCH 001\nAmount: Rp 75.000 ($35.50)\nRRN: ${rrn}\nStatus: APPROVED\nRemaining balance deducted on backend.\n\n[V-W15 Replay Attack]: Tap "Simulate Terminal Scan" again to re-debit using the same static token!`,
                   [{ text: 'OK', onPress: () => onNavigate('dashboard') }]
                 );
               } else {
                 Alert.alert(
                   'Offline Demo',
-                  `Payment of $35.50 executed locally.\n\n[V-W15] Replayable static token.`
+                  `Payment of Rp 75.000 executed locally.\n\n[V-W15] Replayable static token.`
                 );
               }
             } catch {
-              Alert.alert('Payment Recorded', 'Payment of $35.50 sent.');
+              Alert.alert('Payment Recorded', 'Payment of Rp 75.000 sent.');
             } finally {
               setIsProcessing(false);
             }

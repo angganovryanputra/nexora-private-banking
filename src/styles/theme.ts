@@ -40,30 +40,30 @@ export const scaleRadius = (radius: number) => {
 };
 
 export const COLORS = {
-  // Modern Smartwatch Fintech Palette
-  primary: '#00E599',       // Cyber neon emerald for money / success
+  // Nexora Luxury Smartwatch Fintech Palette
+  primary: '#00E599',       // Nexora Electric Emerald (Growth, Success, Liquid Balance)
   primaryDark: '#00B377',
-  secondary: '#00C2FF',     // Electric cyan for cards / transfers
-  accentGold: '#FFD700',    // Gold for balance / VIP
-  danger: '#FF3B30',        // Crimson alert
-  warning: '#FFB020',       // Amber for pentest alerts
+  secondary: '#00D2FF',     // Nexora Cyan Frost (Cards, Transfers, Contactless)
+  accentGold: '#FFD700',    // Royal Champagne Gold (VIP Tier, Platinum Balance)
+  danger: '#FF334B',        // Crimson Alert (Lockout, High-risk 2FA)
+  warning: '#FFB020',       // Amber Alert (Pentest / Exploit trigger)
   success: '#00E599',
-  info: '#00C2FF',
+  info: '#00D2FF',
 
   // High contrast text for smartwatch legibility
   text: '#FFFFFF',
-  textLight: '#8E95A5',
-  textDark: '#12141B',
-  textMuted: '#646A7B',
+  textLight: '#94A3B8',
+  textDark: '#070A11',
+  textMuted: '#64748B',
 
-  // AMOLED Pure Black Backgrounds
+  // AMOLED Pure Black Backgrounds & Obsidian Glass
   background: '#000000',
   backgroundDark: '#000000',
-  surface: '#11141B',
-  surfaceElevated: '#1A1E29',
-  border: '#232938',
-  card: '#11141B',
-  cardDark: '#11141B',
+  surface: '#0F1420',
+  surfaceElevated: '#161C2C',
+  border: '#222A3E',
+  card: '#0F1420',
+  cardDark: '#0B0F19',
 
   // Special colors
   white: '#FFFFFF',
@@ -73,13 +73,13 @@ export const COLORS = {
 
   // Pentest Lab colors
   pentestLab: '#FFB020',
-  vulnBadge: '#FF3B30',
+  vulnBadge: '#FF334B',
   exploitSuccess: '#00E599',
 
   // Status colors
   statusPending: '#FFB020',
   statusApproved: '#00E599',
-  statusRejected: '#FF3B30',
+  statusRejected: '#FF334B',
 };
 
 export const FONTS = {

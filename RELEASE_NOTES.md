@@ -1,78 +1,60 @@
-# 🏦 VulnBank OmniWear Suite v1.0.0
-## Enterprise Smartwatch & Mobile Banking Assessment Framework
-### Standar Kepatuhan: OJK POJK 11/POJK.03/2022, Bank Indonesia SNAP QRIS, & PCI-DSS v4.0
-
-Selamat datang di rilis resmi pertama **VulnBank OmniWear Suite v1.0.0**. Framework ini dirancang khusus untuk pengujian penetrasi (penetration testing), audit keamanan siber, dan demonstrasi tender pengadaan perbankan pada ekosistem **Smartwatch (Wear OS & Apple watchOS)** serta **Smartphone Companion (Android & iOS)**.
+# 🏦 Nexora OmniWear Suite v1.1.0 — Enterprise Wearable Banking Security Lab
+## Multi-Platform Release Notes (Android, Wear OS, Apple iOS & watchOS)
 
 ---
 
-### 📦 Paket Instalasi Rilis Multi-Platform (Release Assets)
+### 🌟 Executive Overview & Rebranding
+**Nexora OmniWear Suite v1.1.0** introduces a ground-up transformation, retiring generic vulnerable naming conventions in favor of **Nexora Bank** — a distinctive, hyper-realistic tier-1 autonomous digital bank and wearable assessment environment.
 
-Seluruh file installer telah dikompilasi secara otomatis melalui pipeline CI/CD dan siap diunduh:
-
-| File Artefak | Ukuran | Lingkungan Target | Deskripsi |
-|---|---|---|---|
-| **`vulnbank-wear-release.apk`** | ~61 MB | **Smartwatch Wear OS** (Galaxy Watch, Pixel Watch, Emulator 480x480) | UI AMOLED bulat responsif, Glanceable Balance, Quick-PIN 3x4, Rotating QRIS, Sensor denyut nadi, & Off-wrist lockout. |
-| **`vulnbank-mobile-companion-release.apk`** | ~61 MB | **Smartphone Android** (Fisik / Emulator) | Pusat kendali penyerang: Remote balance sync, pemicu push 2FA $50,000, trigger quick pay, dan packet sniffer nirkabel. |
-| **`vulnbank-universal-release.apk`** | ~61 MB | **Universal Android** (HP / Jam) | Paket universal fleksibel untuk demonstrasi mandiri (standalone). |
-| **`vulnbank-ios-companion-release.ipa`** | ~25 MB | **Apple iPhone 11 Fisik / iOS 15.1+** | Aplikasi pendamping iOS dengan layout responsif Liquid Retina (Safe Area Notch/Home Bar) dan jembatan WCSession. |
-| **`VulnBank-watchOS-Bundle.zip`** | ~2 MB | **Apple Watch (watchOS 9.0+)** | Proyek native SwiftUI lengkap untuk Xcode Simulator & Apple Watch fisik (40mm s/d 49mm Ultra). |
-| **`SHA256SUMS.txt`** | ~1 KB | **Semua Platform** | Checksum kriptografis SHA-256 untuk verifikasi integritas biner rilis. |
+Engineered specifically for financial cybersecurity researchers, penetration testers, and regulatory compliance auditors (OJK POJK 11/2022, Bank Indonesia SNAP QRIS, PCI-DSS v4.0), the suite delivers an authentic dual-persona experience: **100% genuine banking aesthetics** for normal users and a **stealth Security Audit Mode** with deep runtime telemetry for security evaluators.
 
 ---
 
-### 🛡️ 8 Skenario Pentest Perbankan Dunia Nyata (Real-World Banking Simulation)
+### 🚀 Key Enhancements & Business Flow Gaps Resolved
 
-1. **Skenario 1 (V-B01 / V-AP02): Remote Balance Injection & Replay**
-   - Eksploitasi sinkronisasi Bluetooth LE / WCSession tanpa HMAC signature. Menyuntikkan saldo `$888,888.00` secara nirkabel ke smartwatch secara real time.
-2. **Skenario 2 (V-W09 / V-AP04): High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack**
-   - Transaksi transfer kawat $50,000 dikonfirmasi melalui pop-up jam tangan tanpa verifikasi biometrik / Secure Enclave hardware, memotong saldo akun secara nyata di database core banking.
-3. **Skenario 3 (V-W15 / V-AP06): Contactless Dynamic SNAP QRIS Replay Attack**
-   - QRIS dinamis di pergelangan tangan tidak memiliki timestamp freshness TOTP dan tidak memeriksa *idempotency key*. Kasir/penyerang dapat mendebit saldo nasabah berulang kali dengan kode QR yang sama.
-4. **Skenario 4 (V-W10 / V-AP03): Quick-PIN 4-Digit Brute-Force Tanpa Rate Limiting**
-   - Smartwatch mengizinkan brute-force seluruh ruang kunci PIN (0000-9999) dalam waktu **0.6 detik** tanpa penalti jeda waktu (*exponential backoff delay*) atau *account lockout*.
-5. **Skenario 5 (V-R01 / V-R02): Client-Side Anti-Tamper & Root Check Bypass**
-   - Perlindungan anti-root perbankan hanya berupa pengecekan client-side yang dapat dinetralisir dalam hitungan detik via Frida hook atau manipulasi SharedPreferences flag.
-6. **Skenario 6 (V-08): Bypass Bank-Grade SSL Pinning (Security Theater)**
-   - Sertifikat pinning dapat dinonaktifkan atau dibypass dengan *universal TrustManager fallback* untuk melakukan inspeksi MITM penuh pada Burp Suite / Charles.
-7. **Skenario 7 (V-W11 / V-AP05): Wrist-Off Sensor Lockout Spoofing & Health Telemetry Leak**
-   - Sensor lepas-tangan (*off-wrist*) dapat dimanipulasi di memori runtime, sementara data denyut nadi nasabah bocor secara unauthenticated ke endpoint telemetri.
-8. **Skenario 8: CISO Executive Regulatory Compliance Audit**
-   - Evaluasi menyeluruh terhadap standar kepatuhan regulasi: **OJK POJK No. 11/POJK.03/2022 Pasal 38, 39, & 42**, **Bank Indonesia SNAP PADG No. 24/1/PADG/2022**, dan **PCI-DSS v4.0 Requirement 3, 4, & 8**.
+1. **Dual-Persona Architecture (Client Banking UI vs. Security Auditor Mode)**:
+   - Conspicuous pentest banners have been removed from the primary customer dashboard.
+   - The default UI is now an ultra-sleek, prestigious digital banking experience featuring Platinum Private Banking status, masked liquid balance cards, and quick services.
+   - Researchers can unlock **Auditor & Pentest Mode** via a discreet easter egg (tapping the security shield or app version 5 times in Profile), granting immediate access to all 14 active exploit vectors, live BLE packet sniffers, and Frida hooking scripts.
 
----
+2. **Smartwatch ATM Cardless Cash-Out OTP (Tarik Tunai Tanpa Kartu)**:
+   - Wearable smartwatch users can now generate a dynamic, 6-digit withdrawal OTP (`token`) directly on their wrist, valid for 5 minutes at any ATM terminal.
+   - Simulates realistic ATM cash dispensing and security challenges (CWE-307 / CWE-330 short-entropy brute force).
 
-### ⚡ Panduan Cepat Menjalankan Backend Lokal (Air-Gapped)
+3. **Smartwatch Emergency Card Kill-Switch (Wrist Freeze)**:
+   - Users can instantly freeze or unfreeze their physical/virtual debit cards with a single tap on Wear OS or Apple Watch to mitigate POS or contactless NFC skimming in transit.
+   - State synchronizes automatically across phone, smartwatch, and local backend via WCSession / Bluetooth LE packets.
 
-Aplikasi telah dikonfigurasi 100% menggunakan backend lokal yang mandiri (zero-dependency Python Flask):
+4. **Bank Indonesia SNAP QRIS Harmonization (PADG 24/1/PADG/2022)**:
+   - Contactless QR payment screens now follow official Bank Indonesia SNAP QRIS EMVCo specifications with Merchant ID `NMID: ID1020029988112`, dynamic countdown timers (120s), Retrieval Reference Numbers (RRN), and dual currency support (IDR `Rp` / USD `$`).
+   - Simulates real-world static token replay attacks (V-W15 / V-AP06).
 
-```bash
-# Jalankan backend lokal di PC/Laptop Anda
-python backend/server.py
-```
-- **Localhost:** `http://127.0.0.1:5000`
-- **Android Emulator Alias:** `http://10.0.2.2:5000`
-- **Perangkat Fisik (Wi-Fi):** `http://<IP_LAPTOP_ANDA>:5000`
+5. **Cross-Platform Bug Fixes & iOS Build Pipeline Optimization**:
+   - Fixed Xcode build failures caused by duplicate vector font bundle copying in CocoaPods.
+   - Automated compilation of full-scale `.ipa` installer (`nexora-ios-companion-release.ipa`, ~6.2 MB) ready for sideloading via Sideloadly or AltStore without an Apple Developer subscription.
+   - Native Apple watchOS SwiftUI bundle (`Nexora-watchOS-Bundle.zip`) with paired WCSession relay.
 
 ---
 
-### 📲 Panduan Instalasi Cepat
+### 📦 Official Release Binaries
 
-#### Android & Wear OS:
-```bash
-# Instalasi ke Smartwatch Wear OS (Fisik via Wi-Fi Debugging atau Emulator)
-adb -s <DEVICE_ID> install -r vulnbank-wear-release.apk
+All binaries are compiled, verified, and downloadable directly from [**GitHub Releases**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest):
 
-# Instalasi ke Smartphone Android
-adb -s <DEVICE_ID> install -r vulnbank-mobile-companion-release.apk
-```
+| Binary Artifact | Platform & Target | Role & Hardware Compatibility |
+|---|---|---|
+| **`nexora-wear-release.apk`** | ⌚ **Wear OS Smartwatch** | Victim Watch UI: AMOLED 480x480 circular layout, Glanceable Balance, Quick-PIN 3x4, rotating QRIS, & wrist lockout. |
+| **`nexora-companion-release.apk`** | 📱 **Android Smartphone** | Attacker Console: Controls BLE sync, injects balances, triggers $50,000 OOB wire transfers, and sniffs relay packets. |
+| **`nexora-universal-release.apk`** | 🌐 **Android Universal** | Standalone hybrid binary compatible with both Android smartphones and smartwatches. |
+| **`nexora-ios-companion-release.ipa`** | 🍏 **Apple iOS (iPhone 11)** | Native React Native companion for iOS 15.1+ (sideloadable via Sideloadly / AltStore). |
+| **`Nexora-watchOS-Bundle.zip`** | ⌚ **Apple watchOS 9+** | Native SwiftUI Watch App (`NexoraWatch`) + WatchBridge for direct deployment via Xcode. |
+| **`SHA256SUMS.txt`** | 🔒 **Forensic Checksums** | Cryptographic verification hashes ensuring complete chain of custody integrity. |
 
-#### Apple iOS (iPhone 11) & watchOS:
-- **iPhone Fisik:** Sideload file `vulnbank-ios-companion-release.ipa` menggunakan [Sideloadly](https://sideloadly.io/) atau [AltStore](https://altstore.io/) dengan Apple ID gratis.
-- **Apple Watch Simulator:** Buka folder `ios/VulnBankWatch/` di Xcode, pilih target scheme `VulnBankWatch`, lalu tekan **Cmd + R** untuk menjalankan aplikasi pada Apple Watch Series 9 / Ultra Simulator.
+*(Note: Legacy file names e.g. `vulnbank-wear-release.apk` remain attached as backwards-compatibility aliases).*
 
 ---
 
-### 📜 Lisensi & Etika Pengujian
-Framework ini dibuat semata-mata untuk tujuan riset akademis, pengujian keamanan terotorisasi, dan demonstrasi tender pengadaan perbankan. Dilarang keras menggunakan teknik ini terhadap sistem tanpa izin tertulis dari pemilik aset.
-
+### 🛡️ Compliance & Standards Coverage
+- **OJK POJK No. 11/POJK.03/2022**: Cyber Resilience & Customer Data Protection in Commercial Banking IT.
+- **Bank Indonesia PADG No. 24/1/PADG/2022**: Standar Nasional Open API Pembayaran (SNAP) & Dynamic QRIS.
+- **PCI-DSS v4.0**: Requirements 3 & 4 (Protection of Cardholder Data in Storage & Transit).
+- **OWASP Mobile Top 10 (2024)**: M1 (Improper Credential Usage), M3 (Insecure Authentication), M5 (Insecure Communication), M8 (Security Misconfiguration), M9 (Insecure Data Storage).

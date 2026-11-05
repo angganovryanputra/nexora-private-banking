@@ -1,5 +1,5 @@
 # 🍎 TUTORIAL SETUP, WORKFLOW & WRITEUP PENTEST SMARTWATCH (APPLE WATCHOS & IPHONE 11)
-## VulnBank OmniWear: Enterprise Assessment Framework for Apple Watch & iOS Companion
+## Nexora OmniWear (formerly VulnBank): Enterprise Assessment Framework for Apple Watch & iOS Companion
 ### Standar Kepatuhan: OJK POJK 11/POJK.03/2022, Bank Indonesia SNAP QRIS, & PCI-DSS v4.0
 
 > [!IMPORTANT]

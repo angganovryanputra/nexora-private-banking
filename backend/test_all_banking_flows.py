@@ -136,6 +136,35 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         descriptions = [t['description'] for t in txs]
         self.assertTrue(any("2FA Wire Transfer" in d for d in descriptions))
 
+    def test_cardless_cash_and_emergency_freeze(self):
+        # 1. Generate ATM cardless cash token
+        res_gen = self.client.post('/api/atm/cardless-cash/generate', data=json.dumps({
+            "account_number": "ADMIN001",
+            "amount": 250000.0
+        }), content_type='application/json')
+        self.assertEqual(res_gen.status_code, 200)
+        data_gen = json.loads(res_gen.data)
+        self.assertEqual(data_gen['status'], 'success')
+        self.assertTrue('token' in data_gen)
+        token = data_gen['token']
+
+        # 2. Verify ATM cash token and dispense
+        res_disp = self.client.post('/api/atm/cardless-cash/verify', data=json.dumps({
+            "token": token
+        }), content_type='application/json')
+        self.assertEqual(res_disp.status_code, 200)
+        data_disp = json.loads(res_disp.data)
+        self.assertEqual(data_disp['status'], 'DISPENSED')
+
+        # 3. Emergency wearable card freeze
+        res_freeze = self.client.post('/api/wearable/card-freeze', data=json.dumps({
+            "card_id": 1,
+            "is_frozen": 1
+        }), content_type='application/json')
+        self.assertEqual(res_freeze.status_code, 200)
+        data_freeze = json.loads(res_freeze.data)
+        self.assertEqual(data_freeze['is_frozen'], 1)
+
 if __name__ == '__main__':
     unittest.main()
 

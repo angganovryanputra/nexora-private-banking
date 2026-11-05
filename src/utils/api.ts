@@ -51,6 +51,10 @@ export const ENDPOINTS = {
   qris: {
     checkout: '/api/qris/checkout',
   },
+  atm: {
+    generateCashToken: '/api/atm/cardless-cash/generate',
+    verifyCashToken: '/api/atm/cardless-cash/verify',
+  },
   profile: {
     get: '/profile',
     update: '/profile/update',
@@ -66,6 +70,7 @@ export const ENDPOINTS = {
     events: (deviceId: string) => `/api/wearable/events/${deviceId}`,
     resolveEvent: '/api/wearable/resolve-event',
     packets: '/api/wearable/packets',
+    cardFreeze: '/api/wearable/card-freeze',
   },
   compliance: '/api/compliance/report',
 };
@@ -181,4 +186,22 @@ export const getWearablePackets = () => {
 
 export const getComplianceReport = () => {
   return get(ENDPOINTS.compliance);
+};
+
+export const generateCardlessCash = (accountNumber = 'ADMIN001', amount = 100000.0) => {
+  return post(ENDPOINTS.atm.generateCashToken, {
+    account_number: accountNumber,
+    amount,
+  });
+};
+
+export const verifyCardlessCash = (token: string) => {
+  return post(ENDPOINTS.atm.verifyCashToken, { token });
+};
+
+export const triggerWearableCardFreeze = (cardId = 1, isFrozen = 1) => {
+  return post(ENDPOINTS.wearable.cardFreeze, {
+    card_id: cardId,
+    is_frozen: isFrozen,
+  });
 };

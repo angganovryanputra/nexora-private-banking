@@ -19,10 +19,10 @@ struct BalanceView: View {
                 VStack(spacing: 5) {
                     // Header Bar
                     HStack(spacing: 4) {
-                        Image(systemName: "banknote.fill")
+                        Image(systemName: "diamond.fill")
                             .foregroundColor(WatchTheme.gold)
-                            .font(.system(size: 10))
-                        Text("VulnBank")
+                            .font(.system(size: 9))
+                        Text("Nexora")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
@@ -37,7 +37,7 @@ struct BalanceView: View {
                     
                     // Balance Card
                     VStack(spacing: 2) {
-                        Text("TOTAL LIQUID BALANCE")
+                        Text("TOTAL LIQUID ASSETS")
                             .font(.system(size: 7, weight: .bold))
                             .foregroundColor(WatchTheme.textMuted)
                             .tracking(0.5)
@@ -52,7 +52,7 @@ struct BalanceView: View {
                             Text(InsecureStorage.shared.getAccountNumber())
                                 .font(.system(size: 7, design: .monospaced))
                                 .foregroundColor(WatchTheme.textLight)
-                            Text("• VIP")
+                            Text("• Platinum VIP")
                                 .font(.system(size: 7, weight: .bold))
                                 .foregroundColor(WatchTheme.emerald)
                         }
@@ -78,9 +78,9 @@ struct BalanceView: View {
                                 .foregroundColor(.white)
                         }
                         Spacer()
-                        Text("[V-AP02] Plain WCSession")
+                        Text("WCSession Ready")
                             .font(.system(size: 7))
-                            .foregroundColor(WatchTheme.textMuted)
+                            .foregroundColor(WatchTheme.emerald)
                     }
                     .padding(.horizontal, 4)
                     
@@ -91,7 +91,7 @@ struct BalanceView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "qrcode")
                                 .font(.system(size: 10))
-                            Text("QRIS Pay (V-AP06)")
+                            Text("SNAP QRIS Pay")
                                 .font(.system(size: 9, weight: .bold))
                         }
                         .frame(maxWidth: .infinity, minHeight: btnHeight)
@@ -107,7 +107,7 @@ struct BalanceView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "shield.lefthalf.filled.trianglebadge.exclamationmark")
                                 .font(.system(size: 9))
-                            Text("Pentest Lab (6 Flaws)")
+                            Text("Security Audit Lab")
                                 .font(.system(size: 9, weight: .bold))
                         }
                         .frame(maxWidth: .infinity, minHeight: btnHeight)
@@ -123,7 +123,7 @@ struct BalanceView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "sensor.tag.radiowaves.forward.fill")
                                 .font(.system(size: 8))
-                            Text("Test Wrist Lock (V-AP05)")
+                            Text("Test Wrist Lock")
                                 .font(.system(size: 8, weight: .medium))
                         }
                         .frame(maxWidth: .infinity, minHeight: isSmallWatch ? 22 : 24)

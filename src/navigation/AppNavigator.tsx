@@ -166,20 +166,20 @@ const AppNavigator: React.FC<Props> = ({ initialScreen = 'welcome' }) => {
 
   const getScreenTitle = () => {
     switch (currentScreen) {
-      case 'dashboard': return 'VulnBank';
+      case 'dashboard': return 'Nexora Bank';
       case 'balance': return 'Balance';
       case 'transfer': return 'Transfer';
       case 'qrPay': return 'QR Pay';
       case 'cards': return 'Cards';
       case 'health': return 'Health';
-      case 'pentestLab': return 'Pentest Lab';
+      case 'pentestLab': return 'Security Diagnostics';
       case 'companionManager': return 'Phone Companion';
       case 'transactions': return 'History';
       case 'loans': return 'Loans';
       case 'bills': return 'Bills';
       case 'profile': return 'Profile';
       case 'admin': return 'Admin';
-      default: return 'VulnBank';
+      default: return 'Nexora';
     }
   };
 

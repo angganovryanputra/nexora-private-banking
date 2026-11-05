@@ -198,6 +198,18 @@ def init_db():
         )
     ''')
 
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS cardless_cash_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            account_number TEXT,
+            token TEXT UNIQUE,
+            amount REAL,
+            status TEXT DEFAULT 'ACTIVE',
+            expires_at TEXT,
+            created_at TEXT
+        )
+    ''')
+
     # Seed initial test data
     cur.execute("SELECT COUNT(*) FROM users")
     if cur.fetchone()[0] == 0:
@@ -1019,6 +1031,123 @@ def get_wearable_packets():
     return jsonify({
         "total_packets": len(rows),
         "packets": [dict(r) for r in rows]
+    }), 200
+
+# ---------------------------------------------------------------------------
+# 8B. REALISTIC WEARABLE BANKING FLOWS: ATM CARDLESS CASH & EMERGENCY FREEZE
+# ---------------------------------------------------------------------------
+@app.route('/api/atm/cardless-cash/generate', methods=['POST'])
+def generate_cardless_cash():
+    """
+    Generates a 6-digit dynamic ATM cash withdrawal code directly from the smartwatch.
+    VULNERABILITY: Short 6-digit numeric token without brute-force rate limit (CWE-330 / CWE-307).
+    """
+    data = request.get_json() or {}
+    account_number = data.get('account_number', 'ADMIN001')
+    amount = float(data.get('amount', 100000.0))
+
+    import random
+    token = f"{random.randint(100000, 999999)}"
+    
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO cardless_cash_tokens (account_number, token, amount, status, expires_at, created_at)
+        VALUES (?, ?, ?, 'ACTIVE', datetime('now', '+5 minutes'), datetime('now'))
+    ''', (account_number, token, amount))
+    
+    cur.execute('''
+        INSERT INTO wearable_packets (source_device, target_device, action, payload, timestamp)
+        VALUES ('NEXORA_WATCH', 'ATM_GATEWAY', 'CARDLESS_CASH_TOKEN_GENERATED', ?, datetime('now'))
+    ''', (json.dumps({"token": token, "amount": amount, "account_number": account_number}),))
+    
+    conn.commit()
+    conn.close()
+
+    print(f"   🏧 \033[92m[ATM CARDLESS CASH TOKEN GENERATED]\033[0m Account: {account_number} -> Code: {token} (Rp {amount:,.2f})")
+    return jsonify({
+        "status": "success",
+        "token": token,
+        "amount": amount,
+        "account_number": account_number,
+        "expires_in_seconds": 300,
+        "message": "ATM Cardless Cash Withdrawal code generated. Enter this 6-digit code at any ATM."
+    }), 200
+
+
+@app.route('/api/atm/cardless-cash/verify', methods=['POST'])
+def verify_cardless_cash():
+    """
+    Simulates an ATM terminal verifying and dispensing cash via the 6-digit wearable code.
+    """
+    data = request.get_json() or {}
+    token = data.get('token')
+
+    if not token:
+        return jsonify({"message": "Withdrawal token is required"}), 400
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+
+    cur.execute('''
+        SELECT * FROM cardless_cash_tokens 
+        WHERE token = ? AND status = 'ACTIVE' AND expires_at > datetime('now')
+    ''', (token,))
+    record = cur.fetchone()
+
+    if not record:
+        conn.close()
+        return jsonify({"message": "Invalid or expired ATM cash token"}), 400
+
+    cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (record['amount'], record['account_number']))
+    cur.execute("UPDATE cardless_cash_tokens SET status = 'DISPENSED' WHERE id = ?", (record['id'],))
+    cur.execute('''
+        INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
+        VALUES (?, 'ATM-NEXORA-008', ?, 'Cardless Cash Withdrawal (Wearable OTP)', datetime('now'))
+    ''', (record['account_number'], record['amount']))
+
+    conn.commit()
+    conn.close()
+
+    print(f"   💵 \033[92m[ATM CASH DISPENSED]\033[0m Token: {token} -> Dispensed: Rp {record['amount']:,.2f}")
+    return jsonify({
+        "status": "DISPENSED",
+        "amount": record['amount'],
+        "account_number": record['account_number'],
+        "atm_terminal_id": "ATM-NEXORA-008",
+        "message": "Cash dispensed successfully from ATM"
+    }), 200
+
+
+@app.route('/api/wearable/card-freeze', methods=['POST'])
+def wearable_card_freeze():
+    """
+    Emergency card freeze triggered with a single tap directly from the smartwatch.
+    """
+    data = request.get_json() or {}
+    card_id = data.get('card_id', 1)
+    is_frozen = 1 if data.get('is_frozen', 1) else 0
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("UPDATE virtual_cards SET is_frozen = ? WHERE id = ?", (is_frozen, card_id))
+
+    cur.execute('''
+        INSERT INTO wearable_packets (source_device, target_device, action, payload, timestamp)
+        VALUES ('NEXORA_WATCH', 'CARD_PROCESSOR', 'EMERGENCY_CARD_FREEZE_TOGGLED', ?, datetime('now'))
+    ''', (json.dumps({"card_id": card_id, "is_frozen": is_frozen}),))
+
+    conn.commit()
+    conn.close()
+
+    status_str = "FROZEN" if is_frozen else "UNFROZEN"
+    print(f"   ❄️ \033[96m[WEARABLE CARD KILL-SWITCH]\033[0m Card #{card_id} is now {status_str}")
+    return jsonify({
+        "status": "success",
+        "card_id": card_id,
+        "is_frozen": is_frozen,
+        "message": f"Card #{card_id} successfully updated to {status_str} from wrist."
     }), 200
 
 # ---------------------------------------------------------------------------

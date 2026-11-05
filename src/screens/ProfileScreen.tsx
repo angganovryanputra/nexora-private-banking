@@ -194,12 +194,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           <Icon name="chevron-right" size={SIZES.xSmall} color={COLORS.textLight} />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => onNavigate('pentestLab')}
+        >
           <View style={styles.actionIcon}>
-            <Icon name="shield" size={SIZES.small} color={COLORS.primary} />
+            <Icon name="shield" size={SIZES.small} color={COLORS.warning} />
           </View>
-          <Text style={styles.actionText}>Privacy & Security</Text>
-          <Icon name="chevron-right" size={SIZES.xSmall} color={COLORS.textLight} />
+          <Text style={[styles.actionText, { color: COLORS.warning, fontWeight: '600' }]}>Security Audit & Pentest Lab</Text>
+          <Icon name="chevron-right" size={SIZES.xSmall} color={COLORS.warning} />
         </TouchableOpacity>
       </View>
       
@@ -214,6 +217,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onNavigate }) => {
           variant="danger"
         />
       )}
+
+      {/* Version Footer with Easter Egg */}
+      <View style={{ alignItems: 'center', marginTop: 16, marginBottom: 10 }}>
+        <Text style={{ fontSize: 11, color: COLORS.textMuted }}>Nexora Bank v1.1.0-wear (Build 2026)</Text>
+        <Text style={{ fontSize: 9, color: COLORS.textMuted, marginTop: 2 }}>POJK 11/2022 • SNAP QRIS • PCI-DSS v4.0</Text>
+      </View>
     </ScrollView>
   );
 };
