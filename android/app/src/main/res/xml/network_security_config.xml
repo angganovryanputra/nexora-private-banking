@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  INTENTIONALLY INSECURE (V-08 style, mobile finding):
+  Trusts user-installed CA certificates and permits cleartext traffic.
+  This makes the app interceptable with a MITM proxy (Burp Suite) without
+  any bypass effort, which is required for the pentest demo of the API
+  communication flaws (JWT exposure, unauthenticated health sync, etc.).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

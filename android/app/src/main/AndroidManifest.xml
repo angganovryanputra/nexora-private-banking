@@ -1,0 +1,95 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Watch-specific: heart-rate sensor access for the Health Monitor -->
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+
+    <!-- Supports both Android 10+ Smartphone and Wear OS Smartwatch -->
+    <uses-feature android:name="android.hardware.type.watch" android:required="false" />
+    <uses-feature android:name="android.hardware.sensor.heart_rate" android:required="false" />
+
+    <application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:allowBackup="true"
+      android:usesCleartextTraffic="true"
+      android:networkSecurityConfig="@xml/network_security_config"
+      android:theme="@style/AppTheme"
+      android:supportsRtl="true">
+
+      <!-- Standalone watch app: works without the phone app installed -->
+      <meta-data
+        android:name="com.google.android.wearable.standalone_app"
+        android:value="true" />
+
+      <activity
+        android:name=".MainActivity"
+        android:label="@string/app_name"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+
+        <!-- V-W07: Unauthenticated Deep Link CSRF (vulnbank://transfer) -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="vulnbank" android:host="transfer" />
+        </intent-filter>
+      </activity>
+
+      <!-- V-W02: intentionally exported, unauthenticated health-data dump -->
+      <activity
+        android:name=".HealthDataActivity"
+        android:label="Health Sync"
+        android:exported="true" />
+
+      <!-- V-W08: Tapjacking / Overlay Simulation Activity -->
+      <activity
+        android:name=".TapjackDemoActivity"
+        android:label="Tapjacking Demo"
+        android:theme="@android:style/Theme.Translucent.NoTitleBar"
+        android:exported="true" />
+
+      <!-- V-W06: Insecure Wearable Broadcast Receiver (Quick Pay injection) -->
+      <receiver
+        android:name=".QuickPayReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="com.vulnerablebankapp.ACTION_QUICK_PAY" />
+        </intent-filter>
+      </receiver>
+
+      <!-- V-W09: Insecure 2FA Broadcast Receiver (OTP & Push Approval) -->
+      <receiver
+        android:name=".AuthBroadcastReceiver"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="com.vulnerablebankapp.ACTION_APPROVE_2FA" />
+            <action android:name="com.vulnerablebankapp.ACTION_TRIGGER_OTP" />
+        </intent-filter>
+      </receiver>
+
+      <!-- Intentionally vulnerable meta-data (kept from the phone app) -->
+      <meta-data
+        android:name="debug_endpoint"
+        android:value="/debug/users" />
+
+      <meta-data
+        android:name="admin_username"
+        android:value="admin" />
+
+      <meta-data
+        android:name="admin_password"
+        android:value="admin123" />
+    </application>
+</manifest>
