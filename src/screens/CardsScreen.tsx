@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, Modal, TextInput, TouchableOpacity, A
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
-import { ENDPOINTS, get, post } from '../utils/api';
+import { ENDPOINTS, get, post, triggerWearableCardFreeze } from '../utils/api';
 import CustomButton from '../components/CustomButton';
 import globalStyles, {
   ROUND_INSET,
@@ -151,17 +151,15 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
     setTogglingFreeze(true);
 
     try {
-      const response = await post(
-        ENDPOINTS.virtualCards.toggleFreeze(cardId),
-        {},
-        user?.token
-      );
+      const willFreeze = selectedCard ? !selectedCard.is_frozen : true;
+      // Trigger wearable emergency kill-switch and log packet into BLE sniffer table
+      const response = await triggerWearableCardFreeze(cardId, willFreeze ? 1 : 0);
 
       if (response.ok) {
         // Update local state to reflect change
         const updatedCards = cards.map(card => 
           card.id === cardId 
-            ? { ...card, is_frozen: !card.is_frozen } 
+            ? { ...card, is_frozen: willFreeze } 
             : card
         );
         setCards(updatedCards);
@@ -170,16 +168,16 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
         if (selectedCard && selectedCard.id === cardId) {
           setSelectedCard({
             ...selectedCard,
-            is_frozen: !selectedCard.is_frozen
+            is_frozen: willFreeze
           });
         }
         
         Alert.alert(
-          'Success', 
-          `Card has been ${selectedCard?.is_frozen ? 'unfrozen' : 'frozen'} successfully`
+          'Emergency Kill-Switch ❄️', 
+          `Card #${cardId} has been ${willFreeze ? 'FROZEN' : 'UNFROZEN'}! BLE dispatch packet emitted to card processor.`
         );
       } else {
-        Alert.alert('Error', response.data.message || 'Failed to toggle card status');
+        Alert.alert('Error', response.data?.message || 'Failed to toggle card status');
       }
     } catch (error) {
       console.error("Card toggle freeze error:", error);

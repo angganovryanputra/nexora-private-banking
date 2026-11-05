@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
-import { dispatchWearableEvent, getWearablePackets, pairWearable } from '../utils/api';
+import { dispatchWearableEvent, getWearablePackets, pairWearable, verifyCardlessCash } from '../utils/api';
 import { watchOSBridge } from '../utils/watchOSBridge';
 import theme from '../styles/theme';
 import {
@@ -129,21 +129,43 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
     try {
       await watchOSBridge.sendMessageToWatch({
         action: 'QRIS_PAYMENT_COMPLETED',
-        payload: { amount: 75.0, merchant: 'VULNBANK MERCH 001' },
+        payload: { amount: 75.0, merchant: 'NEXORA DIGITAL MERCH 001' },
       });
       const res = await dispatchWearableEvent(targetDeviceId, 'QRIS_PAYMENT_COMPLETED', {
         amount: 75.0,
-        merchant: 'VULNBANK MERCH 001',
+        merchant: 'NEXORA DIGITAL MERCH 001',
         timestamp: Date.now(),
       });
       if (res.ok) {
         setLastAction(`Executed Merchant QRIS Checkout ($75.00) -> ${targetDeviceId}`);
         Alert.alert(
           '💳 Merchant QRIS Scanned (V-06 / V-AP06)',
-          `Simulated POS checkout from Smartwatch:\nDebit: $75.00\nMerchant: VULNBANK MERCH 001\nStatus: APPROVED\n\n[V-06 Replay Attack Demo]: Tap this button again without generating a new QR code on the watch. Notice both transactions succeed because of static transaction ID!`
+          `Simulated POS checkout from Smartwatch:\nDebit: $75.00\nMerchant: NEXORA DIGITAL MERCH 001\nStatus: APPROVED\n\n[V-06 Replay Attack Demo]: Tap this button again without generating a new QR code on the watch. Notice both transactions succeed because of static transaction ID!`
         );
       } else {
         Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Simulate ATM Terminal Cash Withdrawal (Gap 1 Parity)
+  const handleSimulateAtmWithdrawal = async (token = '839201') => {
+    setIsLoading(true);
+    try {
+      const res = await verifyCardlessCash(token);
+      if (res.ok) {
+        const amt = res.data?.amount || 250000;
+        setLastAction(`ATM Cash Dispensed (Rp ${amt.toLocaleString('id-ID')})`);
+        Alert.alert(
+          '🏧 ATM Terminal Cash Dispensed! 💵',
+          `ATM Terminal: ATM-NEXORA-008\nDispensed: Rp ${amt.toLocaleString('id-ID')}\nAccount: ADMIN001\n\n[Gap 1 Parity]: 6-digit wearable cash token successfully redeemed at ATM terminal!`
+        );
+      } else {
+        Alert.alert('ATM Error', res.data?.message || 'Invalid or expired withdrawal code.');
       }
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -267,6 +289,22 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         <View style={styles.triggerInfo}>
           <Text style={styles.triggerTitle}>Merchant POS Scan (QRIS Replay)</Text>
           <Text style={styles.triggerSub}>V-06 / V-AP06: Simulate POS Scan & Replay</Text>
+        </View>
+        <Icon name="chevron-right" size={10} color={COLORS.textLight} />
+      </TouchableOpacity>
+
+      {/* Trigger 3C: Simulate ATM Terminal Dispense */}
+      <TouchableOpacity
+        style={[styles.triggerCard, { borderColor: 'rgba(255, 215, 0, 0.4)' }]}
+        onPress={() => handleSimulateAtmWithdrawal('839201')}
+        disabled={isLoading}
+      >
+        <View style={[styles.iconCircle, { backgroundColor: '#FFD700' }]}>
+          <Icon name="money" size={12} color={COLORS.black} />
+        </View>
+        <View style={styles.triggerInfo}>
+          <Text style={styles.triggerTitle}>Simulate ATM Terminal Dispense</Text>
+          <Text style={styles.triggerSub}>Gap 1: Redeem 6-digit wearable code at ATM</Text>
         </View>
         <Icon name="chevron-right" size={10} color={COLORS.textLight} />
       </TouchableOpacity>

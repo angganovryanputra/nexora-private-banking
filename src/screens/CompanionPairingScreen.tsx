@@ -40,7 +40,7 @@ const CompanionPairingScreen: React.FC<CompanionPairingScreenProps> = ({ onNavig
       const devId = res.ok && res.data?.device_id ? res.data.device_id : 'watch_9201';
       Alert.alert(
         'Companion Linked! ⌚📱',
-        `Linked to VulnBank Mobile App!\nDevice ID: ${devId}\nPaired Account: ADMIN001\n\n[V-B01] No cryptographic signature required. Token received over HTTP/BLE!`,
+        `Linked to Nexora Mobile Companion!\nDevice ID: ${devId}\nPaired Account: ADMIN001\n\n[V-B01] No cryptographic signature required. Token received over HTTP/BLE!`,
         [
           {
             text: 'Open Wallet',
@@ -68,7 +68,7 @@ const CompanionPairingScreen: React.FC<CompanionPairingScreenProps> = ({ onNavig
       <View style={styles.header}>
         <Icon name="link" size={16} color={COLORS.secondary} />
         <Text style={styles.title}>Companion Pairing</Text>
-        <Text style={styles.subtitle}>Link watch to VulnBank Mobile App</Text>
+        <Text style={styles.subtitle}>Link watch to Nexora Mobile Companion</Text>
       </View>
 
       <View style={styles.codeCard}>

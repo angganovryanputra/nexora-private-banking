@@ -56,7 +56,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigate }) => {
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Sign up to get started with VulnBank</Text>
+      <Text style={styles.subtitle}>Sign up to get started with Nexora Bank</Text>
       
       <View style={styles.form}>
         <View style={styles.inputContainer}>

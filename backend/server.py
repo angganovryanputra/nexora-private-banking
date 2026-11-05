@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-🏦 VulnBank Wear OS — Local Pentest Backend
-===========================================
+🏦 Nexora Bank OmniWear Suite — Local Pentest Backend
+=====================================================
 Lightweight, zero-dependency Python Flask backend designed for local smartwatch
 and mobile banking penetration testing demonstrations.
 
@@ -587,7 +587,7 @@ def qris_checkout():
         amount = float(data.get('amount', 75.0))
     except (ValueError, TypeError):
         amount = 75.0
-    merchant = data.get('merchant_name', 'VULNBANK MERCH 001')
+    merchant = data.get('merchant_name', 'NEXORA DIGITAL MERCH 001')
     qr_payload = data.get('qr_payload', 'VULN-QRIS-992144-TOKEN')
     rrn = f"RRN-{int(time.time()) % 100000000:08d}"
 
@@ -668,7 +668,7 @@ def admin_approve_loan(loan_id):
         if loan:
             cur.execute("UPDATE loans SET status = 'approved' WHERE id = ?", (loan_id,))
             cur.execute("UPDATE users SET balance = balance + ? WHERE account_number = ?", (loan['amount'], loan['account_number']))
-            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('VULNBANK_CREDIT', ?, ?, 'Approved Commercial Loan Disbursement', datetime('now'))", (loan['account_number'], loan['amount']))
+            cur.execute("INSERT INTO transactions (from_account, to_account, amount, description, timestamp) VALUES ('NEXORA_CREDIT', ?, ?, 'Approved Commercial Loan Disbursement', datetime('now'))", (loan['account_number'], loan['amount']))
             conn.commit()
     finally:
         conn.close()
@@ -771,7 +771,7 @@ def get_profile():
             "accountNumber": u['account_number'],
             "balance": u['balance'],
             "isAdmin": bool(u['is_admin']),
-            "email": "admin@vulnbank.internal",
+            "email": "admin@nexorabank.internal",
             "phone": "+62 811-9201-441"
         }), 200
     return jsonify({"message": "User not found"}), 404
@@ -1057,34 +1057,37 @@ def resolve_wearable_event():
         except Exception:
             p = {"raw": ev['payload']}
 
+        # Target account for deduction
+        target_acct = p.get('account_number', 'ADMIN001') if isinstance(p, dict) else 'ADMIN001'
+
         # If action was UPDATE_BALANCE, also update the database balance
         if ev['action'] == 'UPDATE_BALANCE' and resolution == 'APPLIED':
             try:
                 amt = float(p.get('amount', 0)) if isinstance(p, dict) else 0.0
-                cur.execute("UPDATE users SET balance = ? WHERE account_number = 'ADMIN001'", (amt,))
+                cur.execute("UPDATE users SET balance = ? WHERE account_number = ?", (amt, target_acct))
             except Exception as e:
                 print(f"Error updating balance on resolve: {e}")
         elif ev['action'] in ('PUSH_2FA', 'TRIGGER_HIGH_VALUE_2FA') and resolution == 'APPLIED':
             try:
                 amt = float(p.get('amount', 50000.0)) if isinstance(p, dict) else 50000.0
                 recipient = (p.get('recipient') or p.get('merchant') or 'HACKER_CORP') if isinstance(p, dict) else 'HACKER_CORP'
-                cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+                cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, target_acct))
                 cur.execute('''
                     INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
-                    VALUES ('ADMIN001', ?, ?, 'OOB 2FA Wire Transfer Authorization (Watch Approved)', datetime('now'))
-                ''', (recipient, amt))
+                    VALUES (?, ?, ?, 'OOB 2FA Wire Transfer Authorization (Watch Approved)', datetime('now'))
+                ''', (target_acct, recipient, amt))
                 print(f"   💸 \033[92m[2FA HIGH-VALUE TRANSFER DEBITED]\033[0m -$ {amt:.2f} to {recipient}")
             except Exception as e:
                 print(f"Error executing 2FA debit on resolve: {e}")
         elif ev['action'] == 'QRIS_PAYMENT_COMPLETED' and resolution == 'APPLIED':
             try:
                 amt = float(p.get('amount', 75.0)) if isinstance(p, dict) else 75.0
-                merchant = p.get('merchant', 'VULNBANK MERCH 001') if isinstance(p, dict) else 'VULNBANK MERCH 001'
-                cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+                merchant = p.get('merchant', 'NEXORA DIGITAL MERCH 001') if isinstance(p, dict) else 'NEXORA DIGITAL MERCH 001'
+                cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, target_acct))
                 cur.execute('''
                     INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
-                    VALUES ('ADMIN001', ?, ?, 'Dynamic SNAP QRIS Wearable Checkout', datetime('now'))
-                ''', (merchant, amt))
+                    VALUES (?, ?, ?, 'Dynamic SNAP QRIS Wearable Checkout', datetime('now'))
+                ''', (target_acct, merchant, amt))
                 print(f"   💳 \033[92m[QRIS PAYMENT DEBITED]\033[0m -$ {amt:.2f} at {merchant}")
             except Exception as e:
                 print(f"Error executing QRIS debit on resolve: {e}")
@@ -1092,11 +1095,11 @@ def resolve_wearable_event():
             try:
                 amt = float(p.get('amount', 50000.0)) if isinstance(p, dict) else 50000.0
                 recipient = p.get('recipient', 'HACKER_CORP') if isinstance(p, dict) else 'HACKER_CORP'
-                cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = 'ADMIN001'", (amt,))
+                cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amt, target_acct))
                 cur.execute('''
                     INSERT INTO transactions (from_account, to_account, amount, description, timestamp)
-                    VALUES ('ADMIN001', ?, ?, 'Quick Pay Direct Injection (Unauthenticated)', datetime('now'))
-                ''', (recipient, amt))
+                    VALUES (?, ?, ?, 'Quick Pay Direct Injection (Unauthenticated)', datetime('now'))
+                ''', (target_acct, recipient, amt))
                 print(f"   ⚡ \033[92m[QUICK PAY DEBITED]\033[0m -$ {amt:.2f} to {recipient}")
             except Exception as e:
                 print(f"Error executing Quick Pay debit on resolve: {e}")
@@ -1236,7 +1239,7 @@ def wearable_card_freeze():
     """
     data = request.get_json(silent=True) or {}
     card_id = data.get('card_id', 1)
-    is_frozen = 1 if data.get('is_frozen', 1) else 0
+    is_frozen = 0 if data.get('is_frozen') in (0, '0', False, 'false') else 1
 
     conn = get_db()
     cur = conn.cursor()

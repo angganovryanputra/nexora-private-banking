@@ -84,8 +84,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
     >
       <View style={styles.header}>
         <Icon name="university" size={IS_WATCH_DEVICE ? 20 : 32} color={COLORS.primary} />
-        <Text style={styles.title}>VulnBank</Text>
-        <Text style={styles.subtitle}>Wear OS Banking Edition</Text>
+        <Text style={styles.title}>Nexora Bank</Text>
+        <Text style={styles.subtitle}>Next-Gen Autonomous Banking</Text>
       </View>
 
       {/* V-W10: Quick PIN Button (Wear OS Ergonomic Alternative) */}

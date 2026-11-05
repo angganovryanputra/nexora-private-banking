@@ -37,7 +37,7 @@ interface QRPayScreenProps {
  */
 const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
   const { user } = useAuth();
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(120);
   const [tokenCode, setTokenCode] = useState('8839-2144-0192');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -48,7 +48,7 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
           // Rotate mock token
           const rand = Math.floor(1000 + Math.random() * 9000);
           setTokenCode(`8839-${rand}-0192`);
-          return 60;
+          return 120;
         }
         return prev - 1;
       });

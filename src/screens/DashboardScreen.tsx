@@ -137,12 +137,34 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
         setAtmModalVisible(true);
       } else {
         setAtmCashToken('839201');
+        setAtmCashCountdown(300);
         setAtmModalVisible(true);
       }
     } catch {
       setAtmCashToken('839201');
+      setAtmCashCountdown(300);
       setAtmModalVisible(true);
     }
+  };
+
+  useEffect(() => {
+    if (!atmModalVisible) return;
+    const timer = setInterval(() => {
+      setAtmCashCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [atmModalVisible]);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
   const quickPills = [
@@ -308,7 +330,7 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
             </View>
 
             <Text style={styles.atmExpiryText}>
-              Valid for: Rp 250.000 • Expires in 04:59
+              Valid for: Rp 250.000 • Expires in {formatCountdown(atmCashCountdown)}
             </Text>
 
             <TouchableOpacity
