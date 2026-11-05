@@ -132,8 +132,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun clearHistory(promise: Promise) {
         prefs().edit().remove(HISTORY_KEY).apply()
-        reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().remove(HISTORY_KEY).apply()
         promise.resolve(null)
     }
 

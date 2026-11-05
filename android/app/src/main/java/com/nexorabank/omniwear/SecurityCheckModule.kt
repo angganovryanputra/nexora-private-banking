@@ -37,11 +37,10 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
     // ------------------------------------------------------------- 1. ROOT CHECK
     @ReactMethod
     fun isDeviceRooted(): Boolean {
-        // V-R02: Check if client-side bypass flag is enabled in primary or legacy prefs
+        // V-R02: Check if client-side bypass flag is enabled in primary prefs
         val prefs = reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val legacyPrefs = reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
         
-        if (prefs.getBoolean("bypass_root_check", false) || legacyPrefs.getBoolean("bypass_root_check", false)) {
+        if (prefs.getBoolean("bypass_root_check", false)) {
             Log.d(LOG_TAG, "Root check bypassed via client SharedPreferences flag!")
             return false
         }
