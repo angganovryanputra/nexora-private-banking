@@ -4,7 +4,12 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import { ENDPOINTS, get } from '../utils/api';
-import globalStyles from '../styles/globalStyles';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 import theme from '../styles/theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
@@ -206,7 +211,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundDark,
   },
   header: {
-    padding: SIZES.spacing.md,
+    paddingHorizontal: ROUND_INSET,
+    paddingTop: CIRCULAR_PADDING_TOP,
+    paddingBottom: SIZES.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },

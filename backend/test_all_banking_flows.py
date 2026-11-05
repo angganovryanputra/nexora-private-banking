@@ -17,8 +17,8 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
         payload = {
             "account_number": "ADMIN001",
             "amount": 75.0,
-            "merchant_name": "VULNBANK MERCH 001",
-            "qr_payload": "00020101021226610016ID.VULNBANK.WWW"
+            "merchant_name": "NEXORA MERCH 001",
+            "qr_payload": "00020101021226610016ID.NEXORA.WWW"
         }
         res1 = self.client.post('/api/qris/checkout', data=json.dumps(payload), content_type='application/json')
         self.assertEqual(res1.status_code, 200)
@@ -65,6 +65,12 @@ class TestEnterpriseBankingFlows(unittest.TestCase):
             "amount": 25000.0
         }), content_type='application/json')
         self.assertEqual(res.status_code, 200)
+
+        # Check user loans list
+        res_user_loans = self.client.get('/loans/ADMIN001')
+        self.assertEqual(res_user_loans.status_code, 200)
+        user_loans = json.loads(res_user_loans.data)['loans']
+        self.assertTrue(len(user_loans) > 0)
 
         # Admin gets pending loans
         res_pending = self.client.get('/admin/pending_loans')

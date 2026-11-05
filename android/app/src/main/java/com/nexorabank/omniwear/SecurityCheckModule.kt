@@ -1,6 +1,5 @@
-package com.vulnerablebankapp
+package com.nexorabank.omniwear
 
-import android.app.KeyguardManager
 import android.content.Context
 import android.os.Build
 import android.util.Log
@@ -29,32 +28,25 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
 
     companion object {
         const val NAME = "SecurityCheck"
-        const val LOG_TAG = "VULN_RUNTIME_CHECK"
+        const val LOG_TAG = "NEXORA_SECURITY_CHECK"
+        const val PREFS_NAME = "NexoraVaultPrefs"
+        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun getName() = NAME
 
     // ------------------------------------------------------------- 1. ROOT CHECK
-    /**
-     * V-R01: Naive root detection.
-     * Frida Bypass Target:
-     *   Java.perform(function() {
-     *     var SecurityCheckModule = Java.use("com.vulnerablebankapp.SecurityCheckModule");
-     *     SecurityCheckModule.isDeviceRooted.implementation = function() {
-     *       console.log("[*] Frida hooked isDeviceRooted -> returning false");
-     *       return false;
-     *     };
-     *   });
-     */
+    @ReactMethod
     fun isDeviceRooted(): Boolean {
-        // V-R02: Check if client-side bypass flag is enabled
-        val prefs = reactContext.getSharedPreferences("VulnBankPrefs", Context.MODE_PRIVATE)
-        if (prefs.getBoolean("bypass_root_check", false)) {
+        // V-R02: Check if client-side bypass flag is enabled in primary or legacy prefs
+        val prefs = reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val legacyPrefs = reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+        
+        if (prefs.getBoolean("bypass_root_check", false) || legacyPrefs.getBoolean("bypass_root_check", false)) {
             Log.d(LOG_TAG, "Root check bypassed via client SharedPreferences flag!")
             return false
         }
 
-        // Standard naive su binary paths
         val suPaths = arrayOf(
             "/system/app/Superuser.apk",
             "/sbin/su",
@@ -73,7 +65,6 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
             }
         }
 
-        // Test-keys build check
         val buildTags = Build.TAGS
         if (buildTags != null && buildTags.contains("test-keys")) {
             Log.w(LOG_TAG, "Root detected via test-keys: $buildTags")
@@ -84,12 +75,7 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
     }
 
     // ------------------------------------------------------------ 2. FRIDA CHECK
-    /**
-     * V-R03: Naive Frida Detection.
-     * Checks default Frida port 27042.
-     * Easily bypassed by running frida-server on custom port (`frida-server -l 0.0.0.0:1337`)
-     * or hooking this method.
-     */
+    @ReactMethod
     fun isFridaRunning(): Boolean {
         return try {
             val socket = Socket("127.0.0.1", 27042)
@@ -101,53 +87,42 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
-    // --------------------------------------------------------- 3. EMULATOR CHECK
-    fun isEmulator(): Boolean {
-        return (Build.FINGERPRINT.startsWith("generic")
-                || Build.FINGERPRINT.startsWith("unknown")
-                || Build.MODEL.contains("google_sdk")
-                || Build.MODEL.contains("Emulator")
-                || Build.MODEL.contains("Android SDK built for x86")
-                || Build.MANUFACTURER.contains("Genymotion")
-                || Build.HARDWARE.contains("goldfish")
-                || Build.HARDWARE.contains("ranchu")
-                || Build.PRODUCT.contains("sdk_google"))
+    // ----------------------------------------------------- 3. CLIENT-SIDE TOGGLE
+    @ReactMethod
+    fun toggleClientRootBypass(enable: Boolean, promise: Promise) {
+        reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("bypass_root_check", enable)
+            .apply()
+
+        reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("bypass_root_check", enable)
+            .apply()
+
+        Log.i(LOG_TAG, "V-R02: Toggled bypass_root_check to: $enable")
+        promise.resolve(enable)
     }
 
-    // ---------------------------------------------------- 4. DEVICE LOCK STATUS
-    fun isDeviceLockEnabled(): Boolean {
-        val keyguardManager = reactContext.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        return keyguardManager.isDeviceSecure
-    }
-
-    // ------------------------------------------------- REACT METHODS
+    // ------------------------------------------------- 4. COMPREHENSIVE REPORT
     @ReactMethod
     fun getRuntimeSecurityReport(promise: Promise) {
         val rooted = isDeviceRooted()
         val frida = isFridaRunning()
-        val emu = isEmulator()
-        val lockEnabled = isDeviceLockEnabled()
+        val isEmulator = Build.FINGERPRINT.startsWith("generic") ||
+                Build.FINGERPRINT.startsWith("unknown") ||
+                Build.MODEL.contains("google_sdk") ||
+                Build.MODEL.contains("Emulator") ||
+                Build.MODEL.contains("Android SDK built for x86")
 
         val map = Arguments.createMap().apply {
             putBoolean("isRooted", rooted)
             putBoolean("isFridaDetected", frida)
-            putBoolean("isEmulator", emu)
-            putBoolean("isDeviceSecure", lockEnabled)
+            putBoolean("isEmulator", isEmulator)
             putString("buildFingerprint", Build.FINGERPRINT)
-            putString("suCheckMethod", "Naive file-path & test-keys check (Frida hookable)")
-            putString("bypassFlagLocation", "VulnBankPrefs.xml -> bypass_root_check")
+            putString("osVersion", "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            putBoolean("isBypassFlagActive", reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getBoolean("bypass_root_check", false))
         }
-
-        Log.i(LOG_TAG, "Runtime security report generated: Rooted=$rooted Frida=$frida Emu=$emu Lock=$lockEnabled")
         promise.resolve(map)
     }
-
-    @ReactMethod
-    fun toggleClientRootBypass(enable: Boolean, promise: Promise) {
-        // V-R02: Insecure client-side bypass toggle
-        val prefs = reactContext.getSharedPreferences("VulnBankPrefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("bypass_root_check", enable).apply()
-        promise.resolve(enable)
-    }
 }
-

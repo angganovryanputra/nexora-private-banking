@@ -28,6 +28,7 @@ export const ENDPOINTS = {
   transfer: '/transfer',
   transactions: (accountNumber: string) => `/transactions/${accountNumber}`,
   requestLoan: '/request_loan',
+  loans: (accountNumber: string) => `/loans/${accountNumber}`,
   virtualCards: {
     list: '/api/virtual-cards',
     create: '/api/virtual-cards/create',

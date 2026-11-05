@@ -15,7 +15,13 @@ import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import CustomButton from '../components/CustomButton';
 import theme from '../styles/theme';
-import { API_BASE } from '../utils/api';
+import { post } from '../utils/api';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 
 const { COLORS, SIZES, SHADOWS } = theme;
 
@@ -107,16 +113,16 @@ const HealthScreen: React.FC<HeartRateScreenProps> = () => {
     setSyncStatus('Syncing...');
     try {
       const payload = {
-        username: user?.username,
-        account_number: user?.accountNumber,
+        username: user?.username || 'admin',
+        account_number: user?.accountNumber || 'ADMIN001',
         readings: history,
       };
-      await fetch(`${API_BASE}/debug/heart`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      setSyncStatus(`Sent ${history.length} readings (unauthenticated)`);
+      const res = await post('/debug/heart', payload);
+      if (res.ok) {
+        setSyncStatus(`Sent ${history.length} readings (unauthenticated)`);
+      } else {
+        setSyncStatus(`Sync responded: ${res.status}`);
+      }
     } catch (e: any) {
       setSyncStatus('Network error — payload still attempted');
     }
@@ -176,7 +182,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundDark,
   },
   contentContainer: {
-    padding: SIZES.spacing.sm,
+    paddingHorizontal: ROUND_INSET,
+    paddingTop: CIRCULAR_PADDING_TOP,
+    paddingBottom: CIRCULAR_PADDING_BOTTOM + 24,
   },
   bpmCard: {
     alignItems: 'center',

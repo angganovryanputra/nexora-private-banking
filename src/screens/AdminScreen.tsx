@@ -3,9 +3,14 @@ import { View, Text, StyleSheet, FlatList, Alert, ActivityIndicator, TextInput }
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
-import { ENDPOINTS, get, post } from '../utils/api';
+import { ENDPOINTS, get, post, del } from '../utils/api';
 import CustomButton from '../components/CustomButton';
-import globalStyles from '../styles/globalStyles';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 import theme from '../styles/theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
@@ -88,9 +93,8 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate }) => {
 
   const handleDeleteAccount = async (userId: number) => {
     try {
-      const response = await post(
+      const response = await del(
         ENDPOINTS.admin.deleteAccount(userId),
-        {},
         user?.token
       );
       
@@ -336,7 +340,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundDark,
-    padding: SIZES.spacing.md,
+    paddingHorizontal: ROUND_INSET,
+    paddingTop: CIRCULAR_PADDING_TOP,
+    paddingBottom: CIRCULAR_PADDING_BOTTOM + 24,
   },
   headerTitle: {
     fontSize: SIZES.xxLarge,

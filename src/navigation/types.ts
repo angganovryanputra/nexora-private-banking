@@ -1,5 +1,5 @@
 /**
- * Navigation Types for Vulnerable Bank Mobile App
+ * Navigation Types for Nexora Bank OmniWear Suite
  */
 
 export type ScreenType = 

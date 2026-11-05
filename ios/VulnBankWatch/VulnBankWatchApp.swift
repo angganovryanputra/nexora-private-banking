@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct VulnBankWatchApp: App {
+struct NexoraWatchApp: App {
     @WKApplicationDelegateAdaptor(ExtensionDelegate.self) var delegate
 
     var body: some Scene {

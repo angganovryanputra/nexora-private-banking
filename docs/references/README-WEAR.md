@@ -9,7 +9,7 @@ dan menambahkan attack surface khas smartwatch.
 
 | | Ponsel (asli) | Wear (port) |
 |---|---|---|
-| applicationId | `com.vulnerablebankapp` | `com.vulnerablebankapp.wear` |
+| applicationId | `com.nexorabank.omniwear` | `com.nexorabank.omniwear` |
 | minSdk | 24 (Android 7) | 33 (Wear OS 4) |
 | targetSdk | 35 | 35 |
 | Layar | ~390dp lebar | ~180-230dp, bundar/bujur sangkar |

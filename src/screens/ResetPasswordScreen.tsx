@@ -1,9 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import CustomButton from '../components/CustomButton';
 import { ScreenType } from '../navigation/types';
 import { ENDPOINTS, post } from '../utils/api';
-import globalStyles from '../styles/globalStyles';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 import theme from '../styles/theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
@@ -32,23 +47,23 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ onNavigate })
         { 
           username,
           reset_pin: resetPin,
-          new_password: newPassword
+          new_password: newPassword,
         }
       );
 
       if (response.ok) {
         Alert.alert(
-          'Success',
-          'Your password has been reset successfully!',
+          'Password Reset Successful',
+          'Your password has been updated. You can now login with your new credentials.',
           [
             {
-              text: 'Login',
-              onPress: () => onNavigate('login')
-            }
+              text: 'Sign In',
+              onPress: () => onNavigate('login'),
+            },
           ]
         );
       } else {
-        Alert.alert('Error', response.data.message || 'Failed to reset password');
+        Alert.alert('Reset Failed', response.data?.message || 'Invalid username or reset PIN');
       }
     } catch (error) {
       console.error('Password reset error:', error);
@@ -59,118 +74,141 @@ const ResetPasswordScreen: React.FC<ResetPasswordScreenProps> = ({ onNavigate })
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Reset Password</Text>
-      <Text style={styles.subtitle}>
-        Enter the PIN received in your email to reset your password
-      </Text>
-      
-      <View style={styles.form}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.header}>
+        <Icon name="key" size={IS_WATCH_DEVICE ? 18 : 26} color={COLORS.accentGold} />
+        <Text style={styles.title}>Reset Password</Text>
+        <Text style={styles.subtitle}>Enter your 3-digit PIN and new password</Text>
+      </View>
+
+      <View style={styles.formCard}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Username</Text>
           <TextInput
             style={globalStyles.input}
-            placeholder="Enter your username"
+            placeholder="Username (e.g. admin)"
             placeholderTextColor={COLORS.textLight}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
+            accessibilityLabel="Username input"
           />
         </View>
-        
+
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Reset PIN</Text>
           <TextInput
             style={globalStyles.input}
-            placeholder="Enter 3-digit PIN"
+            placeholder="3-digit PIN (e.g. 123)"
             placeholderTextColor={COLORS.textLight}
             value={resetPin}
             onChangeText={setResetPin}
             keyboardType="number-pad"
             maxLength={3}
+            accessibilityLabel="Reset PIN input"
           />
         </View>
-        
+
         <View style={styles.inputContainer}>
           <Text style={styles.label}>New Password</Text>
           <TextInput
             style={globalStyles.input}
-            placeholder="Enter new password"
+            placeholder="New password"
             placeholderTextColor={COLORS.textLight}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
+            autoCapitalize="none"
+            accessibilityLabel="New password input"
           />
         </View>
-        
+
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />
+          <ActivityIndicator size="small" color={COLORS.primary} style={styles.loader} />
         ) : (
           <CustomButton
             title="Reset Password"
             onPress={handleResetPassword}
             isFullWidth
+            variant="primary"
           />
         )}
       </View>
-      
-      <View style={styles.footer}>
+
+      <TouchableOpacity
+        style={styles.footer}
+        onPress={() => onNavigate('login')}
+        accessibilityRole="button"
+        accessibilityLabel="Return to sign in"
+      >
         <Text style={styles.footerText}>
-          Remember your password?{' '}
-          <Text 
-            style={styles.loginText}
-            onPress={() => onNavigate('login')}
-          >
-            Sign In
-          </Text>
+          Remember your password? <Text style={styles.loginText}>Sign In</Text>
         </Text>
-      </View>
-    </View>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SIZES.spacing.lg,
-    width: '100%',
     backgroundColor: COLORS.backgroundDark,
   },
+  contentContainer: {
+    paddingHorizontal: ROUND_INSET,
+    paddingTop: CIRCULAR_PADDING_TOP,
+    paddingBottom: CIRCULAR_PADDING_BOTTOM + 24,
+    alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: SIZES.spacing.sm,
+  },
   title: {
-    fontSize: SIZES.xxLarge,
+    fontSize: SIZES.large,
     fontWeight: 'bold',
     color: COLORS.white,
-    marginBottom: SIZES.spacing.xs,
+    marginTop: 4,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: SIZES.medium,
+    fontSize: SIZES.xSmall,
     color: COLORS.textLight,
-    marginBottom: SIZES.spacing.xl,
+    marginTop: 2,
     textAlign: 'center',
   },
-  form: {
+  formCard: {
     width: '100%',
-    marginBottom: SIZES.spacing.xl,
+    backgroundColor: COLORS.cardDark,
+    borderRadius: SIZES.radius.md,
+    padding: SIZES.spacing.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SIZES.spacing.sm,
+    ...SHADOWS.small,
   },
   inputContainer: {
-    marginBottom: SIZES.spacing.md,
-  },
-  label: {
-    fontSize: SIZES.medium,
-    color: COLORS.white,
     marginBottom: SIZES.spacing.xs,
   },
+  label: {
+    fontSize: SIZES.xSmall,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    marginBottom: 2,
+  },
   loader: {
-    marginVertical: SIZES.spacing.md,
+    marginVertical: SIZES.spacing.sm,
   },
   footer: {
-    marginTop: SIZES.spacing.xl,
+    paddingVertical: SIZES.spacing.xs,
   },
   footerText: {
-    fontSize: SIZES.medium,
+    fontSize: SIZES.xSmall,
     color: COLORS.textLight,
     textAlign: 'center',
   },

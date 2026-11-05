@@ -12,7 +12,22 @@ Engineered specifically for financial cybersecurity researchers, penetration tes
 
 ### 🚀 Key Enhancements & Business Flow Gaps Resolved
 
-1. **Dual-Persona Architecture (Client Banking UI vs. Security Auditor Mode)**:
+1. **Complete Brand Neutralization & Identifier Migration (`com.nexorabank.omniwear`)**:
+   - Replaced all legacy package identifiers with `com.nexorabank.omniwear` across all native Java/Kotlin code, build configurations, and AndroidManifest.
+   - Dual-intent filter architecture maintained: accepts both `com.nexorabank.omniwear.*` and `com.vulnerablebankapp.*` intents and deep links (`nexorabank://` and `vulnbank://`) to ensure 100% backward compatibility with existing automated testing scripts.
+   - Rebranded app icons with bespoke high-resolution vector-rendered luxury banking iconography (Obsidian base, sapphire glow, dual gold bezel, architectural monogram N, emerald key center) across all Android mipmap densities (`mdpi` to `xxxhdpi`) and iOS asset sets.
+
+2. **WCAG 2.2 Accessibility & Circular Smartwatch Ergonomics**:
+   - Enhanced all interactive UI elements with comprehensive accessibility roles (`accessibilityRole="button"`), accessible names, hit slop margins (at least 48x48dp tap target area), and high contrast colors.
+   - Screen layouts rewritten with dynamic circular inset calculation (`ROUND_INSET`, `CIRCULAR_PADDING_TOP`, `CIRCULAR_PADDING_BOTTOM`) ensuring zero button clipping or text occlusion on circular Wear OS (480x480 AMOLED) and curved Apple Watch displays.
+
+3. **Core Challenge Functional Gap Fixes**:
+   - **Loan Management**: Integrated `/loans/<account_number>` endpoint in `LoansScreen.tsx` and backend, allowing dynamic query and display of pending/approved loans.
+   - **Admin Account Management**: Resolved HTTP method mismatch in `AdminScreen.tsx` for account deletion, supporting both `DELETE` and `POST`.
+   - **Reset Password Screen**: Completely transformed `ResetPasswordScreen.tsx` into an ergonomically scrollable, accessible interface with instant input validation.
+   - **Biometric Health Telemetry**: Refactored `HealthScreen.tsx` to communicate via centralized API helpers with responsive circular safe areas.
+
+4. **Dual-Persona Architecture (Client Banking UI vs. Security Auditor Mode)**:
    - Conspicuous pentest banners have been removed from the primary customer dashboard.
    - The default UI is now an ultra-sleek, prestigious digital banking experience featuring Platinum Private Banking status, masked liquid balance cards, and quick services.
    - Researchers can unlock **Auditor & Pentest Mode** via a discreet easter egg (tapping the security shield or app version 5 times in Profile), granting immediate access to all 14 active exploit vectors, live BLE packet sniffers, and Frida hooking scripts.

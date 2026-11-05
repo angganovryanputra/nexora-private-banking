@@ -5,7 +5,12 @@ import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import { ENDPOINTS, get, post } from '../utils/api';
 import CustomButton from '../components/CustomButton';
-import globalStyles from '../styles/globalStyles';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 import theme from '../styles/theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
@@ -594,7 +599,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.backgroundDark,
-    padding: SIZES.spacing.md,
+    paddingHorizontal: ROUND_INSET,
+    paddingTop: CIRCULAR_PADDING_TOP,
+    paddingBottom: CIRCULAR_PADDING_BOTTOM + 24,
   },
   header: {
     marginBottom: SIZES.spacing.lg,

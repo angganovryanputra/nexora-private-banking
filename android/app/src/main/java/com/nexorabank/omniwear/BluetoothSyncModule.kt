@@ -1,4 +1,4 @@
-package com.vulnerablebankapp
+package com.nexorabank.omniwear
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -30,16 +30,21 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
 
     companion object {
         const val NAME = "BluetoothSync"
-        const val ACTION_BT_SYNC = "com.vulnerablebankapp.ACTION_BT_SYNC"
-        const val ACTION_BT_BEACON = "com.vulnerablebankapp.ACTION_BT_BEACON"
-        const val LOG_TAG = "VULN_BT_SYNC"
+        const val ACTION_BT_SYNC = "com.nexorabank.omniwear.ACTION_BT_SYNC"
+        const val LEGACY_ACTION_BT_SYNC = "com.vulnerablebankapp.ACTION_BT_SYNC"
+        const val ACTION_BT_BEACON = "com.nexorabank.omniwear.ACTION_BT_BEACON"
+        const val LOG_TAG = "NEXORA_BT_SYNC"
+        const val PREFS_NAME = "NexoraVaultPrefs"
+        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun getName() = NAME
 
     private val syncReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null || intent.action != ACTION_BT_SYNC) return
+            if (intent == null) return
+            val act = intent.action
+            if (act != ACTION_BT_SYNC && act != LEGACY_ACTION_BT_SYNC) return
 
             val payloadStr = intent.getStringExtra("sync_payload") ?: "{}"
             Log.w(LOG_TAG, "⚠️ [V-B01 EXPLOIT] Received unauthenticated BLE sync packet: $payloadStr")
@@ -50,9 +55,11 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
                 val amount = json.optDouble("amount", 0.0)
 
                 // V-B02: Replay vulnerability - packet is processed unconditionally without nonce check
-                val prefs = reactContext.getSharedPreferences("VulnBankPrefs", Context.MODE_PRIVATE)
+                val prefs = reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val legacyPrefs = reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
                 if (action == "UPDATE_BALANCE") {
-                    prefs.edit().putString("balance", "$$amount").apply()
+                    prefs.edit().putString("balance", "Rp ${amount.toLong()}").apply()
+                    legacyPrefs.edit().putString("balance", "$$amount").apply()
                 }
 
                 // Store last synced payload for inspection
@@ -64,7 +71,7 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
 
                 Toast.makeText(
                     reactContext,
-                    "📶 [V-B01 BLE Sync] Executed action: $action ($$amount)",
+                    "📶 [BLE Sync] Executed action: $action ($$amount)",
                     Toast.LENGTH_LONG
                 ).show()
 
@@ -84,7 +91,10 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
     }
 
     init {
-        val filter = IntentFilter(ACTION_BT_SYNC)
+        val filter = IntentFilter().apply {
+            addAction(ACTION_BT_SYNC)
+            addAction(LEGACY_ACTION_BT_SYNC)
+        }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             reactContext.registerReceiver(syncReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
@@ -95,7 +105,7 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun simulatePhoneBeacon(promise: Promise) {
         // V-B03: Leak victim JWT token and pairing keys via simulated BLE advertisement
-        val prefs = reactContext.getSharedPreferences("VulnBankPrefs", Context.MODE_PRIVATE)
+        val prefs = reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val username = prefs.getString("username", "admin") ?: "admin"
         val jwt = Secrets.HARDCODED_ADMIN_JWT
 
@@ -104,12 +114,11 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
             put("paired_user", username)
             put("auth_token", jwt)
             put("bt_mac", "DC:A6:32:8B:11:04")
-            put("replay_nonce_supported", false) // Exploit indicator!
+            put("replay_nonce_supported", false)
         }
 
         Log.w(LOG_TAG, "⚠️ [V-B03 BLE LEAK] Broadcasting unencrypted BLE beacon: $beaconPayload")
 
-        // Broadcast to logcat and intent
         val intent = Intent(ACTION_BT_BEACON).apply {
             putExtra("beacon_data", beaconPayload.toString())
         }

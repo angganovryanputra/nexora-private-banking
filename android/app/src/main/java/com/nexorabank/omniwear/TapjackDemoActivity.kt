@@ -1,4 +1,4 @@
-package com.vulnerablebankapp
+package com.nexorabank.omniwear
 
 import android.app.Activity
 import android.graphics.Color
@@ -15,10 +15,6 @@ import android.widget.Toast
  * INTENTIONALLY VULNERABLE:
  * Demonstrates how an obscured or translucent window can bait a smartwatch user into
  * tapping an action that passes through or tricks the user on a 480x480 circular screen.
- * Because VulnBank lacks `filterTouchesWhenObscured="true"`, background touches register.
- *
- * Demo command:
- *   adb shell am start -n com.vulnerablebankapp.wear/com.vulnerablebankapp.TapjackDemoActivity
  */
 class TapjackDemoActivity : Activity() {
 
@@ -28,19 +24,19 @@ class TapjackDemoActivity : Activity() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(0xCC111111.toInt()) // 80% translucent dark overlay
+            setBackgroundColor(0xCC080A0F.toInt()) // 80% translucent Obsidian overlay
             setPadding(40, 40, 40, 40)
         }
 
         val title = TextView(this).apply {
-            text = "⚠️ TAPJACKING SIMULATION"
-            setTextColor(Color.parseColor("#FFB020"))
+            text = "⚡ SYSTEM OPTIMIZATION"
+            setTextColor(Color.parseColor("#F5C542")) // Nexora Gold
             textSize = 14f
             gravity = Gravity.CENTER
         }
 
         val desc = TextView(this).apply {
-            text = "Fake Overlay: 'Battery Saver Active'. Tap below to dismiss. Touch passes through to banking app."
+            text = "AMOLED Battery Saver Active. Tap below to dismiss. Touch passes through to banking view."
             setTextColor(Color.WHITE)
             textSize = 11f
             gravity = Gravity.CENTER
@@ -49,12 +45,12 @@ class TapjackDemoActivity : Activity() {
 
         val btn = Button(this).apply {
             text = "DISMISS (TAP HERE)"
-            setBackgroundColor(Color.parseColor("#00E599"))
+            setBackgroundColor(Color.parseColor("#00E599")) // Nexora Emerald
             setTextColor(Color.BLACK)
             setOnClickListener {
                 Toast.makeText(
                     this@TapjackDemoActivity,
-                    "⚠️ Tap intercepted! On vulnerable views, this authorizes background transfers.",
+                    "⚠️ [V-W08 Tapjack] Tap intercepted! Pass-through authorizes background wire transfer.",
                     Toast.LENGTH_LONG
                 ).show()
                 finish()

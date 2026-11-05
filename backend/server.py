@@ -37,7 +37,7 @@ if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 app = Flask(__name__)
-DB_PATH = os.path.join(os.path.dirname(__file__), 'vulnbank.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), 'nexora_vault.db' if os.path.exists(os.path.join(os.path.dirname(__file__), 'nexora_vault.db')) else 'vulnbank.db')
 
 # Hardcoded valid Master JWT (matches Secrets.java)
 MASTER_JWT = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc0NDk3NjIyM30.yXm-7iN-6sn3kvvXkOiOLVRHXSn6MBSpwbM2VcXVds8"
@@ -645,6 +645,22 @@ def request_loan():
     return jsonify({"status": "success", "message": f"Loan application for ${amt} submitted"}), 200
 
 
+@app.route('/loans/<account_number>', methods=['GET'])
+def get_user_loans(account_number):
+    """
+    Returns loans for an account number.
+    VULNERABILITY: BOLA / IDOR - any account number can be queried without ownership check.
+    """
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM loans WHERE account_number = ? ORDER BY id DESC", (account_number,))
+        rows = cur.fetchall()
+    finally:
+        conn.close()
+    return jsonify({"loans": [dict(r) for r in rows]}), 200
+
+
 @app.route('/admin/pending_loans', methods=['GET'])
 def admin_pending_loans():
     conn = get_db()
@@ -824,7 +840,7 @@ def create_admin():
         conn.close()
 
 
-@app.route('/admin/delete_account/<int:user_id>', methods=['DELETE'])
+@app.route('/admin/delete_account/<int:user_id>', methods=['DELETE', 'POST'])
 def delete_account(user_id):
     conn = get_db()
     cur = conn.cursor()

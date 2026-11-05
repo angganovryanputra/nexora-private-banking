@@ -32,7 +32,7 @@ interface QRPayScreenProps {
  *
  * INTENTIONALLY VULNERABLE:
  *  - V-W15: QR Token Sniffing & Replay.
- *    The QR payload ('VULN-QRIS-992144-TOKEN') is static and lacks a dynamic
+ *    The QR payload ('NEXORA-QRIS-992144-TOKEN') is static and lacks a dynamic
  *    HMAC signature, allowing shoulder surfers or rogue cameras to replay it.
  */
 const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {

@@ -66,6 +66,10 @@ const CustomButton: React.FC<CustomButtonProps> = ({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled }}
+      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
     >
       {iconName && (
         <Icon 

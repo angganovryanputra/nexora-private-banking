@@ -5,7 +5,12 @@ import { ScreenType } from '../navigation/types';
 import { useAuth } from '../contexts/AuthContext';
 import { ENDPOINTS, post, get } from '../utils/api';
 import CustomButton from '../components/CustomButton';
-import globalStyles from '../styles/globalStyles';
+import globalStyles, {
+  ROUND_INSET,
+  CIRCULAR_PADDING_TOP,
+  CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
+} from '../styles/globalStyles';
 import theme from '../styles/theme';
 
 const { COLORS, SIZES, SHADOWS } = theme;
@@ -37,32 +42,13 @@ const LoansScreen: React.FC<LoansScreenProps> = ({ onNavigate }) => {
     setError(null);
     
     try {
-      // Using a placeholder endpoint for now
-      // This would be replaced with the actual endpoint once implemented
-      // Using transactions endpoint for now just to show some data
       const response = await get(
-        ENDPOINTS.transactions(user.accountNumber),
+        ENDPOINTS.loans(user.accountNumber || 'ADMIN001'),
         user.token
       );
       
-      if (response.ok) {
-        // Mock loans data based on transactions
-        // This would be replaced with actual loans data
-        const mockLoans: Loan[] = [
-          {
-            id: 1,
-            amount: 5000,
-            status: 'approved',
-            created_at: new Date(Date.now() - 3600000 * 24 * 30).toISOString(),
-          },
-          {
-            id: 2,
-            amount: 10000,
-            status: 'pending',
-            created_at: new Date(Date.now() - 3600000 * 24 * 7).toISOString(),
-          }
-        ];
-        setLoans(mockLoans);
+      if (response.ok && response.data?.loans) {
+        setLoans(response.data.loans);
       } else {
         setError('Failed to fetch loans');
       }
@@ -262,7 +248,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundDark,
   },
   contentContainer: {
-    padding: SIZES.spacing.md,
+    paddingHorizontal: ROUND_INSET,
+    paddingTop: CIRCULAR_PADDING_TOP,
+    paddingBottom: CIRCULAR_PADDING_BOTTOM + 24,
   },
   headerContainer: {
     marginBottom: SIZES.spacing.lg,

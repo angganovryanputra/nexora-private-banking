@@ -1,4 +1,4 @@
-package com.vulnerablebankapp
+package com.nexorabank.omniwear
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -15,22 +15,21 @@ import org.json.JSONObject
  * This receiver is exported with NO signature or custom permission protection.
  * Any third-party app installed on the watch — or an attacker using adb — can
  * broadcast an intent to silently inject a transfer or manipulate balance.
- *
- * Demo command:
- *   adb shell am broadcast -a com.vulnerablebankapp.ACTION_QUICK_PAY \
- *     --es recipient "HACKER_ACCT_999" \
- *     --ef amount 150000.0 \
- *     -n com.vulnerablebankapp.wear/com.vulnerablebankapp.QuickPayReceiver
  */
 class QuickPayReceiver : BroadcastReceiver() {
 
     companion object {
-        const val ACTION_QUICK_PAY = "com.vulnerablebankapp.ACTION_QUICK_PAY"
-        const val LOG_TAG = "VULN_QUICK_PAY"
+        const val ACTION_QUICK_PAY = "com.nexorabank.omniwear.ACTION_QUICK_PAY"
+        const val LEGACY_ACTION_QUICK_PAY = "com.vulnerablebankapp.ACTION_QUICK_PAY"
+        const val LOG_TAG = "NEXORA_QUICK_PAY"
+        const val PREFS_NAME = "NexoraVaultPrefs"
+        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent == null || intent.action != ACTION_QUICK_PAY) return
+        if (intent == null) return
+        val act = intent.action
+        if (act != ACTION_QUICK_PAY && act != LEGACY_ACTION_QUICK_PAY) return
 
         val recipient = intent.getStringExtra("recipient") ?: "UNKNOWN_RECIPIENT"
         val amount = intent.getFloatExtra("amount", 0.0f)
@@ -41,15 +40,9 @@ class QuickPayReceiver : BroadcastReceiver() {
             "⚠️ EXPLOIT DETECTED (V-W06): Unauthenticated Quick Pay triggered! To=$recipient Amount=$amount Note=$note"
         )
 
-        val prefs = context.getSharedPreferences("VulnBankPrefs", Context.MODE_PRIVATE)
-        val editor = prefs.edit()
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val legacyPrefs = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
 
-        // Deduct simulated balance in SharedPreferences
-        val rawBal = prefs.getString("balance", "$999999")?.replace("$", "")?.toDoubleOrNull() ?: 999999.0
-        val newBal = (rawBal - amount).coerceAtLeast(0.0)
-        editor.putString("balance", "$$newBal")
-
-        // Append to local transaction history
         val txJson = JSONArray(prefs.getString("recent_transactions", "[]"))
         val newTx = JSONObject().apply {
             put("type", "QUICK_PAY_INJECTION")
@@ -59,8 +52,10 @@ class QuickPayReceiver : BroadcastReceiver() {
             put("status", "SUCCESS_UNAUTHENTICATED")
         }
         txJson.put(newTx)
-        editor.putString("recent_transactions", txJson.toString())
-        editor.apply()
+
+        val txStr = txJson.toString()
+        prefs.edit().putString("recent_transactions", txStr).apply()
+        legacyPrefs.edit().putString("recent_transactions", txStr).apply()
 
         Toast.makeText(
             context,

@@ -1,4 +1,4 @@
-package com.vulnerablebankapp
+package com.nexorabank.omniwear
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -21,26 +21,23 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 /**
- * Wear OS heart-rate telemetry module.
+ * Wear OS biometric telemetry module.
  *
  * INTENTIONALLY VULNERABLE (watch-specific attack surface):
  *  - V-W1: every reading is persisted to *plaintext* SharedPreferences
- *          (same "VulnBankPrefs" file that stores the hardcoded credentials).
- *  - V-W3: every reading — including the stored username — is written to
+ *          (co-located with credentials in NexoraVaultPrefs).
+ *  - V-W3: every reading — including user identity — is written to
  *          the system log, readable by any app holding READ_LOGS / adb.
- *
- * When no hardware heart-rate sensor exists (e.g. emulator), a simulator
- * produces plausible telemetry so the vulnerability surface stays
- * demonstrable everywhere.
  */
 class HeartRateModule(private val reactContext: ReactApplicationContext) :
         ReactContextBaseJavaModule(reactContext), SensorEventListener {
 
     companion object {
         const val NAME = "HeartRate"
-        const val PREFS_NAME = "VulnBankPrefs"
+        const val PREFS_NAME = "NexoraVaultPrefs"
+        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
         const val HISTORY_KEY = "heart_rate_history"
-        const val LOG_TAG = "HEART_RATE_LEAK"
+        const val LOG_TAG = "NEXORA_HEALTH_TELEMETRY"
         const val MAX_HISTORY = 500
     }
 
@@ -54,8 +51,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
     private fun prefs(): SharedPreferences =
             reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    // ---------------------------------------------------------------- storage
-    // V-W1: plaintext storage of health data, co-located with credentials.
     private fun persistReading(bpm: Int, timestampSec: Long) {
         val json = JSONArray(prefs().getString(HISTORY_KEY, "[]"))
         val entry = JSONObject()
@@ -65,14 +60,18 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
         while (json.length() > MAX_HISTORY) {
             json.remove(0)
         }
-        prefs().edit().putString(HISTORY_KEY, json.toString()).apply()
+        val serialized = json.toString()
+        prefs().edit().putString(HISTORY_KEY, serialized).apply()
+
+        // Legacy mirror
+        reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putString(HISTORY_KEY, serialized).apply()
     }
 
     private fun emit(bpm: Int, timestampSec: Long) {
-        // V-W3: health data + identity leaked to system logcat.
         Log.d(
             LOG_TAG,
-            "user=${prefs().getString("username", "unknown")} bpm=$bpm ts=$timestampSec",
+            "user=${prefs().getString("username", "admin")} bpm=$bpm ts=$timestampSec",
         )
         persistReading(bpm, timestampSec)
 
@@ -89,7 +88,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
         emit(bpm, TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()))
     }
 
-    // ---------------------------------------------------------------- sensor
     override fun onSensorChanged(event: SensorEvent?) {
         val bpm = event?.values?.firstOrNull()?.toInt() ?: return
         handleReading(bpm)
@@ -97,7 +95,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
-    // ------------------------------------------------------------- simulator
     private val simRunnable: Runnable = object : Runnable {
         override fun run() {
             simBpm = (simBpm + Random.nextInt(-3, 4)).coerceIn(60, 100)
@@ -117,8 +114,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
             )
             Log.d(LOG_TAG, "using hardware heart-rate sensor")
         } else {
-            // Emulator / watch without a heart-rate sensor: simulate telemetry
-            // so the demo (and its leaks) still works end-to-end.
             simHandler = Handler(Looper.getMainLooper())
             simHandler?.post(simRunnable)
             Log.d(LOG_TAG, "no hardware sensor; simulated heart-rate telemetry active")
@@ -142,13 +137,15 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun clearHistory(promise: Promise) {
         prefs().edit().remove(HISTORY_KEY).apply()
+        reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().remove(HISTORY_KEY).apply()
         promise.resolve(null)
     }
 
-    // NativeEventEmitter parity (RN >= 0.65)
     @ReactMethod
     fun addListener(eventName: String?) {}
 
     @ReactMethod
-    fun removeListeners(count: Double) {}
+    fun removeListeners(count: Int) {}
 }
+
