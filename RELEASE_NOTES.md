@@ -53,7 +53,7 @@ Engineered specifically for financial cybersecurity researchers, penetration tes
 
 ### 📦 Official Release Binaries
 
-All binaries are compiled, verified, and downloadable directly from [**GitHub Releases**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest):
+All binaries are compiled, verified, and downloadable directly from [**GitHub Releases**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest):
 
 | Binary Artifact | Platform & Target | Role & Hardware Compatibility |
 |---|---|---|

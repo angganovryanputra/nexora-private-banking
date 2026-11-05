@@ -34,7 +34,7 @@ The suite provides 3 universal-architecture APK release binaries (`arm64-v8a`, `
 | **`nexora-universal-release.apk`** | **Universal Device** | Flexible standalone binary compatible with both phones and smartwatches. | ~61 MB |
 
 > [!TIP]
-> All APK binaries can be downloaded directly from the official [**GitHub Releases Tab**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest).
+> All APK binaries can be downloaded directly from the official [**GitHub Releases Tab**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest).
 
 ---
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/angganovryanputra/vulnbank-omniwear-suite/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="110" alt="Nexora OmniWear Logo" />
+  <img src="https://raw.githubusercontent.com/angganovryanputra/nexora-private-banking/main/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="110" alt="Nexora OmniWear Logo" />
 </p>
 
 <h1 align="center">🏛️ Nexora OmniWear Suite</h1>
@@ -11,8 +11,8 @@
 
 <p align="center">
   <!-- Release & Build Badges -->
-  <a href="https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest"><img src="https://img.shields.io/github/v/release/angganovryanputra/vulnbank-omniwear-suite?color=blue&style=flat-square" alt="Latest Release" /></a>
-  <a href="https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions/workflows/release.yml"><img src="https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions/workflows/release.yml/badge.svg" alt="Multi-Platform Build & Release" /></a>
+  <a href="https://github.com/angganovryanputra/nexora-private-banking/releases/latest"><img src="https://img.shields.io/github/v/release/angganovryanputra/nexora-private-banking?color=blue&style=flat-square" alt="Latest Release" /></a>
+  <a href="https://github.com/angganovryanputra/nexora-private-banking/actions/workflows/release.yml"><img src="https://github.com/angganovryanputra/nexora-private-banking/actions/workflows/release.yml/badge.svg" alt="Multi-Platform Build & Release" /></a>
   <img src="https://img.shields.io/badge/Backend-100%25_Air--Gapped_Local-green?style=flat-square" alt="Air-Gapped Local" />
   <img src="https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square" alt="MIT License" />
 </p>
@@ -47,16 +47,16 @@ Relying solely on traditional smartphone penetration tests leaves up to **80% of
 
 ## 📦 Official Multi-Platform Releases (1-Click Download)
 
-Pre-compiled, production-ready release packages are automatically compiled and published via our multi-platform CI/CD pipeline on [**GitHub Releases**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest):
+Pre-compiled, production-ready release packages are automatically compiled and published via our multi-platform CI/CD pipeline on [**GitHub Releases**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest):
 
 | Target Device | Package File | Compatibility & Architecture | Direct Download |
 |---|---|---|---|
-| ⌚ **Wear OS Watch** | `nexora-wear-release.apk` | Samsung Galaxy Watch, Pixel Watch, Wear OS 3+ (`arm64-v8a`, `x86_64`) | [📥 Download Wear APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/nexora-wear-release.apk) |
-| 📱 **Android Phone** | `nexora-companion-release.apk` | Android 10+ Physical Phone & Emulator | [📥 Download Companion APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/nexora-companion-release.apk) |
-| 🌐 **Universal Android** | `nexora-universal-release.apk` | Standalone hybrid binary for phone or watch | [📥 Download Universal APK](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/nexora-universal-release.apk) |
-| 🍏 **iPhone 11 (iOS)** | `nexora-ios-companion-release.ipa` | iPhone 11 / iOS 15.1+ (Sideload via Sideloadly / AltStore) | [🍏 Download iOS IPA](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/nexora-ios-companion-release.ipa) |
-| ⌚ **Apple Watch** | `Nexora-watchOS-Bundle.zip` | Apple Watch Series 9, Ultra (watchOS 9.0+) Native SwiftUI | [⌚ Download watchOS Bundle](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/Nexora-watchOS-Bundle.zip) |
-| 🔒 **Integrity Checksums** | `SHA256SUMS.txt` | Cryptographic SHA-256 Checksums for forensic audit verification | [🔒 Download SHA256SUMS](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest/download/SHA256SUMS.txt) |
+| ⌚ **Wear OS Watch** | `nexora-wear-release.apk` | Samsung Galaxy Watch, Pixel Watch, Wear OS 3+ (`arm64-v8a`, `x86_64`) | [📥 Download Wear APK](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/nexora-wear-release.apk) |
+| 📱 **Android Phone** | `nexora-companion-release.apk` | Android 10+ Physical Phone & Emulator | [📥 Download Companion APK](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/nexora-companion-release.apk) |
+| 🌐 **Universal Android** | `nexora-universal-release.apk` | Standalone hybrid binary for phone or watch | [📥 Download Universal APK](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/nexora-universal-release.apk) |
+| 🍏 **iPhone 11 (iOS)** | `nexora-ios-companion-release.ipa` | iPhone 11 / iOS 15.1+ (Sideload via Sideloadly / AltStore) | [🍏 Download iOS IPA](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/nexora-ios-companion-release.ipa) |
+| ⌚ **Apple Watch** | `Nexora-watchOS-Bundle.zip` | Apple Watch Series 9, Ultra (watchOS 9.0+) Native SwiftUI | [⌚ Download watchOS Bundle](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/Nexora-watchOS-Bundle.zip) |
+| 🔒 **Integrity Checksums** | `SHA256SUMS.txt` | Cryptographic SHA-256 Checksums for forensic audit verification | [🔒 Download SHA256SUMS](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/SHA256SUMS.txt) |
 
 *(Note: Legacy file names e.g. `vulnbank-wear-release.apk` are preserved in the release assets for backwards-compatibility).*
 
@@ -135,8 +135,8 @@ All event transmissions, wireless balance synchronizations, and 2FA authorizatio
 ### 1. Launch the Air-Gapped Local Backend
 Ensure Python 3.9+ is installed, then launch the local server:
 ```bash
-git clone https://github.com/angganovryanputra/vulnbank-omniwear-suite.git
-cd vulnbank-omniwear-suite
+git clone https://github.com/angganovryanputra/nexora-private-banking.git
+cd nexora-private-banking
 python backend/server.py
 ```
 > Server runs on `http://0.0.0.0:5000` (`http://127.0.0.1:5000` or `http://10.0.2.2:5000` for Android Emulator).

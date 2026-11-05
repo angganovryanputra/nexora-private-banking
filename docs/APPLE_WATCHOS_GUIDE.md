@@ -53,7 +53,7 @@ The Nexora Apple banking ecosystem features a hybrid architecture: **React Nativ
 ```
 
 ### Official Release Binaries
-All binaries can be downloaded directly from the [**GitHub Releases Tab**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest):
+All binaries can be downloaded directly from the [**GitHub Releases Tab**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest):
 
 | File Name | Target Hardware | Format & Role |
 |---|---|---|
@@ -79,8 +79,8 @@ Open Terminal on your Mac:
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/angganovryanputra/vulnbank-omniwear-suite.git
-cd vulnbank-omniwear-suite
+git clone https://github.com/angganovryanputra/nexora-private-banking.git
+cd nexora-private-banking
 
 # 2. Install Node dependencies
 npm install --legacy-peer-deps
@@ -143,7 +143,7 @@ python3 backend/server.py
 ## 📱 3. Lab Setup Using Physical Devices (Real iPhone 11 & Apple Watch)
 
 ### Method A: Sideloading via Sideloadly / AltStore (Free Apple ID)
-1. Download **`nexora-ios-companion-release.ipa`** from [GitHub Releases](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest).
+1. Download **`nexora-ios-companion-release.ipa`** from [GitHub Releases](https://github.com/angganovryanputra/nexora-private-banking/releases/latest).
 2. Download and launch [Sideloadly](https://sideloadly.io/) on your PC or Mac.
 3. Connect your iPhone 11 via Lightning USB cable.
 4. Drag-and-drop the `.ipa` file into Sideloadly.
