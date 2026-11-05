@@ -44,7 +44,7 @@ The Nexora Apple banking ecosystem features a hybrid architecture: **React Nativ
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
 │             Apple Watch Series 9 / Ultra (watchOS 9.0+)     │
-│  - Target Victim: Native SwiftUI Target (`VulnBankWatch`)   │
+│  - Target Victim: Native SwiftUI Target (`NexoraWatch`)   │
 │  - Insecure Storage: `UserDefaults.standard` Plist          │
 │  - Quick-PIN Pad 3x4 & SNAP QRIS Display                    │
 │  - Optical PPG Pulse Sensor & Wrist-Off Gatekeeper          │
@@ -58,7 +58,7 @@ All binaries can be downloaded directly from the [**GitHub Releases Tab**](https
 | File Name | Target Hardware | Format & Role |
 |---|---|---|
 | **`nexora-ios-companion-release.ipa`** | iPhone 11 / iOS 15.1+ | Production-built iOS installer for sideloading (AltStore / Sideloadly). |
-| **`Nexora-watchOS-Bundle.zip`** | Apple Watch / Xcode | Native SwiftUI Watch App bundle (`VulnBankWatch`) + bridging headers for direct compilation and debugging in Xcode. |
+| **`Nexora-watchOS-Bundle.zip`** | Apple Watch / Xcode | Native SwiftUI Watch App bundle (`NexoraWatch`) + bridging headers for direct compilation and debugging in Xcode. |
 | **`SHA256SUMS.txt`** | All Artifacts | Cryptographic SHA-256 verification hashes for chain of custody preservation. |
 
 ---
@@ -201,7 +201,7 @@ Nexora Watch replicates a premier private digital banking workflow:
 - **Vulnerability Standard**: CWE-319 (Cleartext Transmission of Sensitive Information)
 - **Description**:
   Communication between iPhone Companion and Apple Watch uses Apple's native `WatchConnectivity` (`WCSession`). Transaction instructions, account balances, and authorization tokens are transmitted as plain Objective-C/Swift dictionaries without application-layer AES-GCM encryption. A runtime memory sniffer or proxy can intercept and tamper with packets.
-- **Root Cause Code** ([`ios/VulnBankWatch/WatchSessionManager.swift`](file:///ios/VulnBankWatch/WatchSessionManager.swift#L45-L65)):
+- **Root Cause Code** ([`ios/NexoraWatch/WatchSessionManager.swift`](file:///ios/NexoraWatch/WatchSessionManager.swift#L45-L65)):
   ```swift
   // VULNERABLE: WCSession packet handled without application-layer encryption
   public func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
@@ -230,7 +230,7 @@ Nexora Watch replicates a premier private digital banking workflow:
 - **Vulnerability Standard**: CWE-312 (Cleartext Storage of Sensitive Information), CWE-922 (Insecure Storage)
 - **Description**:
   Sensitive banking tokens, customer account numbers, and Quick-PINs are stored in unencrypted `UserDefaults.standard` plists in the watch sandboxed container, bypassing **Apple Keychain Services (`kSecClassGenericPassword`)** and Secure Enclave.
-- **Root Cause Code** ([`ios/VulnBankWatch/InsecureStorage.swift`](file:///ios/VulnBankWatch/InsecureStorage.swift#L29-L43)):
+- **Root Cause Code** ([`ios/NexoraWatch/InsecureStorage.swift`](file:///ios/NexoraWatch/InsecureStorage.swift#L29-L43)):
   ```swift
   // VULNERABLE: Plaintext write to UserDefaults plist
   public func saveAuthToken(_ token: String) {
@@ -251,7 +251,7 @@ Nexora Watch replicates a premier private digital banking workflow:
 - **Vulnerability Standard**: CWE-307 (Excessive Authentication Attempts)
 - **Description**:
   The 4-digit Quick-PIN has only 10,000 combinations. The watch app lacks exponential delay, hardware backoff, or remote wipe after failed attempts.
-- **Root Cause Code** ([`ios/VulnBankWatch/QuickPinPadView.swift`](file:///ios/VulnBankWatch/QuickPinPadView.swift#L80-L95)):
+- **Root Cause Code** ([`ios/NexoraWatch/QuickPinPadView.swift`](file:///ios/NexoraWatch/QuickPinPadView.swift#L80-L95)):
   ```swift
   if enteredPin == correctPin {
       isAuthenticated = true
@@ -269,7 +269,7 @@ Nexora Watch replicates a premier private digital banking workflow:
 - **Vulnerability Standard**: CWE-287 (Improper Authentication), CWE-345 (Insufficient Verification)
 - **Description**:
   Approving a $50,000 international wire transfer on Apple Watch sends a bare dictionary `{"action": "APPROVE_2FA", "tx_id": ...}` without Secure Enclave biometric validation (`LocalAuthentication.LAContext`).
-- **Root Cause Code** ([`ios/VulnBankWatch/TwoFactorApprovalView.swift`](file:///ios/VulnBankWatch/TwoFactorApprovalView.swift#L50-L68)):
+- **Root Cause Code** ([`ios/NexoraWatch/TwoFactorApprovalView.swift`](file:///ios/NexoraWatch/TwoFactorApprovalView.swift#L50-L68)):
   ```swift
   Button(action: {
       sessionManager.send2FAResolution(txId: tx["tx_id"] as? String ?? "", approved: true)

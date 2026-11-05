@@ -29,15 +29,6 @@ class MainActivity : ReactActivity() {
     editor.putString("debug_flag", "FLAG{NexoraVault_HardcodedSecrets_CWE312}")
     editor.apply()
 
-    // Legacy mirror for automated pentest scripts
-    val legacyPrefs = getSharedPreferences("VulnBankPrefs", Context.MODE_PRIVATE)
-    legacyPrefs.edit()
-      .putString("username", "admin")
-      .putString("password", "admin123")
-      .putString("balance", "$999999")
-      .putString("debug_flag", "FLAG{NexoraVault_HardcodedSecrets_CWE312}")
-      .apply()
-
     // V-W10: Quick-PIN stored as weak unsalted MD5 hash ('1234' = 81dc9bdb52d04dc20036dbd8313ed055)
     val pinPrefs = getSharedPreferences("quick_pin", Context.MODE_PRIVATE)
     if (!pinPrefs.contains("pin_hash")) {
@@ -48,7 +39,7 @@ class MainActivity : ReactActivity() {
         .apply()
     }
 
-    // V-W07: Deep Link Handling (nexorabank://transfer & vulnbank://transfer)
+    // V-W07: Deep Link Handling (nexorabank://transfer)
     handleDeepLinkIntent(intent)
   }
 
@@ -59,7 +50,7 @@ class MainActivity : ReactActivity() {
 
   private fun handleDeepLinkIntent(intent: Intent?) {
     val data = intent?.data ?: return
-    if ((data.scheme == "nexorabank" || data.scheme == "vulnbank") && data.host == "transfer") {
+    if (data.scheme == "nexorabank" && data.host == "transfer") {
       val to = data.getQueryParameter("to") ?: "UNKNOWN"
       val amount = data.getQueryParameter("amount") ?: "0"
       val auto = data.getQueryParameter("auto") == "true"

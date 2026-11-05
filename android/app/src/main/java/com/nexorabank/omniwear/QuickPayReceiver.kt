@@ -20,16 +20,14 @@ class QuickPayReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_QUICK_PAY = "com.nexorabank.omniwear.ACTION_QUICK_PAY"
-        const val LEGACY_ACTION_QUICK_PAY = "com.vulnerablebankapp.ACTION_QUICK_PAY"
         const val LOG_TAG = "NEXORA_QUICK_PAY"
         const val PREFS_NAME = "NexoraVaultPrefs"
-        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent == null) return
         val act = intent.action
-        if (act != ACTION_QUICK_PAY && act != LEGACY_ACTION_QUICK_PAY) return
+        if (act != ACTION_QUICK_PAY) return
 
         val recipient = intent.getStringExtra("recipient") ?: "UNKNOWN_RECIPIENT"
         val amount = intent.getFloatExtra("amount", 0.0f)
@@ -41,7 +39,6 @@ class QuickPayReceiver : BroadcastReceiver() {
         )
 
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val legacyPrefs = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
 
         val txJson = JSONArray(prefs.getString("recent_transactions", "[]"))
         val newTx = JSONObject().apply {
@@ -55,7 +52,6 @@ class QuickPayReceiver : BroadcastReceiver() {
 
         val txStr = txJson.toString()
         prefs.edit().putString("recent_transactions", txStr).apply()
-        legacyPrefs.edit().putString("recent_transactions", txStr).apply()
 
         Toast.makeText(
             context,

@@ -4,7 +4,7 @@
 
 **Goal:** Strip all external internet backend URLs across Wear OS, Android, watchOS, and iOS applications so they operate strictly with the local air-gapped Python/Flask backend, rebuild updated APKs, and transform the main repository `README.md` into an elite, search-optimized (SEO) cybersecurity showcase for smartwatch pentesting researchers and tender evaluators.
 
-**Architecture:** The entire ecosystem (Android Phone, Wear OS Smartwatch, iPhone 11, Apple Watch) routes exclusively through the local Python Flask relay (`0.0.0.0:5000`) and local ad-hoc channels (`WCSession` / Bluetooth LE). All external domain dependencies (such as `vulnbank.org`) are removed and replaced with local network targeting (Emulator `10.0.2.2:5000`, Simulator `localhost:5000`, and LAN `192.168.1.X:5000`).
+**Architecture:** The entire ecosystem (Android Phone, Wear OS Smartwatch, iPhone 11, Apple Watch) routes exclusively through the local Python Flask relay (`0.0.0.0:5000`) and local ad-hoc channels (`WCSession` / Bluetooth LE). All external domain dependencies (such as `nexorabank.internal`) are removed and replaced with local network targeting (Emulator `10.0.2.2:5000`, Simulator `localhost:5000`, and LAN `192.168.1.X:5000`).
 
 **Tech Stack:** React Native 0.82, Native SwiftUI (watchOS 9+), Python 3 / Flask / SQLite3, Markdown (GitHub Flavored with Badges & Mermaid).
 
@@ -30,14 +30,14 @@
 
 **Interfaces:**
 - Consumes: `setApiBase(url: string)`
-- Produces: Clean local network endpoints (`10.0.2.2:5000`, `localhost:5000`, `192.168.1.x:5000`) with zero references to `vulnbank.org`.
+- Produces: Clean local network endpoints (`10.0.2.2:5000`, `localhost:5000`, `192.168.1.x:5000`) with zero references to `nexorabank.internal`.
 
 - [ ] **Step 1: Check existing references to external URLs**
-  Run: `git grep -i "vulnbank.org"`
+  Run: `git grep -i "nexorabank.internal"`
   Expected: Found in `PentestLabScreen.tsx` and comments.
 
 - [ ] **Step 2: Update `PentestLabScreen.tsx` to replace Cloud switcher with LAN Wi-Fi Switcher**
-  Replace `https://vulnbank.org` with local Wi-Fi LAN target (`http://192.168.1.100:5000`).
+  Replace `https://nexorabank.internal` with local Wi-Fi LAN target (`http://192.168.1.100:5000`).
   
 - [ ] **Step 3: Update `src/utils/api.ts` comments to remove any external cloud references**
   Ensure default comments explicitly denote local air-gapped execution.
@@ -47,7 +47,7 @@
   Expected: PASS with 0 errors.
 
 - [ ] **Step 5: Verify zero external cloud references in codebase**
-  Run: `powershell -Command "Get-ChildItem -Recurse -Path 'src', 'backend', 'ios', 'android' -File | Select-String -Pattern 'vulnbank\.org'"`
+  Run: `powershell -Command "Get-ChildItem -Recurse -Path 'src', 'backend', 'ios', 'android' -File | Select-String -Pattern 'nexorabank\.org'"`
   Expected: Empty output (zero matches).
 
 ---
@@ -55,16 +55,16 @@
 ### Task 2: Recompile Android Release APKs (Local Backend Only)
 
 **Files:**
-- Modify: `vulnbank-universal-release.apk`
-- Modify: `vulnbank-wear-release.apk`
-- Modify: `vulnbank-mobile-companion-release.apk`
+- Modify: `nexora-universal-release.apk`
+- Modify: `nexora-wear-release.apk`
+- Modify: `nexora-companion-release.apk`
 
 - [ ] **Step 1: Execute Gradle release build**
   Run: `cd android && ./gradlew assembleRelease`
   Expected: `BUILD SUCCESSFUL`.
 
 - [ ] **Step 2: Distribute new APK binaries to root folder**
-  Copy `app-release.apk` to `vulnbank-universal-release.apk`, `vulnbank-wear-release.apk`, and `vulnbank-mobile-companion-release.apk`.
+  Copy `app-release.apk` to `nexora-universal-release.apk`, `nexora-wear-release.apk`, and `nexora-companion-release.apk`.
 
 ---
 
@@ -89,6 +89,6 @@
 ### Task 4: Git Commit & Remote Synchronization
 
 - [ ] **Step 1: Stage and commit all changes**
-- [ ] **Step 2: Push to `main` branch on GitHub repository `angganovryanputra/vulnbank-omniwear-suite`**
+- [ ] **Step 2: Push to `main` branch on GitHub repository `angganovryanputra/nexora-private-banking`**
 - [ ] **Step 3: Verify GitHub remote state**
 

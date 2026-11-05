@@ -31,11 +31,9 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
     companion object {
         const val NAME = "BluetoothSync"
         const val ACTION_BT_SYNC = "com.nexorabank.omniwear.ACTION_BT_SYNC"
-        const val LEGACY_ACTION_BT_SYNC = "com.vulnerablebankapp.ACTION_BT_SYNC"
         const val ACTION_BT_BEACON = "com.nexorabank.omniwear.ACTION_BT_BEACON"
         const val LOG_TAG = "NEXORA_BT_SYNC"
         const val PREFS_NAME = "NexoraVaultPrefs"
-        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun getName() = NAME
@@ -44,7 +42,7 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent == null) return
             val act = intent.action
-            if (act != ACTION_BT_SYNC && act != LEGACY_ACTION_BT_SYNC) return
+            if (act != ACTION_BT_SYNC) return
 
             val payloadStr = intent.getStringExtra("sync_payload") ?: "{}"
             Log.w(LOG_TAG, "⚠️ [V-B01 EXPLOIT] Received unauthenticated BLE sync packet: $payloadStr")
@@ -56,10 +54,8 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
 
                 // V-B02: Replay vulnerability - packet is processed unconditionally without nonce check
                 val prefs = reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                val legacyPrefs = reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
                 if (action == "UPDATE_BALANCE") {
                     prefs.edit().putString("balance", "Rp ${amount.toLong()}").apply()
-                    legacyPrefs.edit().putString("balance", "$$amount").apply()
                 }
 
                 // Store last synced payload for inspection
@@ -91,10 +87,7 @@ class BluetoothSyncModule(private val reactContext: ReactApplicationContext) :
     }
 
     init {
-        val filter = IntentFilter().apply {
-            addAction(ACTION_BT_SYNC)
-            addAction(LEGACY_ACTION_BT_SYNC)
-        }
+        val filter = IntentFilter(ACTION_BT_SYNC)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             reactContext.registerReceiver(syncReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {

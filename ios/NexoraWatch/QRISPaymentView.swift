@@ -48,7 +48,7 @@ struct QRISPaymentView: View {
                             Image(systemName: "qrcode")
                                 .font(.system(size: qrBoxSize * 0.55))
                                 .foregroundColor(.black)
-                            Text("VULNBANK")
+                            Text("NEXORA")
                                 .font(.system(size: 6, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
                                 .tracking(0.5)
@@ -56,7 +56,7 @@ struct QRISPaymentView: View {
                     }
                     .padding(.vertical, 2)
                     
-                    Text("Merchant: VULNBANK MERCH 001")
+                    Text("Merchant: NEXORA MERCH 001")
                         .font(.system(size: 7, weight: .medium))
                         .foregroundColor(WatchTheme.textLight)
                     

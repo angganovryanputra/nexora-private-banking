@@ -5,11 +5,11 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>VulnBank Watch</string>
+    <string>Nexora Watch</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
-    <string>org.owasp.vulnbank.watchkitapp</string>
+    <string>com.nexorabank.omniwear.watchkitapp</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -27,7 +27,7 @@
     <key>WKApplication</key>
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
-    <string>org.owasp.vulnbank</string>
+    <string>com.nexorabank.omniwear</string>
 </dict>
 </plist>
 

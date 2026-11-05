@@ -1,12 +1,12 @@
 # 🍎 TUTORIAL SETUP, WORKFLOW & WRITEUP PENTEST SMARTWATCH (APPLE WATCHOS & IPHONE 11)
-## Nexora OmniWear (formerly VulnBank): Enterprise Assessment Framework for Apple Watch & iOS Companion
+## Nexora OmniWear (OmniWear Suite): Enterprise Assessment Framework for Apple Watch & iOS Companion
 ### Standar Kepatuhan: OJK POJK 11/POJK.03/2022, Bank Indonesia SNAP QRIS, & PCI-DSS v4.0
 
 > [!IMPORTANT]
 > **DOKUMENTASI RESMI TERPISAH BERDASARKAN LINGKUNGAN:**
 > - 🍏 **Dokumentasi Utama Apple iOS & watchOS**: Kunjungi [**`docs/APPLE_WATCHOS_GUIDE.md`**](docs/APPLE_WATCHOS_GUIDE.md) untuk panduan instalasi di MacBook Intel/M-series, setup Paired Simulator, sideloading iPhone 11, serta writeup detail 8 skenario eksploitasi.
 > - 🤖 **Dokumentasi Utama Android & Wear OS**: Kunjungi [**`docs/ANDROID_WEAROS_GUIDE.md`**](docs/ANDROID_WEAROS_GUIDE.md).
-> - 📦 **Unduh Biner Siap Pakai**: Unduh berkas `.ipa`, `.apk`, dan `.zip` di [**GitHub Releases Tab**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest).
+> - 📦 **Unduh Biner Siap Pakai**: Unduh berkas `.ipa`, `.apk`, dan `.zip` di [**GitHub Releases Tab**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest).
 
 ---
 
@@ -108,8 +108,8 @@ Jalankan perintah berikut di Terminal untuk mengunduh source code lengkap:
 
 ```bash
 cd ~/Desktop
-git clone https://github.com/angganovryanputra/vulnbank-omniwear-suite.git
-cd vulnbank-omniwear-suite
+git clone https://github.com/angganovryanputra/nexora-private-banking.git
+cd nexora-private-banking
 ```
 
 ---
@@ -159,7 +159,7 @@ Simulator iPhone dan Apple Watch harus berstatus "Paired" agar komunikasi `WCSes
 3. Di panel sebelah kiri, pilih salah satu simulator iPhone (misalnya **iPhone 15** atau **iPhone 11**):
    - Periksa bagian **Paired Watch**:
    - Jika sudah tertulis misalnya *Apple Watch Series 9 (45mm)*, berarti sudah terpasang (*paired*).
-   - Jika belum ada (*None*), klik tombol **`+`** di bawah panel Paired Watches > beri nama watch baru (misal: *VulnBank Apple Watch*) > pilih Watch Model (*Apple Watch Series 9*) dan OS (*watchOS 10*) > klik **Pair**.
+   - Jika belum ada (*None*), klik tombol **`+`** di bawah panel Paired Watches > beri nama watch baru (misal: *Nexora Apple Watch*) > pilih Watch Model (*Apple Watch Series 9*) dan OS (*watchOS 10*) > klik **Pair**.
 4. Tutup jendela Devices and Simulators.
 
 ---
@@ -170,14 +170,14 @@ Agar skenario transfer uang, push 2FA, dan injeksi saldo bekerja secara real-tim
 
 - **Tab Terminal 1 (Backend Flask Relay):**
   ```bash
-  cd ~/Desktop/vulnbank-omniwear-suite
+  cd ~/Desktop/nexora-private-banking
   python3 backend/server.py
   ```
   *Output:* `* Running on all addresses (0.0.0.0:5000)`
 
 - **Tab Terminal 2 (React Native Metro Bundler):**
   ```bash
-  cd ~/Desktop/vulnbank-omniwear-suite
+  cd ~/Desktop/nexora-private-banking
   npm start
   ```
   *Output:* `Welcome to Metro v0.82.1... Type 'i' to run on iOS`
@@ -190,7 +190,7 @@ Agar skenario transfer uang, push 2FA, dan injeksi saldo bekerja secara real-tim
 
 1. Jalankan perintah ini di terminal (atau double click file via Finder):
    ```bash
-   cd ~/Desktop/vulnbank-omniwear-suite/ios
+   cd ~/Desktop/nexora-private-banking/ios
    open VulnerableBankApp.xcworkspace
    ```
 2. Tunggu hingga proses indexing Xcode selesai (bar indikator di tengah atas Xcode menampilkan status *Ready*).
@@ -236,8 +236,8 @@ Agar skenario transfer uang, push 2FA, dan injeksi saldo bekerja secara real-tim
 Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dari laptop Windows menggunakan Apple ID gratis.
 
 1. **Unduh File IPA dari GitHub Actions:**
-   - Buka: [https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions](https://github.com/angganovryanputra/vulnbank-omniwear-suite/actions)
-   - Pilih workflow run terbaru dan unduh artefak `vulnbank-watchos-suite.zip`.
+   - Buka: [https://github.com/angganovryanputra/nexora-private-banking/actions](https://github.com/angganovryanputra/nexora-private-banking/actions)
+   - Pilih workflow run terbaru dan unduh artefak `Nexora-watchOS-Bundle.zip`.
 2. **Install Tool Sideloading di Windows:**
    - Unduh dan instal **[Sideloadly](https://sideloadly.io/)** (atau AltStore Windows).
    - Pastikan **iTunes** dan **iCloud for Windows** (versi non-Microsoft Store) sudah terinstal agar driver Apple Mobile Device Service aktif.
@@ -287,12 +287,12 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
   2. Buka layar **Pentest Lab** di Apple Watch, tap tombol **V-AP01: Plist Storage Dump**.
   3. Atau jalankan inspeksi container simulator via terminal:
      ```bash
-     xcrun simctl get_app_container booted org.owasp.vulnbank.watchkitapp data
-     cat <CONTAINER_PATH>/Library/Preferences/org.owasp.vulnbank.watchkitapp.plist
+     xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data
+     cat <CONTAINER_PATH>/Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist
      ```
 - **Panduan Screenshot POC:**
   - `[POC-AP-1A]` Tangkapan layar Apple Watch menampilkan banner kuning: `[V-AP01] Dumped Plist Token: eyJhbGciOiJIUzI1...`
-  - `[POC-AP-1B]` Tangkapan terminal / Plist Editor menampilkan kunci `vulnbank_auth_token` dan `vulnbank_quick_pin` dalam bentuk teks polos (plaintext).
+  - `[POC-AP-1B]` Tangkapan terminal / Plist Editor menampilkan kunci `nexora_auth_token` dan `nexora_quick_pin` dalam bentuk teks polos (plaintext).
 
 ---
 
@@ -365,7 +365,7 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
 - **Ringkasan:** String QRIS dinamis yang dihasilkan di layar jam menggunakan pengenal transaksi statis dan tidak divalidasi timestamp kedaluwarsanya di server backend, memungkinkan serangan replay pembayaran berulang kali.
 - **Langkah Eksploitasi:**
   1. Buka layar **QRIS Pay** di Apple Watch.
-  2. Tangkap string SNAP QRIS yang muncul di bawah frame QR (`00020101021226610016ID.VULNBANK...`).
+  2. Tangkap string SNAP QRIS yang muncul di bawah frame QR (`00020101021226610016ID.NEXORA...`).
   3. Lakukan pembayaran merchant simulasi pertama.
   4. Tunggu countdown 120 detik habis, lalu gunakan kembali payload string QR yang sama untuk pembayaran kedua.
   5. Backend menerima transaksi kedua tanpa penolakan kedaluwarsa.
@@ -410,7 +410,7 @@ Simpan skrip di bawah ini dengan nama `frida_watchos_suite.js`:
 
 ```javascript
 /*
- * VulnBank OmniWear — Frida Instrumentation Suite for iOS & watchOS
+ * Nexora OmniWear — Frida Instrumentation Suite for iOS & watchOS
  * Usage: frida -U -n "VulnerableBankApp" -l frida_watchos_suite.js
  */
 
@@ -436,7 +436,7 @@ if (ObjC.available) {
         Interceptor.attach(NSUserDefaults['- stringForKey:'].implementation, {
             onEnter: function (args) {
                 var key = ObjC.Object(args[2]).toString();
-                if (key.indexOf("vulnbank") !== -1) {
+                if (key.indexOf("nexorabank") !== -1) {
                     console.log("[!] [V-AP01] UserDefaults access for sensitive key: " + key);
                 }
             }

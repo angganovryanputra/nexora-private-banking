@@ -14,7 +14,7 @@ Engineered specifically for financial cybersecurity researchers, penetration tes
 
 1. **Complete Brand Neutralization & Identifier Migration (`com.nexorabank.omniwear`)**:
    - Replaced all legacy package identifiers with `com.nexorabank.omniwear` across all native Java/Kotlin code, build configurations, and AndroidManifest.
-   - Dual-intent filter architecture maintained: accepts both `com.nexorabank.omniwear.*` and `com.vulnerablebankapp.*` intents and deep links (`nexorabank://` and `vulnbank://`) to ensure 100% backward compatibility with existing automated testing scripts.
+   - Modernized architecture: enforces `com.nexorabank.omniwear.*` intents and deep links (`nexorabank://`) for enterprise security compliance.
    - Rebranded app icons with bespoke high-resolution vector-rendered luxury banking iconography (Obsidian base, sapphire glow, dual gold bezel, architectural monogram N, emerald key center) across all Android mipmap densities (`mdpi` to `xxxhdpi`) and iOS asset sets.
 
 2. **WCAG 2.2 Accessibility & Circular Smartwatch Ergonomics**:
@@ -64,7 +64,7 @@ All binaries are compiled, verified, and downloadable directly from [**GitHub Re
 | **`Nexora-watchOS-Bundle.zip`** | ⌚ **Apple watchOS 9+** | Native SwiftUI Watch App (`NexoraWatch`) + WatchBridge for direct deployment via Xcode. |
 | **`SHA256SUMS.txt`** | 🔒 **Forensic Checksums** | Cryptographic verification hashes ensuring complete chain of custody integrity. |
 
-*(Note: Legacy file names e.g. `vulnbank-wear-release.apk` remain attached as backwards-compatibility aliases).*
+*(All binaries are cryptographic verified with official SHA-256 signatures).*
 
 ---
 

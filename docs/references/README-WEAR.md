@@ -1,6 +1,6 @@
-# VulnBank Wear OS — Catatan Porting
+# Nexora OmniWear OS — Catatan Porting
 
-Porting **VulnBank mobile** (React Native 0.79.1, upstream:
+Porting **Nexora Bank Mobile** (React Native 0.79.1, upstream:
 [Commando-X/vuln-bank-mobile](https://github.com/Commando-X/vuln-bank-mobile))
 dari ponsel Android ke **Wear OS**, mempertahankan seluruh kerentanan asli
 dan menambahkan attack surface khas smartwatch.
@@ -55,7 +55,7 @@ dan menambahkan attack surface khas smartwatch.
 - `build.gradle`: abiFilters `arm64-v8a`, `x86_64`; buildTools 36.0.0.
 
 ### Yang TIDAK berubah (kerentanan asli dipertahankan)
-- `API_BASE = https://vulnbank.org` (src/utils/api.ts)
+- `API_BASE = https://nexorabank.internal` (src/utils/api.ts)
 - JWT di AsyncStorage plaintext (AuthContext.tsx)
 - Otorisasi admin client-side (`username === 'admin'`)
 - `Secrets.java` (hardcoded JWT, IP internal, API key)

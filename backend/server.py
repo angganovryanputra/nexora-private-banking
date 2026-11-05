@@ -39,16 +39,6 @@ if hasattr(sys.stderr, 'reconfigure'):
 app = Flask(__name__)
 DB_NAME = 'nexora_vault.db'
 DB_PATH = os.path.join(os.path.dirname(__file__), DB_NAME)
-LEGACY_DB_PATH = os.path.join(os.path.dirname(__file__), 'vulnbank.db')
-
-# Automatic migration from legacy DB if nexora_vault.db does not exist yet
-if not os.path.exists(DB_PATH) and os.path.exists(LEGACY_DB_PATH):
-    import shutil
-    try:
-        shutil.copy2(LEGACY_DB_PATH, DB_PATH)
-        print(f"📦 Migrated legacy database '{LEGACY_DB_PATH}' -> '{DB_PATH}'")
-    except Exception as e:
-        print(f"⚠️ Database migration notice: {e}")
 
 # Hardcoded valid Master JWT (matches Secrets.java)
 MASTER_JWT = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc0NDk3NjIyM30.yXm-7iN-6sn3kvvXkOiOLVRHXSn6MBSpwbM2VcXVds8"

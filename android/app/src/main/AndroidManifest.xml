@@ -38,18 +38,12 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
 
-        <!-- V-W07: Unauthenticated Deep Link CSRF (nexorabank://transfer & legacy vulnbank://transfer) -->
+        <!-- V-W07: Unauthenticated Deep Link CSRF (nexorabank://transfer) -->
         <intent-filter>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="nexorabank" android:host="transfer" />
-        </intent-filter>
-        <intent-filter>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.DEFAULT" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="vulnbank" android:host="transfer" />
         </intent-filter>
       </activity>
 
@@ -72,7 +66,6 @@
         android:exported="true">
         <intent-filter>
             <action android:name="com.nexorabank.omniwear.ACTION_QUICK_PAY" />
-            <action android:name="com.vulnerablebankapp.ACTION_QUICK_PAY" />
         </intent-filter>
       </receiver>
 
@@ -82,9 +75,7 @@
         android:exported="true">
         <intent-filter>
             <action android:name="com.nexorabank.omniwear.ACTION_APPROVE_2FA" />
-            <action android:name="com.vulnerablebankapp.ACTION_APPROVE_2FA" />
             <action android:name="com.nexorabank.omniwear.ACTION_TRIGGER_OTP" />
-            <action android:name="com.vulnerablebankapp.ACTION_TRIGGER_OTP" />
         </intent-filter>
       </receiver>
 

@@ -35,7 +35,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
     companion object {
         const val NAME = "HeartRate"
         const val PREFS_NAME = "NexoraVaultPrefs"
-        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
         const val HISTORY_KEY = "heart_rate_history"
         const val LOG_TAG = "NEXORA_HEALTH_TELEMETRY"
         const val MAX_HISTORY = 500
@@ -62,10 +61,6 @@ class HeartRateModule(private val reactContext: ReactApplicationContext) :
         }
         val serialized = json.toString()
         prefs().edit().putString(HISTORY_KEY, serialized).apply()
-
-        // Legacy mirror
-        reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-            .edit().putString(HISTORY_KEY, serialized).apply()
     }
 
     private fun emit(bpm: Int, timestampSec: Long) {

@@ -22,7 +22,7 @@
 1. Phone presses "Sync Balance" while Watch is on Dashboard: Watch balance must update on-screen within 2 seconds without user manual refresh.
 2. Phone pushes "2FA Alert": Watch must pop up the 2FA Approval Card in real time with the exact amount and merchant from the phone.
 3. Watch clicks "Approve 2FA": Phone Companion screen must reflect "Status: Approved" instantly.
-4. Smartwatch pairing code `839-201` entered on Phone Companion: Both devices register as paired in `backend/vulnbank.db`.
+4. Smartwatch pairing code `839-201` entered on Phone Companion: Both devices register as paired in `backend/nexora_vault.db`.
 5. Packet sniffer endpoint `GET /api/wearable/packets` in backend exposes full unencrypted sync payloads for MITM demonstrations.
 
 ---
@@ -35,7 +35,7 @@
 - Test: `backend/test_wearable_relay.py`
 
 **Interfaces:**
-- Consumes: `backend/vulnbank.db` SQLite connection.
+- Consumes: `backend/nexora_vault.db` SQLite connection.
 - Produces: 
   - `POST /api/wearable/pair` (`{pairing_code, device_name, device_type}`) -> `{status, device_id, paired_account, auth_token}`
   - `POST /api/wearable/dispatch` (`{target_device_id, action, payload}`) -> `{status, event_id}`

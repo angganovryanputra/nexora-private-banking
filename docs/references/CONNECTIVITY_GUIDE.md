@@ -1,12 +1,12 @@
-# 🌐 Panduan Koneksi Backend & Skenario Companion Dual-Device VulnBank Wear
+# 🌐 Panduan Koneksi Backend & Skenario Companion Dual-Device Nexora OmniWear
 
-Panduan lengkap mengenai cara menghubungkan aplikasi **VulnBank Wear** (baik di emulator maupun perangkat fisik) ke local Flask backend, serta cara melakukan pengujian skenario *Companion App* (Smartphone + Smartwatch).
+Panduan lengkap mengenai cara menghubungkan aplikasi **Nexora OmniWear** (baik di emulator maupun perangkat fisik) ke local Flask backend, serta cara melakukan pengujian skenario *Companion App* (Smartphone + Smartwatch).
 
 ---
 
 ## 🏛️ 1. Arsitektur Koneksi Backend
 
-Backend Python Flask (`backend/server.py`) berjalan di PC Windows Anda pada port `5000` dan bertindak sebagai pusat database (`vulnbank.db`) sekaligus *relay* komunikasi antara smartphone dan smartwatch.
+Backend Python Flask (`backend/server.py`) berjalan di PC Windows Anda pada port `5000` dan bertindak sebagai pusat database (`nexora_vault.db`) sekaligus *relay* komunikasi antara smartphone dan smartwatch.
 
 ```
 ┌────────────────────────┐         ┌────────────────────────┐
@@ -49,7 +49,7 @@ Perangkat fisik memerlukan alamat IP lokal PC Anda di jaringan Wi-Fi yang sama.
    Buka CMD / PowerShell dan ketik `ipconfig`. Amati IPv4 Address pada adapter Wi-Fi Anda (contoh: `192.168.100.19`).
 2. **Pastikan Satu Jaringan:** Pastikan HP/Smartwatch fisik terhubung ke jaringan Wi-Fi yang sama dengan PC.
 3. **Ubah API Base URL di Aplikasi:**
-   * Di dalam aplikasi VulnBank pada perangkat fisik, masuk ke menu **Pentest Lab** atau pengaturan Companion, lalu arahkan URL backend ke:
+   * Di dalam aplikasi NexoraBank pada perangkat fisik, masuk ke menu **Pentest Lab** atau pengaturan Companion, lalu arahkan URL backend ke:
      `http://192.168.100.19:5000`
 4. **Firewall Windows:** Pastikan Windows Firewall mengizinkan akses ke port `5000`.
 
@@ -61,8 +61,8 @@ Untuk mendemonstrasikan integrasi *Companion App*, Anda dapat menggunakan kombin
 
 ### Langkah-Langkah Pengujian:
 1. **Instal APK di Kedua Perangkat:**
-   * **Smartphone (Companion):** Pasang `vulnbank-mobile-companion-release.apk`
-   * **Smartwatch (Wear OS):** Pasang `vulnbank-wear-release.apk`
+   * **Smartphone (Companion):** Pasang `nexora-companion-release.apk`
+   * **Smartwatch (Wear OS):** Pasang `nexora-wear-release.apk`
 2. **Pastikan Keduanya Terhubung ke Backend yang Sama:**
    * Pastikan HP dan Watch dapat mengakses Flask backend (`http://...:5000`).
 3. **Lakukan Pair Perangkat:**

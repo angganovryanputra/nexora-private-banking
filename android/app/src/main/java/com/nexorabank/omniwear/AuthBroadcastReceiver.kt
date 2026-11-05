@@ -23,26 +23,21 @@ class AuthBroadcastReceiver : BroadcastReceiver() {
 
     companion object {
         const val ACTION_APPROVE_2FA = "com.nexorabank.omniwear.ACTION_APPROVE_2FA"
-        const val LEGACY_ACTION_APPROVE_2FA = "com.vulnerablebankapp.ACTION_APPROVE_2FA"
         const val ACTION_TRIGGER_OTP = "com.nexorabank.omniwear.ACTION_TRIGGER_OTP"
-        const val LEGACY_ACTION_TRIGGER_OTP = "com.vulnerablebankapp.ACTION_TRIGGER_OTP"
         const val CHANNEL_ID = "nexora_security_alerts"
         const val LOG_TAG = "NEXORA_2FA"
         const val PREFS_NAME = "NexoraVaultPrefs"
-        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent == null) return
 
         when (intent.action) {
-            ACTION_APPROVE_2FA, LEGACY_ACTION_APPROVE_2FA -> {
+            ACTION_APPROVE_2FA -> {
                 val sessionId = intent.getStringExtra("session_id") ?: "DEFAULT_SESSION"
                 Log.w(LOG_TAG, "⚠️ EXPLOIT DETECTED (V-W09): 2FA approval bypassed for session $sessionId!")
 
                 context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    .edit().putBoolean("session_approved_${sessionId}", true).apply()
-                context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
                     .edit().putBoolean("session_approved_${sessionId}", true).apply()
 
                 Toast.makeText(
@@ -52,7 +47,7 @@ class AuthBroadcastReceiver : BroadcastReceiver() {
                 ).show()
             }
 
-            ACTION_TRIGGER_OTP, LEGACY_ACTION_TRIGGER_OTP -> {
+            ACTION_TRIGGER_OTP -> {
                 val otp = intent.getStringExtra("otp") ?: "849201"
                 Log.d(LOG_TAG, "LEAKED OTP CODE: $otp")
                 showInsecureNotification(context, otp)

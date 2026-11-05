@@ -58,7 +58,7 @@ Pre-compiled, production-ready release packages are automatically compiled and p
 | ⌚ **Apple Watch** | `Nexora-watchOS-Bundle.zip` | Apple Watch Series 9, Ultra (watchOS 9.0+) Native SwiftUI | [⌚ Download watchOS Bundle](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/Nexora-watchOS-Bundle.zip) |
 | 🔒 **Integrity Checksums** | `SHA256SUMS.txt` | Cryptographic SHA-256 Checksums for forensic audit verification | [🔒 Download SHA256SUMS](https://github.com/angganovryanputra/nexora-private-banking/releases/latest/download/SHA256SUMS.txt) |
 
-*(Note: Legacy file names e.g. `vulnbank-wear-release.apk` are preserved in the release assets for backwards-compatibility).*
+*(All packages are signed and ready for immediate deployment).*
 
 ---
 

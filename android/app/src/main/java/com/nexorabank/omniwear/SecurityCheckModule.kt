@@ -30,7 +30,6 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
         const val NAME = "SecurityCheck"
         const val LOG_TAG = "NEXORA_SECURITY_CHECK"
         const val PREFS_NAME = "NexoraVaultPrefs"
-        const val LEGACY_PREFS_NAME = "VulnBankPrefs"
     }
 
     override fun getName() = NAME
@@ -91,11 +90,6 @@ class SecurityCheckModule(private val reactContext: ReactApplicationContext) :
     @ReactMethod
     fun toggleClientRootBypass(enable: Boolean, promise: Promise) {
         reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean("bypass_root_check", enable)
-            .apply()
-
-        reactContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putBoolean("bypass_root_check", enable)
             .apply()
