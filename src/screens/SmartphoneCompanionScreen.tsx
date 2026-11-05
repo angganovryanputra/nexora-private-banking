@@ -41,18 +41,18 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
       // Dispatches via backend relay and native WatchConnectivity bridge (Apple Watch & Wear OS)
       await watchOSBridge.sendMessageToWatch({
         action: 'UPDATE_BALANCE',
-        payload: { amount: 888888.0, currency: 'USD' },
+        payload: { amount: 888888000.0, currency: 'IDR' },
       });
       const res = await dispatchWearableEvent(targetDeviceId, 'UPDATE_BALANCE', {
-        amount: 888888.0,
-        currency: 'USD',
+        amount: 888888000.0,
+        currency: 'IDR',
         timestamp: Date.now(),
       });
       if (res.ok) {
-        setLastAction(`Transmitted UPDATE_BALANCE ($888,888) -> ${targetDeviceId}`);
+        setLastAction(`Transmitted UPDATE_BALANCE (Rp 888.888.000) -> ${targetDeviceId}`);
         Alert.alert(
           '📶 BLE & WCSession Sync Dispatched (V-B01)',
-          `Transmitted to wearable bridge & backend relay:\nTarget: ${targetDeviceId}\nAction: UPDATE_BALANCE\nAmount: $888,888.00\n\n[V-B01] No HMAC signature or timestamp freshness check. Watch balance will update in real time!`
+          `Transmitted to wearable bridge & backend relay:\nTarget: ${targetDeviceId}\nAction: UPDATE_BALANCE\nAmount: Rp 888.888.000\n\n[V-B01] No HMAC signature or timestamp freshness check. Watch balance will update in real time!`
         );
       } else {
         Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
@@ -65,7 +65,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
   };
 
   // Push 2FA Alert to Watch (V-W09 / V-AP04)
-  const handlePush2FAToWatch = async (amount = 250.00, merchant = 'CyberStore Inc.') => {
+  const handlePush2FAToWatch = async (amount = 50000000.0, merchant = 'CyberStore Inc.') => {
     setIsLoading(true);
     try {
       await watchOSBridge.sendMessageToWatch({
@@ -79,10 +79,10 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         timestamp: Date.now(),
       });
       if (res.ok) {
-        setLastAction(`Pushed 2FA Authorization ($${amount.toLocaleString()}) -> ${targetDeviceId}`);
+        setLastAction(`Pushed 2FA Authorization (Rp ${amount.toLocaleString('id-ID')}) -> ${targetDeviceId}`);
         Alert.alert(
           '🔔 Push 2FA Sent to Watch (V-W09 / V-AP04)',
-          `Broadcast sent to smartwatch:\nTarget: ${targetDeviceId}\nMerchant: ${merchant}\nDebit: $${amount.toLocaleString()}\nOTP: 992104\n\n[V-W09] Plaintext authorization card will pop up on the watch screen in real time!`
+          `Broadcast sent to smartwatch:\nTarget: ${targetDeviceId}\nMerchant: ${merchant}\nDebit: Rp ${amount.toLocaleString('id-ID')}\nOTP: 992104\n\n[V-W09] Plaintext authorization card will pop up on the watch screen in real time!`
         );
       } else {
         Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
@@ -108,10 +108,10 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         timestamp: Date.now(),
       });
       if (res.ok) {
-        setLastAction(`Injected Quick Pay ($50,000) -> ${targetDeviceId}`);
+        setLastAction(`Injected Quick Pay (Rp 50.000.000) -> ${targetDeviceId}`);
         Alert.alert(
           '⚡ Quick Pay Injected (V-W06)',
-          `Transmitted to smartwatch:\nTarget: ${targetDeviceId}\nRecipient: HACKER_CORP\nAmount: $50,000.00\n\nExecuted without smartwatch PIN verification!`
+          `Transmitted to smartwatch:\nTarget: ${targetDeviceId}\nRecipient: HACKER_CORP\nAmount: Rp 50.000.000\n\nExecuted without smartwatch PIN verification!`
         );
       } else {
         Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
@@ -162,7 +162,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         setLastAction(`ATM Cash Dispensed (Rp ${amt.toLocaleString('id-ID')})`);
         Alert.alert(
           '🏧 ATM Terminal Cash Dispensed! 💵',
-          `ATM Terminal: ATM-NEXORA-008\nDispensed: Rp ${amt.toLocaleString('id-ID')}\nAccount: ADMIN001\n\n[Gap 1 Parity]: 6-digit wearable cash token successfully redeemed at ATM terminal!`
+          `ATM Terminal: ATM-NEXORA-008\nDispensed: Rp ${amt.toLocaleString('id-ID')}\nAccount: NX-8492014\n\n[Gap 1 Parity]: 6-digit wearable cash token successfully redeemed at ATM terminal!`
         );
       } else {
         Alert.alert('ATM Error', res.data?.message || 'Invalid or expired withdrawal code.');
@@ -224,7 +224,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         </View>
         <View style={styles.triggerInfo}>
           <Text style={styles.triggerTitle}>Sync Balance to Watch</Text>
-          <Text style={styles.triggerSub}>V-B01: Insecure BLE packet injection ($888,888)</Text>
+          <Text style={styles.triggerSub}>V-B01: Insecure BLE packet injection (Rp 888.888.000)</Text>
         </View>
         <Icon name="chevron-right" size={10} color={COLORS.textLight} />
       </TouchableOpacity>
@@ -272,7 +272,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         </View>
         <View style={styles.triggerInfo}>
           <Text style={styles.triggerTitle}>Inject Watch Payment</Text>
-          <Text style={styles.triggerSub}>V-W06: Unauthorized Quick Pay ($50,000)</Text>
+          <Text style={styles.triggerSub}>V-W06: Unauthorized Quick Pay (Rp 50.000.000)</Text>
         </View>
         <Icon name="chevron-right" size={10} color={COLORS.textLight} />
       </TouchableOpacity>

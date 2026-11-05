@@ -33,7 +33,7 @@ const BalanceScreen: React.FC<BalanceScreenProps> = ({ onNavigate }) => {
       setError(null);
       
       const response = await get(
-        ENDPOINTS.checkBalance(user.accountNumber || 'ADMIN001'),
+        ENDPOINTS.checkBalance(user.accountNumber || 'NX-8492014'),
         user.token
       );
       
@@ -41,12 +41,11 @@ const BalanceScreen: React.FC<BalanceScreenProps> = ({ onNavigate }) => {
         setBalance(response.data.balance);
         setLastUpdated(new Date());
       } else {
-        // Fallback default for demo
-        setBalance(999999.00);
+        setBalance(999999000.00);
         setLastUpdated(new Date());
       }
     } catch {
-      setBalance(999999.00);
+      setBalance(999999000.00);
       setLastUpdated(new Date());
     } finally {
       setLoading(false);
@@ -80,7 +79,7 @@ const BalanceScreen: React.FC<BalanceScreenProps> = ({ onNavigate }) => {
         ) : (
           <>
             <Text style={styles.balanceAmount}>
-              ${balance?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '999,999.00'}
+              Rp {balance?.toLocaleString('id-ID', { minimumFractionDigits: 0 }) || '999.999.000'}
             </Text>
             {lastUpdated && (
               <Text style={styles.lastUpdated}>
@@ -94,7 +93,7 @@ const BalanceScreen: React.FC<BalanceScreenProps> = ({ onNavigate }) => {
       <View style={styles.accountCard}>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Account No</Text>
-          <Text style={styles.rowValue}>{user?.accountNumber || 'ADMIN001'}</Text>
+          <Text style={styles.rowValue}>{user?.accountNumber || 'NX-8492014'}</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Tier</Text>

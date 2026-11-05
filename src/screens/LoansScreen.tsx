@@ -43,7 +43,7 @@ const LoansScreen: React.FC<LoansScreenProps> = ({ onNavigate }) => {
     
     try {
       const response = await get(
-        ENDPOINTS.loans(user.accountNumber || 'ADMIN001'),
+        ENDPOINTS.loans(user.accountNumber || 'NX-8492014'),
         user.token
       );
       
@@ -144,9 +144,9 @@ const LoansScreen: React.FC<LoansScreenProps> = ({ onNavigate }) => {
         </Text>
         
         <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Loan Amount ($)</Text>
+          <Text style={styles.inputLabel}>Loan Amount (Rp)</Text>
           <View style={styles.amountContainer}>
-            <Text style={styles.currencySymbol}>$</Text>
+            <Text style={styles.currencySymbol}>Rp</Text>
             <TextInput
               style={[globalStyles.input, styles.amountInput]}
               placeholder="0.00"
@@ -191,7 +191,7 @@ const LoansScreen: React.FC<LoansScreenProps> = ({ onNavigate }) => {
           loans.map((loan) => (
             <View key={loan.id} style={styles.loanItem}>
               <View style={styles.loanDetails}>
-                <Text style={styles.loanAmount}>${loan.amount.toFixed(2)}</Text>
+                <Text style={styles.loanAmount}>Rp {Number(loan.amount).toLocaleString('id-ID')}</Text>
                 <Text style={styles.loanDate}>
                   Requested on {new Date(loan.created_at).toLocaleDateString()}
                 </Text>
@@ -225,12 +225,12 @@ const LoansScreen: React.FC<LoansScreenProps> = ({ onNavigate }) => {
         
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Minimum Amount</Text>
-          <Text style={styles.infoValue}>$500</Text>
+          <Text style={styles.infoValue}>Rp 5.000.000</Text>
         </View>
         
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Maximum Amount</Text>
-          <Text style={styles.infoValue}>$50,000</Text>
+          <Text style={styles.infoValue}>Rp 500.000.000</Text>
         </View>
         
         <View style={styles.infoItem}>

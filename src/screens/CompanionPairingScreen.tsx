@@ -40,19 +40,19 @@ const CompanionPairingScreen: React.FC<CompanionPairingScreenProps> = ({ onNavig
       const devId = res.ok && res.data?.device_id ? res.data.device_id : 'watch_9201';
       Alert.alert(
         'Companion Linked! ⌚📱',
-        `Linked to Nexora Mobile Companion!\nDevice ID: ${devId}\nPaired Account: ADMIN001\n\n[V-B01] No cryptographic signature required. Token received over HTTP/BLE!`,
+        `Linked to Nexora Mobile Companion!\nDevice ID: ${devId}\nPaired Account: NX-8492014\n\n[V-B01] No cryptographic signature required. Token received over HTTP/BLE!`,
         [
           {
             text: 'Open Wallet',
             onPress: async () => {
-              await login('admin', 'admin123');
+              await login('alexander.vance', 'Password123!');
               onNavigate('dashboard');
             },
           },
         ]
       );
     } catch {
-      await login('admin', 'admin123');
+      await login('alexander.vance', 'Password123!');
       onNavigate('dashboard');
     } finally {
       setLoading(false);

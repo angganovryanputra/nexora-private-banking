@@ -200,12 +200,12 @@ const BillsScreen: React.FC<BillsScreenProps> = ({ onNavigate }) => {
     const amountValue = parseFloat(amount);
     
     if (amountValue < selectedBiller.minimum_amount) {
-      Alert.alert('Error', `Minimum amount is $${selectedBiller.minimum_amount}`);
+      Alert.alert('Error', `Minimum amount is Rp ${selectedBiller.minimum_amount.toLocaleString('id-ID')}`);
       return;
     }
 
     if (selectedBiller.maximum_amount && amountValue > selectedBiller.maximum_amount) {
-      Alert.alert('Error', `Maximum amount is $${selectedBiller.maximum_amount}`);
+      Alert.alert('Error', `Maximum amount is Rp ${selectedBiller.maximum_amount.toLocaleString('id-ID')}`);
       return;
     }
 
@@ -316,7 +316,7 @@ const BillsScreen: React.FC<BillsScreenProps> = ({ onNavigate }) => {
         {item.name}
       </Text>
       <Text style={styles.billerMinAmount}>
-        Min: ${item.minimum_amount}
+        Min: Rp {Number(item.minimum_amount).toLocaleString('id-ID')}
       </Text>
     </TouchableOpacity>
   );
@@ -324,7 +324,7 @@ const BillsScreen: React.FC<BillsScreenProps> = ({ onNavigate }) => {
   const renderPaymentHistoryItem = ({ item }: { item: BillPayment }) => (
     <View style={styles.paymentItem}>
       <View style={styles.paymentHeader}>
-        <Text style={styles.paymentAmount}>${item.amount.toFixed(2)}</Text>
+        <Text style={styles.paymentAmount}>Rp {Number(item.amount).toLocaleString('id-ID')}</Text>
         <View style={[
           styles.statusBadge,
           { backgroundColor: getStatusColor(item.status) + '20' }

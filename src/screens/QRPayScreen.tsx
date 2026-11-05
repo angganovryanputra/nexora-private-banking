@@ -60,7 +60,7 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
   const handleSimulateScan = () => {
     Alert.alert(
       'SNAP QRIS Terminal Detected',
-      `Merchant: NEXORA DIGITAL MERCH 001\nNMID: ID1020029988112\nAmount: Rp 75.000 ($35.50)\nToken: ${tokenCode}\n\n[V-W15] SNAP QRIS verified without cryptographic HMAC timestamp freshness.`,
+      `Merchant: NEXORA DIGITAL MERCH 001\nNMID: ID1020029988112\nAmount: Rp 75.000 \nToken: ${tokenCode}\n\n[V-W15] SNAP QRIS verified without cryptographic HMAC timestamp freshness.`,
       [
         {
           text: 'Authorize Payment',
@@ -70,7 +70,7 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
               const res = await post(
                 '/api/qris/checkout',
                 {
-                  account_number: user?.accountNumber || 'ADMIN001',
+                  account_number: user?.accountNumber || 'NX-8492014',
                   amount: 75.00,
                   merchant_name: 'NEXORA DIGITAL MERCH 001',
                   qr_payload: `00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2`,
@@ -81,7 +81,7 @@ const QRPayScreen: React.FC<QRPayScreenProps> = ({ onNavigate }) => {
                 const rrn = res.data?.rrn || 'RRN-992144';
                 Alert.alert(
                   '💳 Payment Successful (SNAP QRIS)',
-                  `Merchant: NEXORA DIGITAL MERCH 001\nAmount: Rp 75.000 ($35.50)\nRRN: ${rrn}\nStatus: APPROVED\nRemaining balance deducted on backend.\n\n[V-W15 Replay Attack]: Tap "Simulate Terminal Scan" again to re-debit using the same static token!`,
+                  `Merchant: NEXORA DIGITAL MERCH 001\nAmount: Rp 75.000 \nRRN: ${rrn}\nStatus: APPROVED\nRemaining balance deducted on backend.\n\n[V-W15 Replay Attack]: Tap "Simulate Terminal Scan" again to re-debit using the same static token!`,
                   [{ text: 'OK', onPress: () => onNavigate('dashboard') }]
                 );
               } else {

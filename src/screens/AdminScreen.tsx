@@ -200,7 +200,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate }) => {
           Account: {item.account_number}
         </Text>
         <Text style={styles.accountDetails}>
-          Balance: ${item.balance.toFixed(2)}
+          Balance: Rp {Number(item.balance).toLocaleString('id-ID')}
         </Text>
       </View>
       
@@ -217,7 +217,7 @@ const AdminScreen: React.FC<AdminScreenProps> = ({ onNavigate }) => {
       <View style={styles.loanDetails}>
         <Text style={styles.loanId}>Loan #{item.id}</Text>
         <Text style={styles.loanUser}>User ID: {item.user_id}</Text>
-        <Text style={styles.loanAmount}>Amount: ${item.amount.toFixed(2)}</Text>
+        <Text style={styles.loanAmount}>Amount: Rp {Number(item.amount).toLocaleString('id-ID')}</Text>
       </View>
       
       <CustomButton

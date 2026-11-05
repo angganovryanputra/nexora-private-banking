@@ -61,18 +61,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigate }) => {
 
   const handlePinSubmit = async (pin: string) => {
     setPinPadVisible(false);
-    // V-W10: Quick PIN verification against default MD5 hash (1234)
+    // V-W10: Quick PIN verification against local reversible MD5 hash (1234)
     if (pin === '1234') {
-      Alert.alert('⚡ Quick PIN Accepted', 'Logging in as admin (MD5 verified)');
-      await handleLogin('admin', 'admin123');
+      Alert.alert('⚡ Quick PIN Accepted', 'Authenticated as Alexander Vance (Obsidian VIP)');
+      await handleLogin('alexander.vance', 'Password123!');
     } else {
-      Alert.alert('Invalid PIN', 'Default PIN is 1234');
+      Alert.alert('Invalid PIN', 'Authorized PIN is 1234');
     }
   };
 
   const handleAutoFillAdmin = () => {
-    setUsername('admin');
-    setPassword('admin123');
+    setUsername('alexander.vance');
+    setPassword('Password123!');
   };
 
   return (

@@ -230,7 +230,7 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
         <View style={styles.cardFooter}>
           <View>
             <Text style={styles.cardLabel}>BALANCE</Text>
-            <Text style={styles.cardBalance}>${item.balance.toFixed(2)}</Text>
+            <Text style={styles.cardBalance}>Rp {Number(item.balance).toLocaleString('id-ID')}</Text>
           </View>
           <View>
             <Text style={styles.cardLabel}>EXPIRES</Text>
@@ -315,9 +315,9 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
             </View>
             
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Card Limit ($)</Text>
+              <Text style={styles.label}>Card Limit (Rp)</Text>
               <View style={styles.amountContainer}>
-                <Text style={styles.currencySymbol}>$</Text>
+                <Text style={styles.currencySymbol}>Rp</Text>
                 <TextInput
                   style={[globalStyles.input, styles.amountInput]}
                   placeholder="0.00"
@@ -434,12 +434,12 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
                 <View style={styles.detailsContainer}>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Card Balance</Text>
-                    <Text style={styles.detailValue}>${selectedCard.balance.toFixed(2)}</Text>
+                    <Text style={styles.detailValue}>Rp {Number(selectedCard.balance).toLocaleString('id-ID')}</Text>
                   </View>
                   
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Card Limit</Text>
-                    <Text style={styles.detailValue}>${selectedCard.limit.toFixed(2)}</Text>
+                    <Text style={styles.detailValue}>Rp {Number(selectedCard.limit).toLocaleString('id-ID')}</Text>
                   </View>
                   
                   <View style={styles.detailRow}>

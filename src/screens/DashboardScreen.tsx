@@ -22,7 +22,7 @@ interface DashboardScreenProps {
 const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [hideBalance, setHideBalance] = useState(false);
-  const [balance, setBalance] = useState('Rp 99.999.000');
+  const [balance, setBalance] = useState('Rp 999.999.000');
   const [currencyMode, setCurrencyMode] = useState<'IDR' | 'USD'>('IDR');
   const [sim2FAVisible, setSim2FAVisible] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState<{ eventId?: number; amount: number; merchant: string } | null>(null);
@@ -36,17 +36,13 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
 
   const fetchBalance = useCallback(async () => {
     try {
-      const res = await get(ENDPOINTS.checkBalance(user?.accountNumber || 'ADMIN001'), user?.token);
+      const res = await get(ENDPOINTS.checkBalance(user?.accountNumber || 'NX-8492014'), user?.token);
       if (res.ok && res.data?.balance !== undefined) {
         const num = Number(res.data.balance);
-        if (currencyMode === 'IDR') {
-          setBalance(`Rp ${num.toLocaleString('id-ID', { minimumFractionDigits: 0 })}`);
-        } else {
-          setBalance(`$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-        }
+        setBalance(`Rp ${num.toLocaleString('id-ID', { minimumFractionDigits: 0 })}`);
       }
     } catch {}
-  }, [user, currencyMode]);
+  }, [user]);
 
   // 1. Fetch initial account balance
   useEffect(() => {
@@ -58,12 +54,12 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
     const sub = DeviceEventEmitter.addListener('BluetoothSyncEvent', (evt: any) => {
       if (evt && evt.action === 'UPDATE_BALANCE' && evt.amount !== undefined) {
         const num = Number(evt.amount);
-        setBalance(currencyMode === 'IDR' ? `Rp ${num.toLocaleString('id-ID')}` : `$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
-        Alert.alert('📶 Wear OS BLE Sync', `Watch balance synced to ${num} via Bluetooth LE.`);
+        setBalance(`Rp ${num.toLocaleString('id-ID')}`);
+        Alert.alert('📶 Wear OS BLE Sync', `Watch balance synced to Rp ${num.toLocaleString('id-ID')} via Bluetooth LE.`);
       }
     });
     return () => sub.remove();
-  }, [currencyMode]);
+  }, []);
 
   // 2B. Listen to native iOS Apple Watch WCSession messages
   useEffect(() => {
@@ -71,20 +67,20 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
       if (!evt) return;
       if (evt.action === 'UPDATE_BALANCE' && evt.payload?.amount !== undefined) {
         const num = Number(evt.payload.amount);
-        setBalance(currencyMode === 'IDR' ? `Rp ${num.toLocaleString('id-ID')}` : `$${num.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+        setBalance(`Rp ${num.toLocaleString('id-ID')}`);
         Alert.alert('⌚ Apple Watch Sync', `Balance updated via WCSession dictionary.`);
       } else if (evt.action === 'RESOLVE_2FA' || evt.action === 'APPROVE_2FA') {
-        const amt = Number(evt.amount || 50000);
-        Alert.alert('💸 Apple Watch 2FA Approved', `Wire transfer of $${amt.toLocaleString()} authorized from Apple Watch!`);
+        const amt = Number(evt.amount || 50000000);
+        Alert.alert('💸 Apple Watch 2FA Approved', `Wire transfer of Rp ${amt.toLocaleString('id-ID')} authorized from Apple Watch!`);
         fetchBalance();
       } else if (evt.action === 'QRIS_PAYMENT_COMPLETED') {
-        const debit = Number(evt.payload?.amount || 75.0);
-        Alert.alert('💳 Apple Watch QRIS Debit', `SNAP QRIS payment of ${debit} approved on Apple Watch.`);
+        const debit = Number(evt.payload?.amount || 75000);
+        Alert.alert('💳 Apple Watch QRIS Debit', `SNAP QRIS payment of Rp ${debit.toLocaleString('id-ID')} approved on Apple Watch.`);
         fetchBalance();
       }
     });
     return () => sub.remove();
-  }, [fetchBalance, currencyMode]);
+  }, [fetchBalance]);
 
   // 3. Poll wearable events from local backend relay (Cross-device real-time sync)
   useEffect(() => {
@@ -95,38 +91,38 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({ onNavigate }) => {
           for (const ev of res.data.events) {
             if (ev.action === 'UPDATE_BALANCE') {
               const amt = Number(ev.payload?.amount || 0);
-              setBalance(currencyMode === 'IDR' ? `Rp ${amt.toLocaleString('id-ID')}` : `$${amt.toLocaleString('en-US', { minimumFractionDigits: 2 })}`);
+              setBalance(`Rp ${amt.toLocaleString('id-ID')}`);
               await resolveWearableEvent(ev.id, 'APPLIED');
-              Alert.alert('📶 Remote Sync Received', `Balance updated to ${amt} from Smartphone Companion.`);
             } else if (ev.action === 'PUSH_2FA' || ev.action === 'TRIGGER_HIGH_VALUE_2FA') {
               setTwoFactorData({
                 eventId: ev.id,
-                amount: ev.payload?.amount || 50000.00,
+                amount: ev.payload?.amount || 50000000.0,
                 merchant: ev.payload?.merchant || ev.payload?.recipient || 'CyberStore Inc.',
               });
               setSim2FAVisible(true);
             } else if (ev.action === 'QRIS_PAYMENT_COMPLETED') {
-              const debit = Number(ev.payload?.amount || 75.00);
+              const debit = Number(ev.payload?.amount || 75000.0);
               await resolveWearableEvent(ev.id, 'APPLIED');
               Alert.alert(
                 '💳 SNAP QRIS Payment Success',
-                `Payment of ${debit} to ${ev.payload?.merchant || 'NEXORA MERCH 001'} approved.\nRef: SNAP-QRIS-9921\nRemaining Balance Deducted.`
+                `Payment of Rp ${debit.toLocaleString('id-ID')} to ${ev.payload?.merchant || 'NEXORA MERCH 001'} approved.\nRef: SNAP-QRIS-9921\nRemaining Balance Deducted.`
               );
               fetchBalance();
             } else if (ev.action === 'QUICK_PAY') {
               await resolveWearableEvent(ev.id, 'APPLIED');
               Alert.alert(
-                '⚡ Quick Pay Injected',
-                `Transfer of ${ev.payload?.amount || 50000} to ${ev.payload?.recipient || 'HACKER_CORP'} executed without PIN!`
+                '⚡ Quick Pay Executed',
+                `Transfer of Rp ${Number(ev.payload?.amount || 50000000).toLocaleString('id-ID')} to ${ev.payload?.recipient || 'CyberStore Vault'} executed!`
               );
+              fetchBalance();
             }
           }
         }
       } catch {}
-    }, 2500);
+    }, 1500);
 
     return () => clearInterval(interval);
-  }, [currencyMode]);
+  }, [fetchBalance]);
 
   const handleOpenAtmCash = async () => {
     try {

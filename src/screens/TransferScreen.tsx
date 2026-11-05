@@ -36,13 +36,13 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
   const { user } = useAuth();
   const [toAccount, setToAccount] = useState(params?.prefillRecipient || '');
   const [amount, setAmount] = useState(
-    params?.prefillAmount ? params.prefillAmount.toString() : '50'
+    params?.prefillAmount ? params.prefillAmount.toString() : '250000'
   );
   const [loading, setLoading] = useState(false);
   const [pinModalVisible, setPinModalVisible] = useState(false);
 
-  const quickAmounts = ['10', '50', '100', '500'];
-  const quickRecipients = ['ACC_BOB88', 'ACC_ALICE12', 'HACKER99'];
+  const quickAmounts = ['50000', '250000', '1000000', '5000000'];
+  const quickRecipients = ['NX-7391048', 'NX-9201482', 'NX-5182930', 'NX-6302914'];
 
   const initiateTransfer = () => {
     if (!toAccount || !amount) {
@@ -64,33 +64,33 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
       const response = await post(
         ENDPOINTS.transfer,
         {
-          from_account: user?.accountNumber || 'ADMIN001',
+          from_account: user?.accountNumber || 'NX-8492014',
           to_account: toAccount,
           amount: parseFloat(amount),
-          description: `Wear OS Quick Transfer [PIN:${pin}]`,
+          description: `Instant Transfer via Smartwatch [PIN:${pin}]`,
         },
         user?.token
       );
 
       if (response.ok) {
+        const amtNum = parseFloat(amount);
         Alert.alert(
-          'Transfer Successful',
-          `Sent $${amount} to ${toAccount} successfully!`,
+          'Transfer Successful 💸',
+          `Sent Rp ${amtNum.toLocaleString('id-ID')} to ${toAccount} successfully!\nRef: ${response.data?.reference || 'TX_APPROVED'}`,
           [{ text: 'OK', onPress: () => onNavigate('dashboard') }]
         );
       } else {
-        // Fallback for demo when backend is offline
         Alert.alert(
-          'Simulated Success',
-          `[Offline Demo] Sent $${amount} to ${toAccount}. (Backend status: ${response.status || 'offline'})`,
-          [{ text: 'OK', onPress: () => onNavigate('dashboard') }]
+          'Transfer Declined',
+          response.data?.message || 'Unable to process transfer with the core banking engine.',
+          [{ text: 'OK' }]
         );
       }
     } catch {
       Alert.alert(
-        'Simulated Transfer',
-        `Transfer of $${amount} to ${toAccount} executed locally for pentest demo.`,
-        [{ text: 'Done', onPress: () => onNavigate('dashboard') }]
+        'Connection Error',
+        'Unable to reach Nexora Core Banking gateway. Please check backend network connection.',
+        [{ text: 'OK' }]
       );
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
         <Text style={styles.label}>Recipient Account</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. ACC_BOB88"
+          placeholder="e.g. NX-7391048"
           placeholderTextColor={COLORS.textLight}
           value={toAccount}
           onChangeText={setToAccount}
@@ -142,10 +142,10 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
         </View>
 
         {/* Amount Input */}
-        <Text style={[styles.label, { marginTop: 8 }]}>Amount ($ USD)</Text>
+        <Text style={[styles.label, { marginTop: 8 }]}>Amount (IDR - Rp)</Text>
         <TextInput
           style={styles.amountInput}
-          placeholder="0.00"
+          placeholder="250000"
           placeholderTextColor={COLORS.textLight}
           value={amount}
           onChangeText={setAmount}
@@ -154,25 +154,29 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
 
         {/* Quick Amount Pills */}
         <View style={styles.chipRow}>
-          {quickAmounts.map((amt) => (
-            <TouchableOpacity
-              key={amt}
-              style={[
-                styles.chip,
-                amount === amt && styles.chipActive,
-              ]}
-              onPress={() => setAmount(amt)}
-            >
-              <Text
+          {quickAmounts.map((amt) => {
+            const num = parseInt(amt, 10);
+            const label = num >= 1000000 ? `${num / 1000000}M` : `${num / 1000}k`;
+            return (
+              <TouchableOpacity
+                key={amt}
                 style={[
-                  styles.chipText,
-                  amount === amt && styles.chipTextActive,
+                  styles.chip,
+                  amount === amt && styles.chipActive,
                 ]}
+                onPress={() => setAmount(amt)}
               >
-                ${amt}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.chipText,
+                    amount === amt && styles.chipTextActive,
+                  ]}
+                >
+                  Rp {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {loading ? (
@@ -183,7 +187,7 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
             onPress={initiateTransfer}
           >
             <Icon name="paper-plane" size={SIZES.small} color={COLORS.black} />
-            <Text style={styles.sendButtonText}>Send ${amount || '0'}</Text>
+            <Text style={styles.sendButtonText}>Send Rp {parseInt(amount || '0', 10).toLocaleString('id-ID')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -199,7 +203,7 @@ const TransferScreen: React.FC<TransferScreenProps> = ({ onNavigate, params }) =
       <PinPadModal
         visible={pinModalVisible}
         title="Confirm Transfer"
-        subtitle={`Send $${amount} to ${toAccount}`}
+        subtitle={`Send Rp ${parseInt(amount || '0', 10).toLocaleString('id-ID')} to ${toAccount}`}
         onPinSubmit={handlePinAndExecute}
         onCancel={() => setPinModalVisible(false)}
       />
