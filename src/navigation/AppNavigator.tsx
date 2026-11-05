@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, BackHandler } from 'react-native';
+import { SafeAreaView, View, BackHandler, DeviceEventEmitter } from 'react-native';
 import { ScreenType, ScreenParams } from './types';
 import { useAuth } from '../contexts/AuthContext';
 import globalStyles from '../styles/globalStyles';
@@ -73,6 +73,19 @@ const AppNavigator: React.FC<Props> = ({ initialScreen = 'welcome' }) => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => subscription.remove();
   }, [currentScreen, menuVisible]);
+
+  // V-W11: lock the session when the watch reports an off-wrist state. The
+  // native HeartRateModule emits `WristStateChanged` from the off-body sensor
+  // (or the Pentest Lab's simulate button). This gate is client-side only and
+  // is defeated by a Frida hook on isWristDetected() or `adb am start`.
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('WristStateChanged', (evt: any) => {
+      if (evt && evt.wristPresent === false && isAuthenticated) {
+        setIsLocked(true);
+      }
+    });
+    return () => sub.remove();
+  }, [isAuthenticated]);
 
   const handleMenuItemPress = (screen: string) => {
     if (screen === 'lockout') {

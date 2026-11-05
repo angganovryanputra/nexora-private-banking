@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { ScreenType } from '../navigation/types';
-import { dispatchWearableEvent, getWearablePackets, pairWearable, verifyCardlessCash } from '../utils/api';
+import { dispatchWearableEvent, getWearablePackets, pairWearable, verifyCardlessCash, generateCardlessCash, getApiBase, pingBackend } from '../utils/api';
 import { watchOSBridge } from '../utils/watchOSBridge';
 import theme from '../styles/theme';
 import {
@@ -33,6 +33,28 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
   const [lastAction, setLastAction] = useState('Idle');
   const [isLoading, setIsLoading] = useState(false);
   const [packetCount, setPacketCount] = useState(0);
+  const [backendStatus, setBackendStatus] = useState<string>('Checking backend…');
+
+  // Shows the actual target URL so a failed relay is diagnosable at a glance.
+  const showRelayWarning = () => {
+    Alert.alert(
+      'Relay Warning',
+      `Backend unreachable at:\n${getApiBase()}\n\nStart the relay (python backend/server.py) and confirm the URL. On a physical watch/phone use your PC's LAN IP — set & verify it in Pentest Lab → API → Local Backend Target → Test Connection.`
+    );
+  };
+
+  // Live reachability check so the researcher sees backend status immediately.
+  useEffect(() => {
+    let active = true;
+    pingBackend().then((r) => {
+      if (active) {
+        setBackendStatus(r.ok ? `🟢 Backend online · ${r.base}` : `🔴 Unreachable · ${r.base}`);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Sync Balance to Watch (V-B01 / V-B02)
   const handleSyncBalanceToWatch = async () => {
@@ -55,7 +77,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
           `Transmitted to wearable bridge & backend relay:\nTarget: ${targetDeviceId}\nAction: UPDATE_BALANCE\nAmount: Rp 888.888.000\n\n[V-B01] No HMAC signature or timestamp freshness check. Watch balance will update in real time!`
         );
       } else {
-        Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
+        showRelayWarning();
       }
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -85,7 +107,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
           `Broadcast sent to smartwatch:\nTarget: ${targetDeviceId}\nMerchant: ${merchant}\nDebit: Rp ${amount.toLocaleString('id-ID')}\nOTP: 992104\n\n[V-W09] Plaintext authorization card will pop up on the watch screen in real time!`
         );
       } else {
-        Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
+        showRelayWarning();
       }
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -114,7 +136,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
           `Transmitted to smartwatch:\nTarget: ${targetDeviceId}\nRecipient: HACKER_CORP\nAmount: Rp 50.000.000\n\nExecuted without smartwatch PIN verification!`
         );
       } else {
-        Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
+        showRelayWarning();
       }
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -143,7 +165,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
           `Simulated POS checkout from Smartwatch:\nDebit: Rp 75.000\nMerchant: NEXORA DIGITAL MERCH 001\nStatus: APPROVED\n\n[V-06 Replay Attack Demo]: Tap this button again without generating a new QR code on the watch. Notice both transactions succeed because of static transaction ID!`
         );
       } else {
-        Alert.alert('Relay Warning', 'Backend unreachable. Ensure python backend/server.py is running.');
+        showRelayWarning();
       }
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -153,16 +175,25 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
   };
 
   // Simulate ATM Terminal Cash Withdrawal (Gap 1 Parity)
-  const handleSimulateAtmWithdrawal = async (token = '839201') => {
+  const handleSimulateAtmWithdrawal = async () => {
     setIsLoading(true);
     try {
+      // Real flow: generate a fresh 6-digit cardless-cash token on the backend,
+      // then redeem it at the "ATM". (The old hardcoded '839201' never existed in
+      // the DB, so verify always failed.)
+      const gen = await generateCardlessCash('NX-8492014', 250000.0);
+      if (!gen.ok || !gen.data?.token) {
+        showRelayWarning();
+        return;
+      }
+      const token = gen.data.token;
       const res = await verifyCardlessCash(token);
       if (res.ok) {
         const amt = res.data?.amount || 250000;
-        setLastAction(`ATM Cash Dispensed (Rp ${amt.toLocaleString('id-ID')})`);
+        setLastAction(`ATM Cash Dispensed (Rp ${amt.toLocaleString('id-ID')}) — code ${token}`);
         Alert.alert(
           '🏧 ATM Terminal Cash Dispensed! 💵',
-          `ATM Terminal: ATM-NEXORA-008\nDispensed: Rp ${amt.toLocaleString('id-ID')}\nAccount: NX-8492014\n\n[Gap 1 Parity]: 6-digit wearable cash token successfully redeemed at ATM terminal!`
+          `ATM Terminal: ATM-NEXORA-008\nGenerated code: ${token}\nDispensed: Rp ${amt.toLocaleString('id-ID')}\nAccount: NX-8492014\n\n[Gap 1 Parity] 6-digit wearable cash token generated then redeemed at the ATM terminal.`
         );
       } else {
         Alert.alert('ATM Error', res.data?.message || 'Invalid or expired withdrawal code.');
@@ -210,6 +241,8 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
         <View style={styles.statusDot} />
         <Text style={styles.statusText}>{watchSyncStatus}</Text>
       </View>
+
+      <Text style={styles.backendStatusText} numberOfLines={1}>{backendStatus}</Text>
 
       <Text style={styles.sectionTitle}>Cross-Device Pentest Triggers</Text>
 
@@ -296,7 +329,7 @@ const SmartphoneCompanionScreen: React.FC<SmartphoneCompanionScreenProps> = ({ o
       {/* Trigger 3C: Simulate ATM Terminal Dispense */}
       <TouchableOpacity
         style={[styles.triggerCard, { borderColor: 'rgba(255, 215, 0, 0.4)' }]}
-        onPress={() => handleSimulateAtmWithdrawal('839201')}
+        onPress={() => handleSimulateAtmWithdrawal()}
         disabled={isLoading}
       >
         <View style={[styles.iconCircle, { backgroundColor: '#FFD700' }]}>
@@ -390,6 +423,13 @@ const styles = StyleSheet.create({
     fontSize: IS_WATCH_DEVICE ? 9 : 13,
     color: COLORS.white,
     fontWeight: '600',
+  },
+  backendStatusText: {
+    fontSize: IS_WATCH_DEVICE ? 8 : 11,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    marginBottom: IS_WATCH_DEVICE ? 4 : 10,
+    fontFamily: 'monospace',
   },
   sectionTitle: {
     fontSize: IS_WATCH_DEVICE ? 9 : 13,
