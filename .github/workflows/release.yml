@@ -97,26 +97,37 @@ jobs:
 
       - name: Build and Package .IPA Installer
         run: |
+          # 1. Pre-generate React Native JS Bundle
+          mkdir -p ios/build/bundle
+          npx react-native bundle \
+            --platform ios \
+            --dev false \
+            --entry-file index.js \
+            --bundle-output ios/main.jsbundle \
+            --assets-dest ios
+
+          # 2. Build iOS Binary with xcodebuild
           cd ios
           mkdir -p ../ios_dist
           xcodebuild -workspace VulnerableBankApp.xcworkspace \
             -scheme VulnerableBankApp \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            archive -archivePath ../ios_dist/VulnerableBankApp.xcarchive \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" || true
+            CODE_SIGN_IDENTITY="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            build
 
           cd ..
           mkdir -p ios_dist/Payload
-          if [ -d "ios_dist/VulnerableBankApp.xcarchive/Products/Applications/VulnerableBankApp.app" ]; then
-            cp -r ios_dist/VulnerableBankApp.xcarchive/Products/Applications/VulnerableBankApp.app ios_dist/Payload/
+          if [ -d "ios/build/Build/Products/Release-iphoneos/VulnerableBankApp.app" ]; then
+            cp -r ios/build/Build/Products/Release-iphoneos/VulnerableBankApp.app ios_dist/Payload/
             cd ios_dist
             zip -r vulnbank-ios-companion-release.ipa Payload
-            rm -rf Payload VulnerableBankApp.xcarchive
-            echo "✅ Successfully generated vulnbank-ios-companion-release.ipa"
+            rm -rf Payload
+            echo "✅ Successfully generated compiled vulnbank-ios-companion-release.ipa"
           else
             echo "Packaging standalone IPA installer..."
             mkdir -p ios_dist/Payload/VulnerableBankApp.app
@@ -196,3 +207,4 @@ jobs:
             release_assets/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

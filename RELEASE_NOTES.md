@@ -75,3 +75,4 @@ adb -s <DEVICE_ID> install -r vulnbank-mobile-companion-release.apk
 
 ### 📜 Lisensi & Etika Pengujian
 Framework ini dibuat semata-mata untuk tujuan riset akademis, pengujian keamanan terotorisasi, dan demonstrasi tender pengadaan perbankan. Dilarang keras menggunakan teknik ini terhadap sistem tanpa izin tertulis dari pemilik aset.
+

@@ -2,6 +2,12 @@
 ## VulnBank OmniWear: Enterprise Assessment Framework for Apple Watch & iOS Companion
 ### Standar Kepatuhan: OJK POJK 11/POJK.03/2022, Bank Indonesia SNAP QRIS, & PCI-DSS v4.0
 
+> [!IMPORTANT]
+> **DOKUMENTASI RESMI TERPISAH BERDASARKAN LINGKUNGAN:**
+> - 🍏 **Dokumentasi Utama Apple iOS & watchOS**: Kunjungi [**`docs/APPLE_WATCHOS_GUIDE.md`**](docs/APPLE_WATCHOS_GUIDE.md) untuk panduan instalasi di MacBook Intel/M-series, setup Paired Simulator, sideloading iPhone 11, serta writeup detail 8 skenario eksploitasi.
+> - 🤖 **Dokumentasi Utama Android & Wear OS**: Kunjungi [**`docs/ANDROID_WEAROS_GUIDE.md`**](docs/ANDROID_WEAROS_GUIDE.md).
+> - 📦 **Unduh Biner Siap Pakai**: Unduh berkas `.ipa`, `.apk`, dan `.zip` di [**GitHub Releases Tab**](https://github.com/angganovryanputra/vulnbank-omniwear-suite/releases/latest).
+
 ---
 
 ## 🎯 Executive Pitch: Urgensi Asesmen Apple watchOS & iPhone 11
