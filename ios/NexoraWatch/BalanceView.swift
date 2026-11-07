@@ -28,7 +28,7 @@ struct BalanceView: View {
                             .foregroundColor(WatchTheme.gold)
                             .font(.system(size: 8))
                         Text("Nexora Private")
-                            .font(.system(size: 9.5, weight: .bold))
+                            .font(.system(size: WatchTheme.scaledFont(10, geometry.size), weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
                         Circle()
@@ -124,6 +124,45 @@ struct BalanceView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     
+                    // Transfer
+                    Button(action: { currentScreen = "transfer" }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.right.circle.fill").font(.system(size: 9))
+                            Text("Transfer").font(.system(size: 8.5, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: btnHeight)
+                        .background(WatchTheme.surfaceElevated)
+                        .foregroundColor(WatchTheme.gold)
+                        .cornerRadius(btnHeight / 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Transaction History
+                    Button(action: { currentScreen = "transactions" }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "list.bullet.rectangle.portrait.fill").font(.system(size: 9))
+                            Text("History").font(.system(size: 8.5, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: btnHeight)
+                        .background(WatchTheme.surfaceElevated)
+                        .foregroundColor(WatchTheme.emerald)
+                        .cornerRadius(btnHeight / 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Loans
+                    Button(action: { currentScreen = "loans" }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "building.columns.fill").font(.system(size: 9))
+                            Text("Loans").font(.system(size: 8.5, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: btnHeight)
+                        .background(WatchTheme.surfaceElevated)
+                        .foregroundColor(WatchTheme.gold)
+                        .cornerRadius(btnHeight / 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
                     // 2. Cardless ATM Withdrawal
                     Button(action: {
                         currentScreen = "cardless"

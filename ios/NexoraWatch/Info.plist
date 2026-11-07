@@ -28,6 +28,15 @@
     <true/>
     <key>WKCompanionAppBundleIdentifier</key>
     <string>com.nexorabank.omniwear</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <!-- INTENTIONALLY INSECURE (lab): allow cleartext HTTP to the Flask relay
+             so the watch can reach http://<PC-IP>:5000 directly. -->
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Nexora uses location to tag high-value transaction approvals.</string>
 </dict>
 </plist>
 

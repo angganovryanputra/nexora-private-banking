@@ -39,8 +39,10 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onNavigate }) => {
         </Text>
       </View>
       
-      <Text style={styles.description}>
-        Seamless contactless payments, glanceable wrist balances, and high-value biometric authorization across your phone and smartwatch.
+      <Text style={styles.description} numberOfLines={IS_WATCH_DEVICE ? 2 : undefined}>
+        {IS_WATCH_DEVICE
+          ? 'Contactless pay and biometric authorization, right on your wrist.'
+          : 'Seamless contactless payments, glanceable wrist balances, and high-value biometric authorization across your phone and smartwatch.'}
       </Text>
       
       <View style={styles.buttonContainer}>
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.spacing.sm,
   },
   appName: {
-    fontSize: SIZES.xxLarge,
+    fontSize: IS_WATCH_DEVICE ? SIZES.xLarge : SIZES.xxLarge,
     fontWeight: '800',
     color: COLORS.white,
     letterSpacing: 0.5,
@@ -116,8 +118,8 @@ const styles = StyleSheet.create({
     fontSize: SIZES.small,
     color: COLORS.textLight,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: SIZES.spacing.lg,
+    lineHeight: IS_WATCH_DEVICE ? 14 : 18,
+    marginBottom: IS_WATCH_DEVICE ? SIZES.spacing.sm : SIZES.spacing.lg,
     paddingHorizontal: SIZES.spacing.sm,
   },
   buttonContainer: {

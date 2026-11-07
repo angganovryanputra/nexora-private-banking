@@ -127,6 +127,10 @@ struct QuickPinPadView: View {
     private func verify() {
         attemptCount += 1
         if InsecureStorage.shared.verifyPin(enteredPin) {
+            // V-AP03 → real backend sign-in: fetch a live JWT + account number so
+            // the watch reads the SAME SQLite ledger as the phone/Wear OS app.
+            // (No mock session; the token is cached in insecure UserDefaults.)
+            WatchNetworkManager.shared.login(username: "alexander.vance", password: "Password123!") { _ in }
             isAuthenticated = true
         } else {
             errorMessage = "Invalid PIN (\(attemptCount))"

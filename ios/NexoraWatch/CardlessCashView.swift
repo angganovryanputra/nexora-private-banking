@@ -40,7 +40,7 @@ public struct CardlessCashView: View {
                         
                         Spacer()
                         Text("Cardless ATM")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: WatchTheme.scaledFont(10, geometry.size), weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
                     }
@@ -179,12 +179,10 @@ public struct CardlessCashView: View {
                     countdown = 900
                     statusMessage = "Token issued: Rp 100.000"
                 }
-            case .failure:
-                let fallback = String(format: "%06d", Int.random(in: 100000...999999))
-                otpCode = fallback
-                InsecureStorage.shared.setCardlessOtp(fallback)
-                countdown = 900
-                statusMessage = "Offline Token issued: Rp 100.000"
+            case .failure(let err):
+                // No mock fallback token — surface the real backend state.
+                otpCode = ""
+                statusMessage = "Backend unreachable — \(err.localizedDescription)"
             }
         }
     }
@@ -198,8 +196,9 @@ public struct CardlessCashView: View {
             case .success(let data):
                 let status = data["status"] as? String ?? "DISPENSED"
                 statusMessage = "ATM: \(status)! Rp 100.000 dispensed."
-                let cur = InsecureStorage.shared.getBalance()
-                InsecureStorage.shared.saveBalance(max(0.0, cur - 100000.0))
+                // Reflect the real post-debit balance from the backend ledger
+                // (avoids a client-side guess / double-decrement).
+                WatchNetworkManager.shared.checkBalance { _ in }
             case .failure(let err):
                 statusMessage = "ATM Error: \(err.localizedDescription)"
             }
@@ -227,3 +226,4 @@ public struct CardlessCashView: View {
         }
     }
 }
+

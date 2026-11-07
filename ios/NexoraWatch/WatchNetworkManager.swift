@@ -265,4 +265,139 @@ public class WatchNetworkManager: ObservableObject {
             DispatchQueue.main.async { completion(.success(json)) }
         }.resume()
     }
+
+    // MARK: - Shared JSON helpers
+    private func makeJSONRequest(path: String, method: String, body: [String: Any]?) -> URLRequest? {
+        guard let url = URL(string: "\(getBaseUrl())\(path)") else { return nil }
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        if let body = body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        }
+        // V-AP01: bearer token read from insecure UserDefaults (plaintext).
+        if let token = InsecureStorage.shared.getAuthToken(), !token.isEmpty {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    private func runJSON(_ request: URLRequest, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        session.dataTask(with: request) { data, _, error in
+            if let error = error {
+                DispatchQueue.main.async { completion(.failure(error)) }
+                return
+            }
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                DispatchQueue.main.async { completion(.failure(NSError(domain: "NexoraNetwork", code: 500, userInfo: [NSLocalizedDescriptionKey: "Malformed response"]))) }
+                return
+            }
+            DispatchQueue.main.async { completion(.success(json)) }
+        }.resume()
+    }
+
+    // MARK: - Login (SQLi-susceptible by design) + session caching
+    public func login(username: String, password: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        guard let request = makeJSONRequest(path: "/login", method: "POST",
+                                            body: ["username": username, "password": password]) else {
+            completion(.failure(NSError(domain: "NexoraNetwork", code: 400, userInfo: nil))); return
+        }
+        runJSON(request) { result in
+            if case .success(let json) = result {
+                // V-AP01: JWT + account cached in plaintext UserDefaults.
+                if let token = json["token"] as? String { InsecureStorage.shared.saveAuthToken(token) }
+                if let acct = json["accountNumber"] as? String { InsecureStorage.shared.saveAccountNumber(acct) }
+            }
+            completion(result)
+        }
+    }
+
+    // MARK: - Transfer (negative-amount logic flaw lives server-side, by design)
+    public func transfer(toAccount: String, amount: Double, note: String = "Apple Watch transfer",
+                         completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        let body: [String: Any] = [
+            "from_account": InsecureStorage.shared.getAccountNumber(),
+            "to_account": toAccount,
+            "amount": amount,
+            "description": note
+        ]
+        guard let request = makeJSONRequest(path: "/transfer", method: "POST", body: body) else {
+            completion(.failure(NSError(domain: "NexoraNetwork", code: 400, userInfo: nil))); return
+        }
+        runJSON(request) { result in
+            if case .success(let json) = result, let nb = json["new_balance"] as? Double {
+                InsecureStorage.shared.saveBalance(nb)
+            }
+            completion(result)
+        }
+    }
+
+    // MARK: - Quick Pay (Skenario 11 & V-W06)
+    public func quickPay(recipient: String = "NX-7391048", amount: Double = 50000.0,
+                         completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        transfer(toAccount: recipient, amount: amount, note: "Quick Pay Transfer via Apple Watch", completion: completion)
+    }
+
+    // MARK: - Transactions (BOLA/IDOR by design: any account works)
+    public func fetchTransactions(accountNumber: String? = nil,
+                                  completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
+        let acct = accountNumber ?? InsecureStorage.shared.getAccountNumber()
+        guard let request = makeJSONRequest(path: "/transactions/\(acct)", method: "GET", body: nil) else {
+            completion(.failure(NSError(domain: "NexoraNetwork", code: 400, userInfo: nil))); return
+        }
+        runJSON(request) { result in
+            switch result {
+            case .success(let json):
+                let list = (json["transactions"] as? [[String: Any]]) ?? []
+                completion(.success(list))
+            case .failure(let e):
+                completion(.failure(e))
+            }
+        }
+    }
+
+    // MARK: - Virtual cards list
+    public func fetchCards(completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
+        guard let request = makeJSONRequest(path: "/api/virtual-cards", method: "GET", body: nil) else {
+            completion(.failure(NSError(domain: "NexoraNetwork", code: 400, userInfo: nil))); return
+        }
+        session.dataTask(with: request) { data, _, error in
+            if let error = error { DispatchQueue.main.async { completion(.failure(error)) }; return }
+            guard let data = data else {
+                DispatchQueue.main.async { completion(.failure(NSError(domain: "NexoraNetwork", code: 500, userInfo: nil))) }; return
+            }
+            // Backend may return a bare array or {"cards": [...]}; handle both.
+            let obj = try? JSONSerialization.jsonObject(with: data)
+            let list = (obj as? [[String: Any]]) ?? ((obj as? [String: Any])?["cards"] as? [[String: Any]]) ?? []
+            DispatchQueue.main.async { completion(.success(list)) }
+        }.resume()
+    }
+
+    // MARK: - Loans
+    public func fetchLoans(accountNumber: String? = nil,
+                           completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
+        let acct = accountNumber ?? InsecureStorage.shared.getAccountNumber()
+        guard let request = makeJSONRequest(path: "/loans/\(acct)", method: "GET", body: nil) else {
+            completion(.failure(NSError(domain: "NexoraNetwork", code: 400, userInfo: nil))); return
+        }
+        session.dataTask(with: request) { data, _, error in
+            if let error = error { DispatchQueue.main.async { completion(.failure(error)) }; return }
+            guard let data = data else {
+                DispatchQueue.main.async { completion(.failure(NSError(domain: "NexoraNetwork", code: 500, userInfo: nil))) }; return
+            }
+            let obj = try? JSONSerialization.jsonObject(with: data)
+            let list = (obj as? [[String: Any]]) ?? ((obj as? [String: Any])?["loans"] as? [[String: Any]]) ?? []
+            DispatchQueue.main.async { completion(.success(list)) }
+        }.resume()
+    }
+
+    public func requestLoan(amount: Double, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+        let body: [String: Any] = ["account_number": InsecureStorage.shared.getAccountNumber(), "amount": amount]
+        guard let request = makeJSONRequest(path: "/request_loan", method: "POST", body: body) else {
+            completion(.failure(NSError(domain: "NexoraNetwork", code: 400, userInfo: nil))); return
+        }
+        runJSON(request, completion: completion)
+    }
 }
+

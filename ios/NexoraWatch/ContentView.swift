@@ -26,6 +26,12 @@ public struct ContentView: View {
                     CardlessCashView(currentScreen: $currentScreen)
                 case "cards":
                     CardFreezeView(currentScreen: $currentScreen)
+                case "transfer":
+                    TransferView(currentScreen: $currentScreen)
+                case "transactions":
+                    TransactionsView(currentScreen: $currentScreen)
+                case "loans":
+                    LoansView(currentScreen: $currentScreen)
                 case "lab":
                     WatchPentestLabView(currentScreen: $currentScreen)
                 default:

@@ -81,6 +81,17 @@ public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate 
                         return
                     }
                     
+                case "QUICK_PAY":
+                    let payload = message["payload"] as? [String: Any]
+                    let amt = payload?["amount"] as? Double ?? 50000.0
+                    let recipient = payload?["recipient"] as? String ?? "NX-7391048"
+                    let currentBal = InsecureStorage.shared.getBalance()
+                    InsecureStorage.shared.saveBalance(max(0.0, currentBal - amt))
+                    
+                    WatchNetworkManager.shared.quickPay(recipient: recipient, amount: amt) { _ in }
+                    replyHandler(["status": "QUICK_PAY_DEBITED", "amount": amt, "currency": "IDR"])
+                    return
+                    
                 default:
                     break
                 }

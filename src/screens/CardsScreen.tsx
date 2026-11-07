@@ -9,6 +9,7 @@ import globalStyles, {
   ROUND_INSET,
   CIRCULAR_PADDING_TOP,
   CIRCULAR_PADDING_BOTTOM,
+  IS_WATCH_DEVICE,
 } from '../styles/globalStyles';
 import theme from '../styles/theme';
 
@@ -57,50 +58,16 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
         user.token
       );
       
-      if (response.ok && response.data.cards && response.data.cards.length > 0) {
+      if (response.ok && response.data?.cards) {
+        // Real cards from the backend ledger (no mock fallback).
         setCards(response.data.cards);
       } else {
-        // Fallback for offline pentest demo
-        setCards([
-          {
-            id: 1,
-            card_number: '4532 •••• •••• 8821',
-            cvv: '921',
-            expiry_date: '08/28',
-            card_type: 'Titanium Wear',
-            limit: 5000,
-            balance: 1420.50,
-            is_frozen: false,
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 2,
-            card_number: '5412 •••• •••• 3349',
-            cvv: '417',
-            expiry_date: '11/29',
-            card_type: 'Virtual NFC Tap',
-            limit: 1000,
-            balance: 250.00,
-            is_frozen: true,
-            created_at: new Date().toISOString(),
-          },
-        ]);
+        setCards([]);
+        setError('Could not load cards. Tap "Try Again".');
       }
     } catch (error) {
-      // Fallback demo cards
-      setCards([
-        {
-          id: 1,
-          card_number: '4532 •••• •••• 8821',
-          cvv: '921',
-          expiry_date: '08/28',
-          card_type: 'Titanium Wear',
-          limit: 5000,
-          balance: 1420.50,
-          is_frozen: false,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      setCards([]);
+      setError('Backend unreachable. Set it in Pentest Lab → API.');
     } finally {
       setLoading(false);
     }
@@ -257,9 +224,11 @@ const CardsScreen: React.FC<CardsScreenProps> = ({ onNavigate }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Virtual Cards</Text>
-        <Text style={styles.headerSubtitle}>
-          Create and manage your virtual payment cards
-        </Text>
+        {!IS_WATCH_DEVICE && (
+          <Text style={styles.headerSubtitle}>
+            Create and manage your virtual payment cards
+          </Text>
+        )}
       </View>
       
       <CustomButton 
@@ -510,10 +479,10 @@ const styles = StyleSheet.create({
     paddingBottom: CIRCULAR_PADDING_BOTTOM,
   },
   header: {
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: IS_WATCH_DEVICE ? SIZES.spacing.sm : SIZES.spacing.lg,
   },
   headerTitle: {
-    fontSize: SIZES.xxLarge,
+    fontSize: IS_WATCH_DEVICE ? SIZES.large : SIZES.xxLarge,
     fontWeight: 'bold',
     color: COLORS.white,
     marginBottom: SIZES.spacing.xs,
@@ -565,7 +534,7 @@ const styles = StyleSheet.create({
   },
   cardItem: {
     borderRadius: SIZES.radius.md,
-    padding: SIZES.spacing.lg,
+    padding: IS_WATCH_DEVICE ? SIZES.spacing.md : SIZES.spacing.lg,
     marginBottom: SIZES.spacing.md,
     ...SHADOWS.medium,
   },
@@ -573,7 +542,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: IS_WATCH_DEVICE ? SIZES.spacing.sm : SIZES.spacing.lg,
   },
   cardType: {
     color: COLORS.white,

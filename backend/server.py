@@ -1454,7 +1454,8 @@ def wearable_card_freeze():
     """
     data = request.get_json(silent=True) or {}
     card_id = data.get('card_id', 1)
-    is_frozen = 0 if data.get('is_frozen') in (0, '0', False, 'false') else 1
+    raw_frozen = data.get('is_frozen') if 'is_frozen' in data else data.get('frozen')
+    is_frozen = 0 if raw_frozen in (0, '0', False, 'false') else 1
 
     conn = get_db()
     cur = conn.cursor()

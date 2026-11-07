@@ -345,10 +345,10 @@ const styles = StyleSheet.create({
     paddingBottom: CIRCULAR_PADDING_BOTTOM + 24,
   },
   headerTitle: {
-    fontSize: SIZES.xxLarge,
+    fontSize: IS_WATCH_DEVICE ? SIZES.large : SIZES.xxLarge,
     fontWeight: 'bold',
     color: COLORS.white,
-    marginBottom: SIZES.spacing.lg,
+    marginBottom: IS_WATCH_DEVICE ? SIZES.spacing.sm : SIZES.spacing.lg,
   },
   loaderContainer: {
     flex: 1,
@@ -397,9 +397,10 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.spacing.xs,
   },
   userItem: {
-    flexDirection: 'row',
+    flexDirection: IS_WATCH_DEVICE ? 'column' : 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: IS_WATCH_DEVICE ? 'stretch' : 'center',
+    gap: IS_WATCH_DEVICE ? SIZES.spacing.xs : 0,
     padding: SIZES.spacing.md,
     marginBottom: SIZES.spacing.md,
     borderBottomWidth: 1,
@@ -423,9 +424,10 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
   loanItem: {
-    flexDirection: 'row',
+    flexDirection: IS_WATCH_DEVICE ? 'column' : 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: IS_WATCH_DEVICE ? 'stretch' : 'center',
+    gap: IS_WATCH_DEVICE ? SIZES.spacing.xs : 0,
     padding: SIZES.spacing.md,
     marginBottom: SIZES.spacing.md,
     borderBottomWidth: 1,

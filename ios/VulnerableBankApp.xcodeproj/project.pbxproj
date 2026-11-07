@@ -11,6 +11,16 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		BLE7F559C2216DE92448EAC3 /* WatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = NXE7F559C2216DE92448EAC3 /* WatchBridge.swift */; };
+		BLF0CB5ECAAF581CE2371AEC /* WatchBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = NXF0CB5ECAAF581CE2371AEC /* WatchBridge.m */; };
+		BL3418986BDDB4AC6022C911 /* SecurityCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = NX3418986BDDB4AC6022C911 /* SecurityCheck.swift */; };
+		BL2AF6D41A1E825C441FE2DA /* SecurityCheck.m in Sources */ = {isa = PBXBuildFile; fileRef = NX2AF6D41A1E825C441FE2DA /* SecurityCheck.m */; };
+		BLD18F94FAF86D4CC25FB6AD /* HeartRate.swift in Sources */ = {isa = PBXBuildFile; fileRef = NXD18F94FAF86D4CC25FB6AD /* HeartRate.swift */; };
+		BL3219D77042ECD359C689CF /* HeartRate.m in Sources */ = {isa = PBXBuildFile; fileRef = NX3219D77042ECD359C689CF /* HeartRate.m */; };
+		BLF77EDCB652A278B64516B0 /* PinnedNetwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = NXF77EDCB652A278B64516B0 /* PinnedNetwork.swift */; };
+		BLFE8E3B415B590D8557742A /* PinnedNetwork.m in Sources */ = {isa = PBXBuildFile; fileRef = NXFE8E3B415B590D8557742A /* PinnedNetwork.m */; };
+		BL903651831DD727C2106FDF /* BluetoothSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = NX903651831DD727C2106FDF /* BluetoothSync.swift */; };
+		BLCA7A3F05FF0F0E23B587F9 /* BluetoothSync.m in Sources */ = {isa = PBXBuildFile; fileRef = NXCA7A3F05FF0F0E23B587F9 /* BluetoothSync.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +64,16 @@
 		76DE37AF209445DB8144B3A7 /* Octicons.ttf */ = {isa = PBXFileReference; name = "Octicons.ttf"; path = "../node_modules/react-native-vector-icons/Fonts/Octicons.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		B7847213255F48E39ECB0B7F /* SimpleLineIcons.ttf */ = {isa = PBXFileReference; name = "SimpleLineIcons.ttf"; path = "../node_modules/react-native-vector-icons/Fonts/SimpleLineIcons.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		8B4D3394EF0942C798954DD4 /* Zocial.ttf */ = {isa = PBXFileReference; name = "Zocial.ttf"; path = "../node_modules/react-native-vector-icons/Fonts/Zocial.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		NXE7F559C2216DE92448EAC3 /* WatchBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WatchBridge.swift; path = VulnerableBankApp/WatchBridge.swift; sourceTree = "<group>"; };
+		NXF0CB5ECAAF581CE2371AEC /* WatchBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = WatchBridge.m; path = VulnerableBankApp/WatchBridge.m; sourceTree = "<group>"; };
+		NX3418986BDDB4AC6022C911 /* SecurityCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SecurityCheck.swift; path = VulnerableBankApp/SecurityCheck.swift; sourceTree = "<group>"; };
+		NX2AF6D41A1E825C441FE2DA /* SecurityCheck.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = SecurityCheck.m; path = VulnerableBankApp/SecurityCheck.m; sourceTree = "<group>"; };
+		NXD18F94FAF86D4CC25FB6AD /* HeartRate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HeartRate.swift; path = VulnerableBankApp/HeartRate.swift; sourceTree = "<group>"; };
+		NX3219D77042ECD359C689CF /* HeartRate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = HeartRate.m; path = VulnerableBankApp/HeartRate.m; sourceTree = "<group>"; };
+		NXF77EDCB652A278B64516B0 /* PinnedNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PinnedNetwork.swift; path = VulnerableBankApp/PinnedNetwork.swift; sourceTree = "<group>"; };
+		NXFE8E3B415B590D8557742A /* PinnedNetwork.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = PinnedNetwork.m; path = VulnerableBankApp/PinnedNetwork.m; sourceTree = "<group>"; };
+		NX903651831DD727C2106FDF /* BluetoothSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BluetoothSync.swift; path = VulnerableBankApp/BluetoothSync.swift; sourceTree = "<group>"; };
+		NXCA7A3F05FF0F0E23B587F9 /* BluetoothSync.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = BluetoothSync.m; path = VulnerableBankApp/BluetoothSync.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +101,16 @@
 			children = (
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				NXE7F559C2216DE92448EAC3 /* WatchBridge.swift */,
+				NXF0CB5ECAAF581CE2371AEC /* WatchBridge.m */,
+				NX3418986BDDB4AC6022C911 /* SecurityCheck.swift */,
+				NX2AF6D41A1E825C441FE2DA /* SecurityCheck.m */,
+				NXD18F94FAF86D4CC25FB6AD /* HeartRate.swift */,
+				NX3219D77042ECD359C689CF /* HeartRate.m */,
+				NXF77EDCB652A278B64516B0 /* PinnedNetwork.swift */,
+				NXFE8E3B415B590D8557742A /* PinnedNetwork.m */,
+				NX903651831DD727C2106FDF /* BluetoothSync.swift */,
+				NXCA7A3F05FF0F0E23B587F9 /* BluetoothSync.m */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -318,6 +348,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				BLE7F559C2216DE92448EAC3 /* WatchBridge.swift in Sources */,
+				BLF0CB5ECAAF581CE2371AEC /* WatchBridge.m in Sources */,
+				BL3418986BDDB4AC6022C911 /* SecurityCheck.swift in Sources */,
+				BL2AF6D41A1E825C441FE2DA /* SecurityCheck.m in Sources */,
+				BLD18F94FAF86D4CC25FB6AD /* HeartRate.swift in Sources */,
+				BL3219D77042ECD359C689CF /* HeartRate.m in Sources */,
+				BLF77EDCB652A278B64516B0 /* PinnedNetwork.swift in Sources */,
+				BLFE8E3B415B590D8557742A /* PinnedNetwork.m in Sources */,
+				BL903651831DD727C2106FDF /* BluetoothSync.swift in Sources */,
+				BLCA7A3F05FF0F0E23B587F9 /* BluetoothSync.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -352,7 +392,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.nexorabank.omniwear;
 				PRODUCT_NAME = VulnerableBankApp;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -379,7 +419,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.nexorabank.omniwear;
 				PRODUCT_NAME = VulnerableBankApp;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";

@@ -44,7 +44,7 @@ public struct CardFreezeView: View {
                         
                         Spacer()
                         Text("Card Kill-Switch")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: WatchTheme.scaledFont(10, geometry.size), weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
                     }
@@ -182,3 +182,4 @@ public struct CardFreezeView: View {
         statusMessage = "[V-W09 EXPLOIT] Local wrist FROZEN, but backend card is still ACTIVE!"
     }
 }
+

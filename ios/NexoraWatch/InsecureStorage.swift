@@ -65,9 +65,14 @@ public class InsecureStorage {
         let b = defaults.double(forKey: keyBalance)
         return b == 0.0 ? 888888000.0 : b
     }
-    
+
     public func getAccountNumber() -> String {
         return defaults.string(forKey: keyAccountNumber) ?? "NX-8492014"
+    }
+
+    public func saveAccountNumber(_ account: String) {
+        defaults.set(account, forKey: keyAccountNumber)
+        defaults.synchronize()
     }
     
     public func getAccountHolder() -> String {
