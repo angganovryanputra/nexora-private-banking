@@ -33,5 +33,15 @@ public struct WatchTheme {
             return 14
         }
     }
+    
+    /// Format numeric balance as Indonesian Rupiah (e.g. "Rp 888.888.000")
+    public static func formatRupiah(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.groupingSeparator = "."
+        formatter.decimalSeparator = ","
+        formatter.maximumFractionDigits = 0
+        let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
+        return "Rp \(formatted)"
+    }
 }
-

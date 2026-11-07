@@ -22,6 +22,10 @@ public struct ContentView: View {
                 switch currentScreen {
                 case "qris":
                     QRISPaymentView(currentScreen: $currentScreen)
+                case "cardless":
+                    CardlessCashView(currentScreen: $currentScreen)
+                case "cards":
+                    CardFreezeView(currentScreen: $currentScreen)
                 case "lab":
                     WatchPentestLabView(currentScreen: $currentScreen)
                 default:
@@ -31,4 +35,3 @@ public struct ContentView: View {
         }
     }
 }
-

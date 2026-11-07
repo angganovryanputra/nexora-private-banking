@@ -13,11 +13,14 @@
    - [Scenario 1: Plaintext Dictionary WCSession Interception & Replay (V-AP02)](#scenario-1-plaintext-dictionary-wcsession-interception--replay-v-ap02)
    - [Scenario 2: UserDefaults Plist Insecure Storage & Keychain Bypass (V-AP01)](#scenario-2-userdefaults-plist-insecure-storage--keychain-bypass-v-ap01)
    - [Scenario 3: Unthrottled Quick-PIN 4-Digit Brute-Force & Memory Exfiltration (V-AP03)](#scenario-3-unthrottled-quick-pin-4-digit-brute-force--memory-exfiltration-v-ap03)
-   - [Scenario 4: High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack (V-AP04)](#scenario-4-high-value-50000-out-of-band-2fa-wire-transfer-hijack-v-ap04)
+   - [Scenario 4: High-Value (Rp 50.000.000) Out-of-Band 2FA Wire Transfer Hijack (V-AP04)](#scenario-4-high-value-rp-50000000-out-of-band-2fa-wire-transfer-hijack-v-ap04)
    - [Scenario 5: Sensor Wrist-Off Lockout Spoofing & Heart Rate Leak (V-AP05)](#scenario-5-sensor-wrist-off-lockout-spoofing--heart-rate-leak-v-ap05)
    - [Scenario 6: Contactless Dynamic SNAP QRIS Static Replay (V-AP06)](#scenario-6-contactless-dynamic-snap-qris-static-replay-v-ap06)
    - [Scenario 7: Remote Balance Injection via Insecure WatchBridge (V-B01)](#scenario-7-remote-balance-injection-via-insecure-watchbridge-v-b01)
-   - [Scenario 8: CISO Governance & Audit Compliance Assessment (POJK 11 / PCI-DSS v4.0)](#scenario-8-ciso-governance--audit-compliance-assessment-pojk-11--pci-dss-v40)
+   - [Scenario 8: ATM Cardless Cash-Out OTP Brute-Force & Race Condition (V-L04)](#scenario-8-atm-cardless-cash-out-otp-brute-force--race-condition-v-l04)
+   - [Scenario 9: Emergency Wrist Card Kill-Switch Desynchronization (V-W09)](#scenario-9-emergency-wrist-card-kill-switch-desynchronization-v-w09)
+   - [Scenario 10: Client-Side iOS Jailbreak Anti-Tamper Detection Bypass (V-07)](#scenario-10-client-side-ios-jailbreak-anti-tamper-detection-bypass-v-07)
+   - [Scenario 11: CISO Governance & Audit Compliance Assessment (POJK 11 / PCI-DSS v4.0)](#scenario-11-ciso-governance--audit-compliance-assessment-pojk-11--pci-dss-v40)
 6. [Frida & Cycript Cheatsheet for iOS & watchOS](#6-frida--cycript-cheatsheet-for-ios--watchos)
 7. [Regulatory Compliance Matrix & Enterprise Remediation](#7-regulatory-compliance-matrix--enterprise-remediation)
 
@@ -48,7 +51,8 @@ The Nexora Apple banking ecosystem features a hybrid architecture: **React Nativ
 │  - Insecure Storage: `UserDefaults.standard` Plist          │
 │  - Quick-PIN Pad 3x4 & SNAP QRIS Display                    │
 │  - Optical PPG Pulse Sensor & Wrist-Off Gatekeeper          │
-│  - High-Value 2FA Approval Modal ($50,000 Transfer)         │
+│  - High-Value 2FA Approval Modal (Rp 50.000.000 Transfer)   │
+│  - ATM Cardless Cash-Out & Emergency Wrist Card Kill-Switch  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -175,17 +179,23 @@ Nexora Watch replicates a premier private digital banking workflow:
 │         │                                              │
 │         ▼                                              │
 │  [3. Platinum Private Dashboard]                       │
-│       - Liquid Balance: $999,999.00 / Rp 99.999.000    │
+│       - Liquid Balance: Rp 888.888.000 (Alexander Vance)     │
 │       - PPG Heart Rate: 74 BPM                         │
-│       - WCSession Sync: Active                         │
+│       - Dual-Mode Network: HTTP URLSession + WCSession  │
 │         │                                              │
 │         ├─► [SNAP QRIS Pay] ──► Merchant QR Barcode    │
 │         │                        NMID & 120s Timer     │
 │         │                                              │
-│         ├─► [Audit Lab] ──────► 14 Exploit Vectors     │
-│         │                        Frida Sniffer Active  │
+│         ├─► [Cardless ATM] ───► 6-Digit Cash-Out OTP   │
+│         │                        Double-Dispense Race  │
 │         │                                              │
-│         └─► [High-Value 2FA] ─► $50,000 Wire Approval  │
+│         ├─► [Card Freeze] ────► Emergency Kill-Switch  │
+│         │                        Virtual Cards Locked  │
+│         │                                              │
+│         ├─► [Audit Lab] ──────► 21 Exploit Vectors     │
+│         │                        5 Security Pillars    │
+│         │                                              │
+│         └─► [High-Value 2FA] ─► Rp 50.000.000 Wire     │
 │                                  Haptic Dialog Modal   │
 └────────────────────────────────────────────────────────┘
 ```
@@ -264,17 +274,17 @@ Nexora Watch replicates a premier private digital banking workflow:
 
 ---
 
-### Scenario 4: High-Value ($50,000) Out-of-Band 2FA Wire Transfer Hijack (V-AP04)
+### Scenario 4: High-Value (Rp 50.000.000) Out-of-Band 2FA Wire Transfer Hijack (V-AP04)
 - **Severity**: **CRITICAL** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:R/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H` — Score: 8.7)
 - **Vulnerability Standard**: CWE-287 (Improper Authentication), CWE-345 (Insufficient Verification)
 - **Description**:
-  Approving a $50,000 international wire transfer on Apple Watch sends a bare dictionary `{"action": "APPROVE_2FA", "tx_id": ...}` without Secure Enclave biometric validation (`LocalAuthentication.LAContext`).
+  Approving an Rp 50.000.000 international wire transfer to Evelyn Sterling (NX-7391048) on Apple Watch sends a bare dictionary `{"action": "APPROVE_2FA", "tx_id": ...}` without Secure Enclave biometric validation (`LocalAuthentication.LAContext`).
 - **Root Cause Code** ([`ios/NexoraWatch/TwoFactorApprovalView.swift`](file:///ios/NexoraWatch/TwoFactorApprovalView.swift#L50-L68)):
   ```swift
   Button(action: {
-      sessionManager.send2FAResolution(txId: tx["tx_id"] as? String ?? "", approved: true)
+      sessionManager.approvePendingTransaction()
   }) {
-      Text("APPROVE") // Lacks LAContext biometric prompt
+      Text("APPROVE") // Lacks LAContext biometric challenge or hardware-backed signing
   }
   ```
 
@@ -304,7 +314,31 @@ Nexora Watch replicates a premier private digital banking workflow:
 
 ---
 
-### Scenario 8: CISO Governance & Audit Compliance Assessment (POJK 11 / PCI-DSS v4.0)
+### Scenario 8: ATM Cardless Cash-Out OTP Brute-Force & Race Condition (V-L04)
+- **Severity**: **HIGH** (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:H/SI:H/SA:N` — Score: 8.2)
+- **Vulnerability Standard**: CWE-307 (Improper Restriction of Excessive Authentication Attempts), CWE-362 (Race Condition)
+- **Description**:
+  Cardless ATM cash withdrawal generates a 6-digit numerical OTP token valid for 15 minutes. The verification endpoint `/api/atm/cardless-cash/verify` lacks rate-limiting and transaction locking, allowing fast brute-force and concurrent double-dispense exploits.
+
+---
+
+### Scenario 9: Emergency Wrist Card Kill-Switch Desynchronization (V-W09)
+- **Severity**: **MEDIUM** (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:H/VA:N/SC:N/SI:H/SA:N` — Score: 6.9)
+- **Vulnerability Standard**: CWE-306 (Missing Authentication for Critical Function)
+- **Description**:
+  When a user toggles the emergency card freeze kill-switch on their wrist, if network communication drops or is intercepted, the watch updates local UI to "FROZEN" without confirming backend state, leaving physical cards vulnerable to unauthorized transactions.
+
+---
+
+### Scenario 10: Client-Side iOS Jailbreak Anti-Tamper Detection Bypass (V-07)
+- **Severity**: **MEDIUM** (`CVSS:4.0/AV:L/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:N/SC:N/SI:N/SA:N` — Score: 5.8)
+- **Vulnerability Standard**: CWE-693 (Protection Mechanism Failure)
+- **Description**:
+  `SecurityCheckModule.swift` relies on static file inspection and an unencrypted `UserDefaults` plist toggle `nexora_bypass_jailbreak_check`. Attackers can permanently defeat jailbreak defense with 1 Frida line or editing the sandbox plist.
+
+---
+
+### Scenario 11: CISO Governance & Audit Compliance Assessment (POJK 11 / PCI-DSS v4.0)
 - **Severity**: **HIGH** (Regulatory Compliance Failure)
 - **Summary**:
   1. **POJK 11/POJK.03/2022 Article 25**: "Banks must ensure end-point security on customer IT devices." (Failed: Cleartext Plist storage).

@@ -7,7 +7,7 @@ import Combine
 /// - V-AP02: Plaintext Dictionary Sync: WCSession messages and applicationContext
 ///   dictionaries lack application-layer encryption, allowing runtime sniffers/proxies
 ///   to capture balances and credentials in transit between iPhone and Apple Watch.
-/// - V-AP04: Unauthenticated High-Value 2FA Push: Approving a $50,000 wire transfer
+/// - V-AP04: Unauthenticated High-Value 2FA Push: Approving an Rp 50.000.000 wire transfer
 ///   only sends a simple JSON/Dictionary `{"action": "APPROVE_2FA", "tx_id": ...}`
 ///   without hardware-backed asymmetric cryptographic proof (Secure Enclave signature).
 public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate {
@@ -46,19 +46,43 @@ public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate 
         DispatchQueue.main.async {
             self.lastReceivedPacket = message
             
-            // Check for High-Value 2FA Trigger (V-AP04)
             if let action = message["action"] as? String {
-                if action == "TRIGGER_HIGH_VALUE_2FA" {
-                    self.pending2FATransaction = message["payload"] as? [String: Any]
-                    replyHandler(["status": "PROMPT_SHOWN_ON_WATCH", "device": "Apple Watch"])
+                switch action {
+                case "TRIGGER_HIGH_VALUE_2FA":
+                    self.pending2FATransaction = message["payload"] as? [String: Any] ?? [
+                        "tx_id": "TX-9921",
+                        "amount": 50000000.0,
+                        "recipient": "Evelyn Sterling (NX-7391048)"
+                    ]
+                    replyHandler(["status": "PROMPT_SHOWN_ON_WATCH", "device": "Apple Watch", "currency": "IDR"])
                     return
-                } else if action == "UPDATE_BALANCE" {
+                    
+                case "UPDATE_BALANCE":
                     if let payload = message["payload"] as? [String: Any],
                        let amount = payload["amount"] as? Double {
                         InsecureStorage.shared.saveBalance(amount)
-                        replyHandler(["status": "BALANCE_UPDATED", "new_balance": amount])
+                        replyHandler(["status": "BALANCE_UPDATED", "new_balance": amount, "currency": "IDR"])
                         return
                     }
+                    
+                case "FREEZE_CARD":
+                    if let payload = message["payload"] as? [String: Any],
+                       let frozen = payload["frozen"] as? Bool {
+                        InsecureStorage.shared.setCardFrozen(frozen)
+                        replyHandler(["status": "CARD_STATUS_UPDATED", "frozen": frozen])
+                        return
+                    }
+                    
+                case "ATM_CASH_OTP":
+                    if let payload = message["payload"] as? [String: Any],
+                       let otp = payload["token"] as? String {
+                        InsecureStorage.shared.setCardlessOtp(otp)
+                        replyHandler(["status": "OTP_STORED", "token": otp])
+                        return
+                    }
+                    
+                default:
+                    break
                 }
             }
             
@@ -75,6 +99,9 @@ public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate 
             if let token = applicationContext["token"] as? String {
                 InsecureStorage.shared.saveAuthToken(token)
             }
+            if let frozen = applicationContext["card_frozen"] as? Bool {
+                InsecureStorage.shared.setCardFrozen(frozen)
+            }
         }
     }
     
@@ -82,35 +109,55 @@ public class WatchSessionManager: NSObject, ObservableObject, WCSessionDelegate 
     public func approvePendingTransaction() {
         guard let tx = pending2FATransaction else { return }
         
-        let amt = tx["amount"] as? Double ?? 50000.0
+        let amt = tx["amount"] as? Double ?? 50000000.0
+        let txId = tx["tx_id"] as? String ?? "TX-9921"
         let currentBal = InsecureStorage.shared.getBalance()
         InsecureStorage.shared.saveBalance(max(0.0, currentBal - amt))
+        
+        // Also fire direct HTTP relay if backend is reachable
+        WatchNetworkManager.shared.authorize2FA(txId: txId, amount: amt, resolution: "APPROVED") { _ in }
         
         // VULNERABLE: Sends plaintext approval dictionary back to iPhone without Secure Enclave signature
         let payload: [String: Any] = [
             "action": "RESOLVE_2FA",
             "resolution": "APPROVED",
-            "transaction_id": tx["tx_id"] ?? "TX-UNKNOWN",
+            "transaction_id": txId,
             "amount": amt,
-            "approved_by_device": "Apple Watch Series 9",
+            "currency": "IDR",
+            "approved_by_device": "Apple Watch Ultra 2",
             "timestamp": Date().timeIntervalSince1970
         ]
         
         if WCSession.default.isReachable {
             WCSession.default.sendMessage(payload, replyHandler: nil) { error in
-                print("Failed to dispatch approval: \(error)")
+                print("[WCSession] Failed to send 2FA approval: \(error.localizedDescription)")
             }
         } else {
             WCSession.default.transferUserInfo(payload)
         }
         
-        self.pending2FATransaction = nil
-        self.statusMessage = "Transaction Approved! (V-AP04 Exploited)"
+        pending2FATransaction = nil
     }
     
     public func rejectPendingTransaction() {
-        self.pending2FATransaction = nil
-        self.statusMessage = "Transaction Rejected"
+        guard let tx = pending2FATransaction else { return }
+        let txId = tx["tx_id"] as? String ?? "TX-9921"
+        
+        WatchNetworkManager.shared.authorize2FA(txId: txId, amount: 0.0, resolution: "REJECTED") { _ in }
+        
+        let payload: [String: Any] = [
+            "action": "RESOLVE_2FA",
+            "resolution": "REJECTED",
+            "transaction_id": txId,
+            "timestamp": Date().timeIntervalSince1970
+        ]
+        
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(payload, replyHandler: nil, errorHandler: nil)
+        } else {
+            WCSession.default.transferUserInfo(payload)
+        }
+        
+        pending2FATransaction = nil
     }
 }
-

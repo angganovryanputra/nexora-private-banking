@@ -1,19 +1,26 @@
 import SwiftUI
 import WatchConnectivity
 
-/// [V-AP06] Dynamic QRIS Screen on Apple watchOS
+/// [Skenario 6 & V-AP06] Dynamic SNAP QRIS Payment on Apple watchOS
 /// Scaled dynamically across all Apple Watch sizes.
-/// Vulnerability: Dynamic QR string has a static transaction identifier without timestamp validation.
-struct QRISPaymentView: View {
+/// Vulnerability: Dynamic QR string has a static transaction identifier without timestamp validation / TOTP replay protection (CWE-294).
+public struct QRISPaymentView: View {
     @Binding var currentScreen: String
     @State private var countdown: Int = 120
     @State private var qrisString: String = "00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2"
     @State private var timer: Timer?
+    @State private var statusMessage: String = "Merchant: NEXORA DIGITAL MERCH 001"
+    @State private var isProcessing: Bool = false
     
-    var body: some View {
+    public init(currentScreen: Binding<String>) {
+        self._currentScreen = currentScreen
+    }
+    
+    public var body: some View {
         GeometryReader { geometry in
             let isSmallWatch = geometry.size.height < 210
             let qrBoxSize: CGFloat = isSmallWatch ? 64 : (geometry.size.height > 250 ? 84 : 72)
+            let btnHeight = WatchTheme.buttonHeight(screenHeight: geometry.size.height)
             
             ScrollView {
                 VStack(spacing: 5) {
@@ -56,9 +63,10 @@ struct QRISPaymentView: View {
                     }
                     .padding(.vertical, 2)
                     
-                    Text("Merchant: NEXORA MERCH 001")
+                    Text(statusMessage)
                         .font(.system(size: 7, weight: .medium))
                         .foregroundColor(WatchTheme.textLight)
+                        .multilineTextAlignment(.center)
                     
                     // Timer & Status Pill
                     HStack(spacing: 3) {
@@ -74,60 +82,112 @@ struct QRISPaymentView: View {
                     .background(WatchTheme.surface)
                     .cornerRadius(8)
                     
-                    // 1-Tap POS Scan & Replay Simulation Button (V-AP06)
+                    // 1-Tap POS Scan Simulation Button (Rp 75.000)
                     Button(action: {
-                        let cur = InsecureStorage.shared.getBalance()
-                        InsecureStorage.shared.saveBalance(max(0.0, cur - 75.0))
-                        
-                        let payload: [String: Any] = [
-                            "action": "QRIS_PAYMENT_COMPLETED",
-                            "payload": [
-                                "amount": 75.0,
-                                "merchant": "NEXORA DIGITAL MERCH 001",
-                                "qr_payload": qrisString
-                            ]
-                        ]
-                        if WatchSessionManager.shared.isReachable {
-                            WCSession.default.sendMessage(payload, replyHandler: nil, errorHandler: nil)
-                        } else {
-                            WCSession.default.transferUserInfo(payload)
-                        }
+                        executeQrisPayment()
                     }) {
                         HStack(spacing: 3) {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 9))
                                 .foregroundColor(.black)
-                            Text("Simulate POS Scan ($75)")
-                                .font(.system(size: 8.5, weight: .bold))
+                            Text("Simulate POS Scan (Rp 75.000)")
+                                .font(.system(size: 8, weight: .bold))
                                 .foregroundColor(.black)
                         }
-                        .frame(maxWidth: .infinity, minHeight: 24)
-                        .background(WatchTheme.emerald)
-                        .cornerRadius(12)
+                        .frame(maxWidth: .infinity, minHeight: btnHeight)
+                        .background(WatchTheme.gold)
+                        .cornerRadius(btnHeight / 2)
                     }
                     .buttonStyle(PlainButtonStyle())
-                    .padding(.top, 2)
+                    .disabled(isProcessing)
                     
-                    Text("[V-AP06] Replay Flaw: Tap multiple times")
-                        .font(.system(size: 6.5))
+                    // Exploit Trigger: Skenario 6 (Replay Captured QRIS Token)
+                    Button(action: {
+                        triggerQrisReplayExploit()
+                    }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.counterclockwise.circle.fill")
+                                .font(.system(size: 8))
+                            Text("Exploit: Replay QRIS Token")
+                                .font(.system(size: 7.5, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: isSmallWatch ? 20 : 22)
+                        .background(WatchTheme.ruby.opacity(0.18))
                         .foregroundColor(WatchTheme.ruby)
-                        .multilineTextAlignment(.center)
+                        .cornerRadius(btnHeight / 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 4)
             }
         }
         .onAppear {
-            timer?.invalidate()
-            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                if countdown > 0 {
-                    countdown -= 1
-                } else {
-                    countdown = 120
-                }
-            }
+            startCountdown()
         }
         .onDisappear {
             timer?.invalidate()
+        }
+    }
+    
+    private func startCountdown() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if countdown > 0 {
+                countdown -= 1
+            } else {
+                countdown = 120
+            }
+        }
+    }
+    
+    private func executeQrisPayment() {
+        isProcessing = true
+        statusMessage = "Processing POS transaction Rp 75.000..."
+        
+        WatchNetworkManager.shared.checkoutQRIS(amount: 75000.0, qrPayload: qrisString) { result in
+            isProcessing = false
+            switch result {
+            case .success(let data):
+                let status = data["status"] as? String ?? "PAID"
+                statusMessage = "POS: \(status) (Rp 75.000) ✓"
+                let cur = InsecureStorage.shared.getBalance()
+                InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
+            case .failure:
+                let cur = InsecureStorage.shared.getBalance()
+                InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
+                statusMessage = "Offline Paid: Rp 75.000"
+            }
+            
+            // Broadcast payment to iPhone bridge
+            let payload: [String: Any] = [
+                "action": "QRIS_PAYMENT_COMPLETED",
+                "payload": [
+                    "amount": 75000.0,
+                    "currency": "IDR",
+                    "merchant": "NEXORA DIGITAL MERCH 001",
+                    "qr_payload": qrisString
+                ]
+            ]
+            if WatchSessionManager.shared.isReachable {
+                WCSession.default.sendMessage(payload, replyHandler: nil, errorHandler: nil)
+            } else {
+                WCSession.default.transferUserInfo(payload)
+            }
+        }
+    }
+    
+    private func triggerQrisReplayExploit() {
+        statusMessage = "Replaying captured static QR token..."
+        // Fires duplicate transaction using identical QR payload (Skenario 6 POC)
+        WatchNetworkManager.shared.checkoutQRIS(amount: 75000.0, qrPayload: qrisString) { res in
+            DispatchQueue.main.async {
+                switch res {
+                case .success:
+                    statusMessage = "[V-W15 EXPLOIT] Token Replay Accepted!"
+                case .failure:
+                    statusMessage = "[V-W15] Token Replay Dispatched."
+                }
+            }
         }
     }
 }

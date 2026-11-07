@@ -1,98 +1,121 @@
 import SwiftUI
 
 /// Responsive Luxury Dashboard for Apple watchOS
+/// Full parity with Android Wear OS & Mobile Companion suite.
 struct BalanceView: View {
     @Binding var currentScreen: String
     @Binding var isAuthenticated: Bool
     @ObservedObject var sessionManager = WatchSessionManager.shared
     @ObservedObject var wristManager = WristSensorManager.shared
+    @ObservedObject var networkManager = WatchNetworkManager.shared
     
     @State private var balance: Double = InsecureStorage.shared.getBalance()
+    @State private var isBalanceMasked: Bool = false
+    @State private var isRefreshing: Bool = false
     
     var body: some View {
         GeometryReader { geometry in
             let isSmallWatch = geometry.size.height < 210
-            let heroFontSize: CGFloat = isSmallWatch ? 14 : (geometry.size.height > 250 ? 18 : 16)
-            let btnHeight: CGFloat = isSmallWatch ? 24 : 28
+            let heroFontSize: CGFloat = isSmallWatch ? 12 : (geometry.size.height > 250 ? 15 : 13.5)
+            let btnHeight = WatchTheme.buttonHeight(screenHeight: geometry.size.height)
+            let isUltra = geometry.size.height > 250
             
             ScrollView {
-                VStack(spacing: 5) {
-                    // Header Bar
-                    HStack(spacing: 4) {
+                VStack(spacing: 4) {
+                    // Header Bar with Link & Dual-Mode Status
+                    HStack(spacing: 3) {
                         Image(systemName: "diamond.fill")
                             .foregroundColor(WatchTheme.gold)
-                            .font(.system(size: 9))
-                        Text("Nexora")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.system(size: 8))
+                        Text("Nexora Private")
+                            .font(.system(size: 9.5, weight: .bold))
                             .foregroundColor(.white)
                         Spacer()
                         Circle()
-                            .fill(sessionManager.isReachable ? WatchTheme.emerald : WatchTheme.goldMuted)
-                            .frame(width: 6, height: 6)
-                        Text(sessionManager.isReachable ? "Linked" : "Local")
-                            .font(.system(size: 7, weight: .semibold))
-                            .foregroundColor(sessionManager.isReachable ? WatchTheme.emerald : WatchTheme.goldMuted)
+                            .fill(networkManager.isOnline ? WatchTheme.emerald : (sessionManager.isReachable ? WatchTheme.gold : WatchTheme.textMuted))
+                            .frame(width: 5, height: 5)
+                        Text(networkManager.isOnline ? "HTTP" : (sessionManager.isReachable ? "WCSync" : "Local"))
+                            .font(.system(size: 6.5, weight: .semibold))
+                            .foregroundColor(networkManager.isOnline ? WatchTheme.emerald : WatchTheme.textMuted)
                     }
                     .padding(.horizontal, 4)
                     
-                    // Balance Card
+                    // Balance Card with Masking & Tap-to-Refresh
                     VStack(spacing: 2) {
-                        Text("TOTAL LIQUID ASSETS")
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundColor(WatchTheme.textMuted)
-                            .tracking(0.5)
+                        HStack {
+                            Text("TOTAL LIQUID ASSETS")
+                                .font(.system(size: 6.5, weight: .bold))
+                                .foregroundColor(WatchTheme.textMuted)
+                                .tracking(0.5)
+                            Spacer()
+                            Button(action: {
+                                isBalanceMasked.toggle()
+                            }) {
+                                Image(systemName: isBalanceMasked ? "eye.slash.fill" : "eye.fill")
+                                    .font(.system(size: 7.5))
+                                    .foregroundColor(WatchTheme.gold)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
                         
-                        Text("$\(formatCurrency(balance))")
+                        Text(isBalanceMasked ? "Rp •••••••••" : WatchTheme.formatRupiah(balance))
                             .font(.system(size: heroFontSize, weight: .heavy, design: .rounded))
                             .foregroundColor(WatchTheme.gold)
-                            .minimumScaleFactor(0.8)
+                            .minimumScaleFactor(0.7)
                             .lineLimit(1)
+                            .onTapGesture {
+                                refreshBalance()
+                            }
                         
-                        HStack(spacing: 4) {
+                        HStack(spacing: 3) {
                             Text(InsecureStorage.shared.getAccountNumber())
-                                .font(.system(size: 7, design: .monospaced))
+                                .font(.system(size: 6.5, design: .monospaced))
                                 .foregroundColor(WatchTheme.textLight)
-                            Text("• Platinum VIP")
-                                .font(.system(size: 7, weight: .bold))
+                            Text("•")
+                                .font(.system(size: 6.5))
+                                .foregroundColor(WatchTheme.textMuted)
+                            Text(InsecureStorage.shared.getAccountHolder())
+                                .font(.system(size: 6.5, weight: .semibold))
                                 .foregroundColor(WatchTheme.emerald)
+                                .lineLimit(1)
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, isSmallWatch ? 4 : 6)
+                    .padding(.vertical, isSmallWatch ? 3 : 5)
                     .padding(.horizontal, 6)
                     .background(WatchTheme.surface)
-                    .cornerRadius(10)
+                    .cornerRadius(8)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10)
+                        RoundedRectangle(cornerRadius: 8)
                             .stroke(WatchTheme.surfaceElevated, lineWidth: 1)
                     )
                     
-                    // Sensor & Health Telemetry
+                    // Sensor & PPG Biometrics Telemetry
                     HStack {
                         HStack(spacing: 3) {
                             Image(systemName: "heart.fill")
-                                .font(.system(size: 8))
+                                .font(.system(size: 7.5))
                                 .foregroundColor(WatchTheme.ruby)
                             Text("\(wristManager.simulatedHeartRate) BPM")
-                                .font(.system(size: 7, weight: .bold, design: .rounded))
+                                .font(.system(size: 6.5, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                         }
                         Spacer()
-                        Text("WCSession Ready")
-                            .font(.system(size: 7))
+                        Text("PPG Sensor Active")
+                            .font(.system(size: 6.5))
                             .foregroundColor(WatchTheme.emerald)
                     }
                     .padding(.horizontal, 4)
                     
-                    // Action Buttons (Full width with smooth radii)
+                    // 1. SNAP QRIS Payment
                     Button(action: {
                         currentScreen = "qris"
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "qrcode")
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                             Text("SNAP QRIS Pay")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(.system(size: 8.5, weight: .bold))
                         }
                         .frame(maxWidth: .infinity, minHeight: btnHeight)
                         .background(WatchTheme.gold)
@@ -101,14 +124,15 @@ struct BalanceView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     
+                    // 2. Cardless ATM Withdrawal
                     Button(action: {
-                        currentScreen = "lab"
+                        currentScreen = "cardless"
                     }) {
                         HStack(spacing: 4) {
-                            Image(systemName: "shield.lefthalf.filled.trianglebadge.exclamationmark")
+                            Image(systemName: "banknote.fill")
                                 .font(.system(size: 9))
-                            Text("Security Audit Lab")
-                                .font(.system(size: 9, weight: .bold))
+                            Text("Cardless ATM OTP")
+                                .font(.system(size: 8.5, weight: .bold))
                         }
                         .frame(maxWidth: .infinity, minHeight: btnHeight)
                         .background(WatchTheme.surfaceElevated)
@@ -117,29 +141,65 @@ struct BalanceView: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     
+                    // 3. Emergency Card Kill-Switch
+                    Button(action: {
+                        currentScreen = "cards"
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "creditcard.and.123")
+                                .font(.system(size: 9))
+                            Text("Card Kill-Switch")
+                                .font(.system(size: 8.5, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: btnHeight)
+                        .background(WatchTheme.surfaceElevated)
+                        .foregroundColor(WatchTheme.emerald)
+                        .cornerRadius(btnHeight / 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // 4. Security Audit Lab
+                    Button(action: {
+                        currentScreen = "lab"
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "shield.lefthalf.filled.trianglebadge.exclamationmark")
+                                .font(.system(size: 8.5))
+                            Text("Security Audit Lab")
+                                .font(.system(size: 8, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity, minHeight: isSmallWatch ? 22 : 25)
+                        .background(WatchTheme.surfaceElevated)
+                        .foregroundColor(WatchTheme.gold)
+                        .cornerRadius(btnHeight / 2)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    // 5. Test Wrist Lock
                     Button(action: {
                         wristManager.triggerWristOff()
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: "sensor.tag.radiowaves.forward.fill")
-                                .font(.system(size: 8))
+                                .font(.system(size: 7.5))
                             Text("Test Wrist Lock")
-                                .font(.system(size: 8, weight: .medium))
+                                .font(.system(size: 7.5, weight: .medium))
                         }
-                        .frame(maxWidth: .infinity, minHeight: isSmallWatch ? 22 : 24)
-                        .background(WatchTheme.ruby.opacity(0.2))
+                        .frame(maxWidth: .infinity, minHeight: isSmallWatch ? 19 : 22)
+                        .background(WatchTheme.ruby.opacity(0.18))
                         .foregroundColor(WatchTheme.ruby)
                         .cornerRadius(btnHeight / 2)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
+                    // Lock Screen
                     Button(action: {
                         isAuthenticated = false
                     }) {
                         Text("Lock Screen")
-                            .font(.system(size: 8))
+                            .font(.system(size: 7.5))
                             .foregroundColor(WatchTheme.textMuted)
-                            .padding(.vertical, 2)
+                            .padding(.vertical, 1)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -147,17 +207,19 @@ struct BalanceView: View {
             }
         }
         .onAppear {
-            balance = InsecureStorage.shared.getBalance()
+            refreshBalance()
         }
         .onReceive(sessionManager.$lastReceivedPacket) { _ in
             balance = InsecureStorage.shared.getBalance()
         }
     }
     
-    private func formatCurrency(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = "."
-        return formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
+    private func refreshBalance() {
+        balance = InsecureStorage.shared.getBalance()
+        WatchNetworkManager.shared.checkBalance { result in
+            if case .success(let b) = result {
+                self.balance = b
+            }
+        }
     }
 }

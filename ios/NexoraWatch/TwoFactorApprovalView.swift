@@ -1,16 +1,20 @@
 import SwiftUI
 
-/// [V-AP04] High-Value $50,000 Out-of-Band 2FA Approval Modal
+/// [Skenario 4 & 17] High-Value Rp 50.000.000 Out-of-Band (OOB) 2FA Wire Transfer Approval Modal
 /// Responsive modal adapting to small (40mm) and large (49mm Ultra) Apple Watches.
-/// Vulnerability: Approves wire transfer without biometric verification or Secure Enclave signature.
-struct TwoFactorApprovalView: View {
+/// Vulnerability: Approves wire transfer without biometric verification, wrist PIN challenge, or Secure Enclave signature (CWE-287).
+public struct TwoFactorApprovalView: View {
     @ObservedObject var sessionManager = WatchSessionManager.shared
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         if let tx = sessionManager.pending2FATransaction {
             GeometryReader { geometry in
                 let isSmallWatch = geometry.size.height < 210
                 let actionBtnHeight: CGFloat = isSmallWatch ? 24 : 28
+                let amount = tx["amount"] as? Double ?? 50000000.0
+                let recipient = tx["recipient"] as? String ?? "Evelyn Sterling (NX-7391048)"
                 
                 ScrollView {
                     VStack(spacing: 4) {
@@ -28,13 +32,16 @@ struct TwoFactorApprovalView: View {
                                 .font(.system(size: 8))
                                 .foregroundColor(WatchTheme.textMuted)
                             
-                            Text("$\(String(format: "%.2f", tx["amount"] as? Double ?? 50000.0))")
-                                .font(.system(size: isSmallWatch ? 15 : 18, weight: .heavy, design: .rounded))
+                            Text(WatchTheme.formatRupiah(amount))
+                                .font(.system(size: isSmallWatch ? 14 : 16, weight: .heavy, design: .rounded))
                                 .foregroundColor(WatchTheme.gold)
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
                             
-                            Text("To: \(tx["recipient"] as? String ?? "OFFSHORE-SWIFT-991")")
+                            Text("To: \(recipient)")
                                 .font(.system(size: 7, design: .monospaced))
                                 .foregroundColor(.white)
+                                .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(5)
@@ -72,7 +79,7 @@ struct TwoFactorApprovalView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                         
-                        Text("[V-AP04] Missing Biometric Challenge")
+                        Text("[V-W09] Missing Biometric / Enclave Challenge")
                             .font(.system(size: 6.5))
                             .foregroundColor(WatchTheme.textMuted)
                     }
