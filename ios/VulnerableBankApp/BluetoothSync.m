@@ -9,3 +9,4 @@ RCT_EXTERN_METHOD(getLastSyncData:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 @end
+

@@ -13,3 +13,4 @@ RCT_EXTERN_METHOD(bruteForcePin:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 @end
+

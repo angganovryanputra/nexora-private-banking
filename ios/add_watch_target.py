@@ -48,3 +48,4 @@ def verify_and_align_pbxproj():
 
 if __name__ == "__main__":
     verify_and_align_pbxproj()
+

@@ -7,3 +7,4 @@ RCT_EXTERN_METHOD(testPinnedRequest:(NSString *)urlString
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 @end
+

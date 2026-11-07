@@ -20,3 +20,4 @@ RCT_EXTERN_METHOD(clearHistory:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 
 @end
+

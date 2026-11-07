@@ -77,3 +77,4 @@ class HeartRate: RCTEventEmitter {
         resolve(nil)
     }
 }
+
