@@ -263,5 +263,26 @@ class TestWatchOSParity(unittest.TestCase):
         tut_dollar_matches = re.findall(r'\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)', tut_content)
         self.assertEqual(tut_dollar_matches, [], f"Lingering USD dollar amounts in tutorial: {tut_dollar_matches}")
 
+    def test_xcode_setup_tutorial_completeness(self):
+        """docs/APPLE_WATCHOS_GUIDE.md and BUILD-IOS-WATCHOS.md must contain comprehensive Xcode and DB setup instructions."""
+        guide_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs", "APPLE_WATCHOS_GUIDE.md"))
+        with open(guide_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("add_watch_target.rb", content, "add_watch_target.rb missing from tutorial")
+        self.assertIn("nexora_vault.db", content, "nexora_vault.db inspection missing from tutorial")
+        self.assertIn("com.nexorabank.omniwear.watchkitapp", content, "Watch bundle identifier missing from tutorial")
+        self.assertIn("NSAllowsArbitraryLoads", content, "App Transport Security explanation missing")
+        self.assertIn("Pair Apple Watch", content, "Paired simulator instructions missing")
+
+        build_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "BUILD-IOS-WATCHOS.md"))
+        with open(build_path, "r", encoding="utf-8") as f:
+            build_content = f.read()
+
+        self.assertIn("add_watch_target.rb", build_content, "add_watch_target.rb missing from BUILD-IOS-WATCHOS.md")
+        self.assertIn("nexora_vault.db", build_content, "nexora_vault.db missing from BUILD-IOS-WATCHOS.md")
+        self.assertIn("com.nexorabank.omniwear.watchkitapp", build_content, "Watch bundle identifier missing from BUILD-IOS-WATCHOS.md")
+        self.assertIn("NSAllowsArbitraryLoads", build_content, "NSAllowsArbitraryLoads missing from BUILD-IOS-WATCHOS.md")
+
 if __name__ == "__main__":
     unittest.main()

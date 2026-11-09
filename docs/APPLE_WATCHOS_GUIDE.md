@@ -69,27 +69,86 @@ All binaries can be downloaded directly from the [**GitHub Releases Tab**](https
 
 ## 💻 2. Lab Setup Using Xcode Simulator (MacBook Intel / Apple Silicon)
 
-This guide is designed for researchers using **MacBook Pro 2019 (Intel Core i7/i9)** or **Apple Silicon (M1/M2/M3)** running macOS Ventura / Sonoma with Xcode 15+.
-
-### Prerequisites:
-- macOS 13.5+ (Ventura) or 14+ (Sonoma)
-- Xcode 15.0 or later (free from Mac App Store)
-- Node.js v18+ and CocoaPods (`sudo gem install cocoapods`)
+This guide provides a definitive, production-grade tutorial for provisioning the **Nexora OmniWear** banking lab on macOS using Xcode. The setup supports both Intel Core i7/i9 (MacBook Pro 2019) and Apple Silicon (M1/M2/M3/M4) architectures on macOS Sonoma (14.x) and macOS Sequoia (15.x).
 
 ---
 
-### Step 1: Clone Repository & Install Dependencies
-Open Terminal on your Mac:
+### 2.1 Prerequisites & Toolchain Setup
+
+Ensure the following system packages and developer toolchains are installed on macOS:
+
+1. **Operating System & Hardware**:
+   - macOS 14+ (Sonoma) or macOS 15+ (Sequoia).
+   - Apple Silicon (M1/M2/M3/M4) or Intel Core i7/i9.
+2. **Xcode Suite**:
+   - Xcode 15.0+ or Xcode 16.0+ installed from the Mac App Store or Apple Developer Portal.
+   - iOS 17/18 SDK and watchOS 10/11 SDK installed (**Xcode** → **Settings** → **Platforms**).
+   - Command Line Developer Tools:
+     ```bash
+     xcode-select --install
+     sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+     ```
+3. **Ruby Environment & Gems**:
+   - Install CocoaPods and the Apple Xcode project manipulation gem:
+     ```bash
+     sudo gem install cocoapods xcodeproj
+     ```
+4. **JavaScript & Python Runtimes**:
+   - Node.js 18+ (LTS) & Yarn / npm:
+     ```bash
+     node --version # Must be >= v18.0.0
+     ```
+   - Python 3.10+ (for the banking backend):
+     ```bash
+     python3 --version # Must be >= 3.10.0
+     pip3 install flask werkzeug
+     ```
+
+---
+
+### 2.2 Core Banking Backend & SQLite Database Initialization
+
+The core banking engine operates on a local air-gapped Flask service backed by an SQLite relational database (`backend/nexora_vault.db`).
+
+1. **Start the Core Banking Service**:
+   Open a dedicated terminal window and run:
+   ```bash
+   cd backend
+   python3 server.py
+   ```
+   The server initializes the database schema, seeds enterprise private banking profiles, and listens on `http://0.0.0.0:5000`.
+
+2. **Verify SQLite Database Schema & Initial Records**:
+   In another terminal, inspect the database using the `sqlite3` CLI tool:
+   ```bash
+   sqlite3 backend/nexora_vault.db "SELECT account_number, username, balance FROM users WHERE username = 'alexander.vance';"
+   ```
+   **Expected Output**:
+   ```text
+   NX-8492014|alexander.vance|888888000.0
+   ```
+   This confirms that Alexander Vance's platinum account (`NX-8492014`) is loaded with its opening balance of Rp 888.888.000 (IDR).
+
+3. **Verify Restful API Connectivity**:
+   ```bash
+   curl -s http://127.0.0.1:5000/check_balance/NX-8492014
+   ```
+   **Expected JSON Response**:
+   ```json
+   {"accountNumber":"NX-8492014","balance":888888000.0,"currency":"IDR"}
+   ```
+
+---
+
+### 2.3 Scaffolding React Native iOS & CocoaPods
+
+Scaffold the iOS companion application dependencies:
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/angganovryanputra/nexora-private-banking.git
-cd nexora-private-banking
-
-# 2. Install Node dependencies
+# From repository root:
 npm install --legacy-peer-deps
 
-# 3. Install CocoaPods dependencies
+# Install iOS CocoaPods dependencies:
 cd ios
 pod install --repo-update
 cd ..
@@ -97,54 +156,138 @@ cd ..
 
 ---
 
-### Step 2: Open Workspace in Xcode
-> [!IMPORTANT]
-> **Always open the `.xcworkspace` file**, NEVER the `.xcodeproj` file!
-```bash
-open ios/VulnerableBankApp.xcworkspace
-```
+### 2.4 Automated Apple Watch Target Integration (`add_watch_target.rb`)
+
+The `ios/NexoraWatch/` directory contains native SwiftUI source code for watchOS. To integrate this target seamlessly into the Xcode project without manual drag-and-drop:
+
+1. **Execute the Ruby Provisioning Script**:
+   ```bash
+   cd ios
+   ruby add_watch_target.rb
+   ```
+2. **What `add_watch_target.rb` Performs Automatically**:
+   - Sets the iOS companion bundle identifier to `com.nexorabank.omniwear`.
+   - Creates the native watch target **`NexoraWatch`** with bundle identifier `com.nexorabank.omniwear.watchkitapp`.
+   - Sets `WKCompanionAppBundleIdentifier` to `com.nexorabank.omniwear` to guarantee bi-directional `WCSession` pairing.
+   - Enrolls all 16 `*.swift` files, `Info.plist`, and `Assets.xcassets` into the target build phase.
+   - Configures the **Embed Watch Content** build phase and target dependency in `VulnerableBankApp.xcodeproj`.
+3. **Re-synchronize CocoaPods**:
+   ```bash
+   pod install
+   cd ..
+   ```
+   *(Note: The `NexoraWatch` target communicates via native `URLSession` and does not link React Native pods).*
 
 ---
 
-### Step 3: Configure Paired Simulator (iPhone 11 + Apple Watch)
+### 2.5 Paired Simulator Configuration (iPhone 11/15 + Apple Watch Series 9/Ultra)
+
+Xcode provides virtual hardware emulation for paired companion devices:
+
 1. In Xcode menu bar, select **Window** → **Devices and Simulators** (`Cmd + Shift + 2`).
 2. Navigate to the **Simulators** tab.
-3. In the bottom-left panel, click **`+`** (Create New Simulator).
-4. Configure iPhone Simulator:
-   - **Device Name**: `iPhone 11 Lab` (or `iPhone 15 Pro`).
-   - **Device Type**: `iPhone 11`.
-   - **OS Version**: `iOS 17.2` (or installed version).
-5. Pair with Apple Watch:
-   - Check **Pair Apple Watch**.
-   - **Watch Device Name**: `Apple Watch Series 9 Lab`.
-   - **Watch OS Version**: `watchOS 10.2` (or `watchOS 9.x`).
-6. Click **Create**. You now have a virtual paired Bluetooth environment!
+3. In the lower-left corner, click the **`+`** button to create a new simulator.
+4. **Configure the iPhone Simulator**:
+   - **Simulator Name**: `iPhone 15 Pro Lab` (or `iPhone 11 Lab`).
+   - **Device Type**: `iPhone 15 Pro` (or `iPhone 11`).
+   - **OS Version**: `iOS 17.4` (or `iOS 17.x` / `iOS 18.x`).
+5. **Pair with Apple Watch**:
+   - Select the checkbox: **Pair Apple Watch**.
+   - **Watch Simulator Name**: `Apple Watch Series 9 Lab` (or `Apple Watch Ultra 2 Lab`).
+   - **Watch Device Type**: `Apple Watch Series 9 (45mm)` or `Apple Watch Ultra 2 (49mm)`.
+   - **Watch OS Version**: `watchOS 10.4` (or `watchOS 10.x` / `watchOS 11.x`).
+6. Click **Create**.
+7. Xcode will provision a virtual Bluetooth LE bridge linking the simulated iPhone and Apple Watch!
 
 ---
 
-### Step 4: Start Local Flask Backend
-```bash
-python3 backend/server.py
+### 2.6 Dual-Mode Network Configuration & App Transport Security
+
+Nexora OmniWear utilizes a dual-path communication model:
+
 ```
-> Server runs on `http://127.0.0.1:5000` (or your Mac Wi-Fi LAN IP).
+┌────────────────────────────────────────────────────────┐
+│               NETWORK CONNECTIVITY ARCHITECTURE         │
+│                                                        │
+│  [Apple Watch Simulator] ──────► http://localhost:5000  │
+│         (Native URLSession direct to host Mac)         │
+│                                                        │
+│  [Physical Apple Watch]  ──────► http://<MAC_LAN_IP>:5000
+│         (Direct Wi-Fi / Proxy through paired iPhone)   │
+│                                                        │
+│  [WatchSessionManager]   ◄────► WCSession (BLE Sync)   │
+│         (Pairing: com.nexorabank.omniwear)             │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **Simulator Operation**:
+   - The watchOS Simulator shares the host Mac's loopback interface. Direct HTTP calls from `WatchNetworkManager.swift` resolve immediately to `http://localhost:5000`.
+2. **Physical Device Operation**:
+   - Physical devices cannot connect to `localhost`. You must point them to your host Mac's local area network (LAN) IP (e.g., `http://192.168.1.50:5000`).
+   - Configure in `InsecureStorage.swift`:
+     ```swift
+     // ios/NexoraWatch/InsecureStorage.swift
+     private let defaultBackendUrl = "http://192.168.1.50:5000"
+     ```
+   - Or configure interactively via the companion app under **Pentest Lab** → **API Settings**.
+3. **App Transport Security (ATS) Configuration**:
+   - iOS and watchOS enforce secure HTTPS connections by default. Because the pentest lab operates over plaintext HTTP for traffic interception (e.g., via Burp Suite or Charles Proxy), both targets declare:
+     ```xml
+     <key>NSAppTransportSecurity</key>
+     <dict>
+         <key>NSAllowsArbitraryLoads</key>
+         <true/>
+     </dict>
+     ```
+   - This bypasses ATS restrictions on local networks, allowing security researchers to analyze cleartext payloads.
 
 ---
 
-### Step 5: Launch iOS Companion & Apple Watch App
-1. In Xcode's Scheme Selector:
-   - Select **`VulnerableBankApp`** → Target: **`iPhone 11 Lab`**.
-   - Press **Run** (`Cmd + R`).
-   - Once loaded, sign in with:
-     - **Username**: `admin`
-     - **Password**: `admin123`
-2. Launch Watch target:
-   - Select the Watch target → Target: **`Apple Watch Series 9 Lab`**.
-   - Press **Run** (`Cmd + R`).
-   - The Apple Watch screen will launch the **Nexora Watch Interface** automatically!
+### 2.7 End-to-End Database Verification Test
+
+To verify complete end-to-end connectivity from the Apple Watch UI into the backend database:
+
+1. **Launch the Application**:
+   - Open `ios/VulnerableBankApp.xcworkspace` in Xcode.
+   - Set scheme to **`VulnerableBankApp`** with destination **`iPhone 15 Pro Lab`** → Press `Cmd + R`.
+   - Set scheme to **`NexoraWatch`** with destination **`Apple Watch Series 9 Lab`** → Press `Cmd + R`.
+2. **Execute a Transaction on Apple Watch**:
+   - On the watch face, authenticate with Quick-PIN `1234`.
+   - Tap **SNAP QRIS Pay** → Select **Scan & Pay Rp 75.000** for merchant `Warung Kopi Seduh`.
+   - Tap **Confirm Payment**. The watch executes haptic feedback and displays `Payment Approved`.
+3. **Verify Database Insertion in SQLite**:
+   In your host terminal, query `backend/nexora_vault.db`:
+   ```bash
+   sqlite3 backend/nexora_vault.db "SELECT id, from_account, to_account, amount, description, timestamp FROM transactions ORDER BY id DESC LIMIT 1;"
+   ```
+   **Expected Output**:
+   ```text
+   |NX-8492014|ID1020021189360|75000.0|SNAP QRIS Payment - Warung Kopi Seduh|...
+   ```
+4. **Verify Balance Update**:
+   ```bash
+   sqlite3 backend/nexora_vault.db "SELECT balance FROM users WHERE account_number = 'NX-8492014';"
+   ```
+   The balance has been updated atomically in the SQLite database!
+
+---
+
+### 2.8 Xcode Error Resolution Matrix
+
+| Error Message in Xcode | Root Cause | Verified Resolution |
+|---|---|---|
+| `No such module 'React'` on `NexoraWatch` | The watchOS target is attempting to link React Native iOS pods. | `NexoraWatch` is 100% native SwiftUI and `URLSession`. Ensure `NexoraWatch` is **not** included as a target inside `ios/Podfile`. Pods belong exclusively to `VulnerableBankApp`. |
+| `Signing for 'NexoraWatch' requires a development team` | Code signing team is unselected or provisioning profile expired. | In Xcode, select the root project `VulnerableBankApp` → Select `NexoraWatch` target → **Signing & Capabilities** → Set **Team** to your **Personal Team** (Free Apple ID) and change Bundle Identifier prefix if required. Repeat for `VulnerableBankApp`. |
+| `WCSession is not paired` or `sessionWatchAppNotInstalled` | Bundle identifier mismatch between iOS app and watchOS companion. | The companion bundle ID must strictly match: iOS: `com.nexorabank.omniwear`, Watch: `com.nexorabank.omniwear.watchkitapp`. Run `ruby add_watch_target.rb` to automatically repair identifier alignment. |
+| `App Transport Security has blocked a cleartext HTTP connection` | ATS block due to missing `NSAllowsArbitraryLoads`. | Verify `Info.plist` in both `ios/NexoraWatch/Info.plist` and `ios/VulnerableBankApp/Info.plist` contains `<key>NSAllowsArbitraryLoads</key><true/>`. |
+| `Cycle inside VulnerableBankApp; building could produce unreliable results` | Build order cycle between Embed Watch Content and compilation. | In `VulnerableBankApp` Build Phases, ensure **Embed Watch Content** is positioned *after* **Compile Sources** and **Link Binary With Libraries**. |
+| `Destination Apple Watch Series 9 is not valid` | Deployment target mismatch. | In `NexoraWatch` target **Build Settings**, set **watchOS Deployment Target** to `watchOS 9.0` or `watchOS 10.0` matching your installed simulator runtime. |
 
 ---
 
 ## 📱 3. Lab Setup Using Physical Devices (Real iPhone 11 & Apple Watch)
+
+Deploying to physical hardware (e.g. iPhone 11 and Apple Watch Series 9) provides realistic optical sensor testing (PPG heart rate), authentic Bluetooth LE WCSession synchronization, and true hardware off-wrist gatekeeper evaluation.
 
 ### Method A: Sideloading via Sideloadly / AltStore (Free Apple ID)
 1. Download **`nexora-ios-companion-release.ipa`** from [GitHub Releases](https://github.com/angganovryanputra/nexora-private-banking/releases/latest).
@@ -156,11 +299,43 @@ python3 backend/server.py
 7. Open Nexora Bank on iPhone. The paired Apple Watch will automatically synchronize the companion app!
 
 ### Method B: Direct Deployment via Xcode (Recommended for Researchers)
-1. Connect iPhone 11 to Mac via USB.
-2. On iPhone 11: Enable **Developer Mode** (**Settings** → **Privacy & Security** → **Developer Mode** → Restart).
-3. Open `ios/VulnerableBankApp.xcworkspace` in Xcode.
-4. Under **Signing & Capabilities**, select your Personal Apple ID team.
-5. Click **Run** (`Cmd + R`) to compile and deploy directly to both iPhone and Apple Watch!
+1. **Prepare Physical Devices**:
+   - Connect iPhone 11 to your Mac via USB-to-Lightning cable.
+   - Ensure your physical Apple Watch is powered on, on your wrist, unlocked, and paired via the iOS Watch app.
+2. **Enable iOS Developer Mode**:
+   - On iPhone: Navigate to **Settings** → **Privacy & Security** → Scroll down to **Developer Mode** → Toggle ON → Restart device.
+   - After restart, unlock the phone and tap **Turn On** when prompted.
+   - On Apple Watch: In watchOS 10+, navigate to **Settings** → **Privacy & Security** → **Developer Mode** → Toggle ON → Restart watch.
+3. **Configure Code Signing**:
+   - Open `ios/VulnerableBankApp.xcworkspace` in Xcode.
+   - Select project **VulnerableBankApp** in the project navigator.
+   - For **VulnerableBankApp** target: Go to **Signing & Capabilities** → Check **Automatically manage signing** → Select your **Personal Team**.
+   - For **NexoraWatch** target: Repeat selection of your **Personal Team**.
+   - If Apple reports bundle identifier unavailability, adjust bundle identifier prefix (e.g., `com.yourname.nexorabank.omniwear`).
+4. **Compile and Deploy**:
+   - Scheme selector: Select **`VulnerableBankApp`** → Destination: Your physical iPhone.
+   - Press `Cmd + R` to compile and launch.
+   - Scheme selector: Select **`NexoraWatch`** → Destination: Your physical Apple Watch.
+   - Press `Cmd + R`. Xcode will compile the native watch app and install it onto your watch via Bluetooth!
+
+### Method C: Physical Device Backend Routing & Wi-Fi Configuration
+1. **Connect to Shared Wi-Fi Subnet**:
+   - Ensure both the iPhone and your Mac running `python3 backend/server.py` are connected to the same Wi-Fi network.
+   - Find your Mac's LAN IP:
+     ```bash
+     ipconfig getifaddr en0
+     # Example: 192.168.1.105
+     ```
+2. **Verify Firewall Permissions**:
+   - macOS Firewall must allow incoming TCP connections on port 5000:
+     ```bash
+     # Test from iPhone Safari browser:
+     http://192.168.1.105:5000/check_balance/NX-8492014
+     ```
+   - If the JSON response renders in Safari, the backend is reachable from mobile devices.
+3. **Configure Watch Backend URL**:
+   - In `ios/NexoraWatch/InsecureStorage.swift`, update `defaultBackendUrl` with your Mac's LAN IP.
+   - Alternatively, use the companion app's **Pentest Lab** → **API Gateway** setting to broadcast the IP to the Apple Watch via `WCSession`.
 
 ---
 
