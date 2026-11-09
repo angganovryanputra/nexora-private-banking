@@ -167,6 +167,7 @@ public struct CardFreezeView: View {
                         WatchTheme.playHaptic(.click)
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedCardIndex = (selectedCardIndex + 1) % cards.count
+                            isFrozen = InsecureStorage.shared.isCardFrozen(cardId: selectedCardIndex + 1)
                         }
                         statusMessage = "Switched to \(cards[selectedCardIndex].0)"
                     }) {
@@ -204,7 +205,7 @@ public struct CardFreezeView: View {
             }
         }
         .onAppear {
-            isFrozen = InsecureStorage.shared.isCardFrozen()
+            isFrozen = InsecureStorage.shared.isCardFrozen(cardId: selectedCardIndex + 1)
         }
     }
     
@@ -222,12 +223,12 @@ public struct CardFreezeView: View {
                 self.isProcessing = false
                 switch result {
                 case .success(let data):
-                    InsecureStorage.shared.setCardFrozen(newStatus)
+                    InsecureStorage.shared.setCardFrozen(newStatus, cardId: self.selectedCardIndex + 1)
                     let s = data["status"] as? String ?? (newStatus ? "FROZEN" : "ACTIVE")
                     self.statusMessage = "Core: Card \(self.cards[self.selectedCardIndex].0) is \(s) ✓"
                 case .failure:
                     // Offline fallback
-                    InsecureStorage.shared.setCardFrozen(newStatus)
+                    InsecureStorage.shared.setCardFrozen(newStatus, cardId: self.selectedCardIndex + 1)
                     self.statusMessage = "Offline status: \(newStatus ? "FROZEN" : "ACTIVE")"
                 }
             }
@@ -240,7 +241,7 @@ public struct CardFreezeView: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
             isFrozen = true
         }
-        InsecureStorage.shared.setCardFrozen(true)
+        InsecureStorage.shared.setCardFrozen(true, cardId: selectedCardIndex + 1)
         statusMessage = "[V-W09 EXPLOIT] Local wrist FROZEN, but backend card is still ACTIVE!"
     }
 }

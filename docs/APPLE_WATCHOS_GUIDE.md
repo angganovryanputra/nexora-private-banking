@@ -425,8 +425,8 @@ Nexora Watch replicates a premier private digital banking workflow:
   ```
 - **PoC Command via Xcode Simulator**:
   ```bash
-  xcrun simctl get_app_container booted org.reactjs.native.example.VulnerableBankApp.watchkitapp data
-  plutil -p /Library/Preferences/org.reactjs.native.example.VulnerableBankApp.watchkitapp.plist
+  xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data
+  plutil -p /Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist
   ```
 
 ---
@@ -685,10 +685,10 @@ Nexora Watch replicates a premier private digital banking workflow:
   1. **Method A — Modifying UserDefaults Plist via Terminal / Simulator**:
      ```bash
      # Read current bypass status
-     defaults read org.reactjs.native.example.VulnerableBankApp.watchkitapp nexora_bypass_jailbreak_check
+     defaults read com.nexorabank.omniwear.watchkitapp nexora_bypass_jailbreak_check
      
      # Force bypass flag to TRUE
-     defaults write org.reactjs.native.example.VulnerableBankApp.watchkitapp nexora_bypass_jailbreak_check -bool true
+     defaults write com.nexorabank.omniwear.watchkitapp nexora_bypass_jailbreak_check -bool true
      ```
   2. **Method B — Dynamic Runtime Hooking (`bypass_jailbreak.js`)**:
      ```javascript

@@ -429,7 +429,7 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
   2. Buka layar Pentest Lab di Apple Watch dan amati deteksi integritas terpicu.
   3. Jalankan skrip Frida `bypass_jailbreak.js` atau ubah flag `nexora_bypass_jailbreak_check` via perintah defaults write:
      ```bash
-     defaults write org.reactjs.native.example.VulnerableBankApp.watchkitapp nexora_bypass_jailbreak_check -bool true
+     defaults write com.nexorabank.omniwear.watchkitapp nexora_bypass_jailbreak_check -bool true
      ```
   4. Refresh status di smartwatch: seluruh deteksi anti-tamper langsung ter-bypass (`Integrity Clean`).
 - **Panduan Screenshot POC:**

@@ -68,6 +68,7 @@ public struct TwoFactorApprovalView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             Button(action: {
+                                WatchTheme.playHaptic(.click)
                                 sessionManager.rejectPendingTransaction()
                             }) {
                                 Text("REJECT")
@@ -80,7 +81,7 @@ public struct TwoFactorApprovalView: View {
                             .buttonStyle(PlainButtonStyle())
                         }
                         
-                        Text("[V-W09] Missing Biometric / Enclave Challenge")
+                        Text("[V-AP04] Missing Biometric / Enclave Challenge")
                             .font(.system(size: 6.5))
                             .foregroundColor(WatchTheme.textMuted)
                     }

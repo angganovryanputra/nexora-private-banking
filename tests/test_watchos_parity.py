@@ -108,6 +108,7 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("setBackendUrl", content, "setBackendUrl method missing")
         self.assertIn("isCardFrozen", content, "isCardFrozen method missing")
         self.assertIn("setCardFrozen", content, "setCardFrozen method missing")
+        self.assertIn("cardId: Int = 1", content, "Per-card freeze key support missing")
 
     def test_currency_and_accounts_no_dangling_dollars(self):
         """Ensure watchOS views, iOS views, and markdown guides use Indonesian Rupiah (Rp / IDR) and 0 dangling USD signs."""
@@ -188,6 +189,7 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("NX-VIRT-4401", content)
         self.assertIn("NX-VIRT-9812", content)
         self.assertIn("toggleCardFreeze", content)
+        self.assertIn("cardId: selectedCardIndex + 1", content)
 
     def test_security_check_module(self):
         """SecurityCheckModule must inspect iOS jailbreak indicators and support bypass."""
@@ -209,6 +211,7 @@ class TestWatchOSParity(unittest.TestCase):
             content = f.read()
 
         self.assertIn("Rp 75.000", content)
+        self.assertIn("V-AP06 EXPLOIT", content)
         self.assertNotIn("$75", content)
 
     def test_two_factor_view(self):
@@ -220,6 +223,7 @@ class TestWatchOSParity(unittest.TestCase):
 
         self.assertIn("Rp 50.000.000", content)
         self.assertIn("Evelyn Sterling", content)
+        self.assertIn("V-AP04", content)
         self.assertNotIn("$50,000", content)
 
     def test_dashboard_and_router(self):

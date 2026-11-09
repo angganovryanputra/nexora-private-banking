@@ -215,10 +215,10 @@ public struct QRISPaymentView: View {
                 switch res {
                 case .success:
                     WatchTheme.playHaptic(.warning)
-                    self.statusMessage = "[V-W15 EXPLOIT] Token Replay Accepted!"
+                    self.statusMessage = "[V-AP06 EXPLOIT] Token Replay Accepted!"
                 case .failure:
                     WatchTheme.playHaptic(.warning)
-                    self.statusMessage = "[V-W15] Token Replay Dispatched."
+                    self.statusMessage = "[V-AP06] Token Replay Dispatched."
                 }
             }
         }

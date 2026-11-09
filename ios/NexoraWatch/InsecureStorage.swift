@@ -115,12 +115,23 @@ public class InsecureStorage {
     }
     
     // MARK: - Virtual Card Freeze State (Kill-Switch)
-    public func isCardFrozen() -> Bool {
-        return defaults.bool(forKey: keyCardFrozen)
+    public func isCardFrozen(cardId: Int = 1) -> Bool {
+        let perCardKey = "nexora_card_frozen_\(cardId)"
+        if defaults.object(forKey: perCardKey) != nil {
+            return defaults.bool(forKey: perCardKey)
+        }
+        if cardId == 1 && defaults.object(forKey: keyCardFrozen) != nil {
+            return defaults.bool(forKey: keyCardFrozen)
+        }
+        return false
     }
     
-    public func setCardFrozen(_ frozen: Bool) {
-        defaults.set(frozen, forKey: keyCardFrozen)
+    public func setCardFrozen(_ frozen: Bool, cardId: Int = 1) {
+        let perCardKey = "nexora_card_frozen_\(cardId)"
+        defaults.set(frozen, forKey: perCardKey)
+        if cardId == 1 {
+            defaults.set(frozen, forKey: keyCardFrozen)
+        }
         defaults.synchronize()
     }
     
