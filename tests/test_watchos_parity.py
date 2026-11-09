@@ -411,6 +411,24 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("nexorabank://account?num=NX-7391048", guide)
         self.assertIn("exploit_double_dispense.py", guide)
 
+    def test_wrist_sensor_calls_objc_dynamic_method(self):
+        """WristSensorManager must call isWristAttachedToBody in triggerWristOff and telemetry for LLDB/Frida hooks."""
+        wrist_path = os.path.join(WATCHOS_DIR, "WristSensorManager.swift")
+        with open(wrist_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("if isWristAttachedToBody()", content, "triggerWristOff must call isWristAttachedToBody()")
+
+    def test_qris_wcsession_broadcast_only_on_success(self):
+        """QRISPaymentView must only broadcast QRIS_PAYMENT_COMPLETED to WCSession on success, not failure."""
+        qris_path = os.path.join(WATCHOS_DIR, "QRISPaymentView.swift")
+        with open(qris_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        # Find position of QRIS_PAYMENT_COMPLETED and ensure it appears before case .failure:
+        success_pos = content.find("case .success")
+        failure_pos = content.find("case .failure")
+        broadcast_pos = content.find("QRIS_PAYMENT_COMPLETED")
+        self.assertTrue(success_pos < broadcast_pos < failure_pos, "QRIS_PAYMENT_COMPLETED must be inside case .success block")
+
     def test_add_watch_target_ruby_automation(self):
         """ios/add_watch_target.rb must automate target creation and bundle identifier alignment."""
         rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "add_watch_target.rb"))

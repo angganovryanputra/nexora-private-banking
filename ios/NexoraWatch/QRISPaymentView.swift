@@ -180,26 +180,26 @@ public struct QRISPaymentView: View {
                     self.statusMessage = "POS: \(status) (Rp 75.000) ✓"
                     let cur = InsecureStorage.shared.getBalance()
                     InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
+                    
+                    // Broadcast payment to iPhone bridge only on successful settlement
+                    let payload: [String: Any] = [
+                        "action": "QRIS_PAYMENT_COMPLETED",
+                        "payload": [
+                            "amount": 75000.0,
+                            "currency": "IDR",
+                            "merchant": "NEXORA DIGITAL MERCH 001",
+                            "qr_payload": self.qrisString
+                        ]
+                    ]
+                    if WatchSessionManager.shared.isReachable {
+                        WCSession.default.sendMessage(payload, replyHandler: nil, errorHandler: nil)
+                    } else {
+                        WCSession.default.transferUserInfo(payload)
+                    }
                 case .failure:
                     WatchTheme.playHaptic(.failure)
                     self.statusMessage = "Transaksi Gagal: Backend Offline"
                 }
-            }
-            
-            // Broadcast payment to iPhone bridge
-            let payload: [String: Any] = [
-                "action": "QRIS_PAYMENT_COMPLETED",
-                "payload": [
-                    "amount": 75000.0,
-                    "currency": "IDR",
-                    "merchant": "NEXORA DIGITAL MERCH 001",
-                    "qr_payload": self.qrisString
-                ]
-            ]
-            if WatchSessionManager.shared.isReachable {
-                WCSession.default.sendMessage(payload, replyHandler: nil, errorHandler: nil)
-            } else {
-                WCSession.default.transferUserInfo(payload)
             }
         }
     }

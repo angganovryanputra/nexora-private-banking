@@ -276,3 +276,4 @@ Run: `python -m unittest discover tests/ -v`
 Expected: All tests pass.
 - [ ] **Step 3: Verify backend response & SQLite database**
 Run live checks against backend port 5000 and `backend/nexora_vault.db`.
+

@@ -31,7 +31,7 @@ public class WristSensorManager: NSObject, ObservableObject {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
-            if self.isWristAttached {
+            if self.isWristAttachedToBody() {
                 self.simulatedHeartRate = Int.random(in: 68...82)
             } else {
                 self.simulatedHeartRate = 0
@@ -40,8 +40,8 @@ public class WristSensorManager: NSObject, ObservableObject {
     }
     
     public func triggerWristOff() {
-        if bypassActive {
-            // [V-AP05 Bypass]: Security check defeated by client-side override
+        if isWristAttachedToBody() {
+            // [V-AP05 Bypass]: Defeated by client-side override, LLDB breakpoint, or Frida runtime hook
             isLockedDueToWristOff = false
             return
         }
