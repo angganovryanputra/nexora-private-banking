@@ -4,7 +4,7 @@
 
 > [!IMPORTANT]
 > **DOKUMENTASI RESMI TERPISAH BERDASARKAN LINGKUNGAN:**
-> - 🍏 **Dokumentasi Utama Apple iOS & watchOS**: Kunjungi [**`docs/APPLE_WATCHOS_GUIDE.md`**](docs/APPLE_WATCHOS_GUIDE.md) untuk panduan instalasi di MacBook Intel/M-series, setup Paired Simulator, sideloading iPhone 11, serta writeup detail 8 skenario eksploitasi.
+> - 🍏 **Dokumentasi Utama Apple iOS & watchOS**: Kunjungi [**`docs/APPLE_WATCHOS_GUIDE.md`**](docs/APPLE_WATCHOS_GUIDE.md) untuk panduan instalasi di MacBook Intel/M-series, setup Paired Simulator, sideloading iPhone 11, serta master writeup detail 11 skenario eksploitasi.
 > - 🤖 **Dokumentasi Utama Android & Wear OS**: Kunjungi [**`docs/ANDROID_WEAROS_GUIDE.md`**](docs/ANDROID_WEAROS_GUIDE.md).
 > - 📦 **Unduh Biner Siap Pakai**: Unduh berkas `.ipa`, `.apk`, dan `.zip` di [**GitHub Releases Tab**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest).
 
@@ -13,7 +13,7 @@
 ## 🎯 Executive Pitch: Urgensi Asesmen Apple watchOS & iPhone 11
 
 > **Pesan Kunci untuk Evaluator Tender & Dewan Penguji:**
-> *"Banyak institusi perbankan mengasumsikan bahwa perangkat Apple secara otomatis terlindungi oleh App Sandbox dan Secure Enclave. Fakta di lapangan menunjukkan bahwa celah perbankan terbesar di ekosistem Apple berasal dari kesalahan arsitektur pengembang: menyimpan token sesi di `UserDefaults.standard` (unencrypted Plist), sinkronisasi kamus data via `WCSession` tanpa enkripsi lapis aplikasi, serta pengesahan otorisasi transfer bernilai tinggi ($50,000) melalui interaksi notifikasi smartwatch tanpa cryptographic signature hardware. Framework ini membuktikan secara nyata bagaimana seluruh celah tersebut dieksploitasi dan diaudit sesuai standar OJK & PCI-DSS."*
+> *"Banyak institusi perbankan mengasumsikan bahwa perangkat Apple secara otomatis terlindungi oleh App Sandbox dan Secure Enclave. Fakta di lapangan menunjukkan bahwa celah perbankan terbesar di ekosistem Apple berasal dari kesalahan arsitektur pengembang: menyimpan token sesi di `UserDefaults.standard` (unencrypted Plist), sinkronisasi kamus data via `WCSession` tanpa enkripsi lapis aplikasi, serta pengesahan otorisasi transfer bernilai tinggi (Rp 50.000.000) melalui interaksi notifikasi smartwatch tanpa cryptographic signature hardware. Framework ini membuktikan secara nyata bagaimana seluruh celah tersebut dieksploitasi dan diaudit sesuai standar OJK & PCI-DSS."*
 
 ---
 
@@ -23,15 +23,18 @@
    - [Metode A: Setup via Xcode Simulator (macOS)](#metode-a-setup-via-xcode-simulator-macos)
    - [Metode B: Setup Sideloading ke iPhone 11 Fisik dari Windows](#metode-b-setup-sideloading-ke-iphone-11-fisik-dari-windows)
    - [Metode C: Setup Proxy Burp Suite / Charles untuk iOS & watchOS](#metode-c-setup-proxy-burp-suite--charles-untuk-ios--watchos)
-3. [Master Writeup 8 Skenario Pentest watchOS & Panduan Screenshot POC](#3-master-writeup-8-skenario-pentest-watchos--panduan-screenshot-poc)
+3. [Master Writeup 11 Skenario Pentest watchOS & Panduan Screenshot POC](#3-master-writeup-11-skenario-pentest-watchos--panduan-screenshot-poc)
    - [Skenario 1: V-AP01 — Insecure Local Plist Storage (`UserDefaults` Token Dump)](#skenario-1-v-ap01--insecure-local-plist-storage-userdefaults-token-dump)
    - [Skenario 2: V-AP02 — Unencrypted `WCSession` Bridge Packet Sniffing](#skenario-2-v-ap02--unencrypted-wcsession-bridge-packet-sniffing)
    - [Skenario 3: V-AP03 — Quick-PIN 4-Digit Brute-Force Tanpa Rate Limiting](#skenario-3-v-ap03--quick-pin-4-digit-brute-force-tanpa-rate-limiting)
-   - [Skenario 4: V-AP04 — High-Value ($50,000) Out-of-Band 2FA Transaction Hijack](#skenario-4-v-ap04--high-value-50000-out-of-band-2fa-transaction-hijack)
+   - [Skenario 4: V-AP04 — High-Value (Rp 50.000.000) Out-of-Band 2FA Transaction Hijack](#skenario-4-v-ap04--high-value-rp-50000000-out-of-band-2fa-transaction-hijack)
    - [Skenario 5: V-AP05 — Wrist-Off Sensor Lockout Spoofing via Frida](#skenario-5-v-ap05--wrist-off-sensor-lockout-spoofing-via-frida)
    - [Skenario 6: V-AP06 — Contactless Dynamic SNAP QRIS Replay Attack](#skenario-6-v-ap06--contactless-dynamic-snap-qris-replay-attack)
    - [Skenario 7: V-B01 — Remote Balance Injection over Wearable Bridge](#skenario-7-v-b01--remote-balance-injection-over-wearable-bridge)
-   - [Skenario 8: CISO Executive Scorecard — Audit Kepatuhan POJK 11, SNAP, & PCI-DSS](#skenario-8-ciso-executive-scorecard--audit-kepatuhan-pojk-11-snap--pci-dss)
+   - [Skenario 8: V-L04 — ATM Cardless Cash-Out OTP Brute-Force & Race Condition](#skenario-8-v-l04--atm-cardless-cash-out-otp-brute-force--race-condition)
+   - [Skenario 9: V-W09 — Emergency Wrist Card Kill-Switch Desynchronization](#skenario-9-v-w09--emergency-wrist-card-kill-switch-desynchronization)
+   - [Skenario 10: V-07 — Client-Side iOS Jailbreak Anti-Tamper Detection Bypass](#skenario-10-v-07--client-side-ios-jailbreak-anti-tamper-detection-bypass)
+   - [Skenario 11: CISO Executive Scorecard — Audit Kepatuhan POJK 11, SNAP, & PCI-DSS](#skenario-11-ciso-executive-scorecard--audit-kepatuhan-pojk-11-snap--pci-dss)
 4. [Koleksi Skrip Frida Khusus watchOS & iOS](#4-koleksi-skrip-frida-khusus-watchos--ios)
 5. [Tabel Pemetaan Regulasi & Rekomendasi Remedi](#5-tabel-pemetaan-regulasi--rekomendasi-remedi)
 
@@ -227,7 +230,7 @@ Agar skenario transfer uang, push 2FA, dan injeksi saldo bekerja secara real-tim
 1. Di Simulator Apple Watch: Aplikasi menampilkan layar **Quick-PIN Dial**. Masukkan PIN `1234` atau tekan tombol **1234**. Saldo `Rp 12.500.000` akan muncul dengan indikator hijau `Linked`.
 2. Di Simulator iPhone: Buka menu **Phone Companion Screen**.
 3. Di iPhone, tap tombol **Sync Balance to Watch (V-B01)**.
-4. Perhatikan layar Apple Watch di sebelahnya: Saldo di Apple Watch akan langsung berubah secara instan menjadi **$888,888**! Ini membuktikan koneksi `WCSession` dual-device telah aktif 100%.
+4. Perhatikan layar Apple Watch di sebelahnya: Saldo di Apple Watch akan langsung berubah secara instan menjadi **Rp 888.888.000**! Ini membuktikan koneksi `WCSession` dual-device telah aktif 100%.
 
 ---
 
@@ -276,7 +279,7 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
 
 ---
 
-## 🔬 3. Master Writeup 8 Skenario Pentest watchOS & Panduan Screenshot POC
+## 🔬 3. Master Writeup 11 Skenario Pentest watchOS & Panduan Screenshot POC
 
 ### Skenario 1: V-AP01 — Insecure Local Plist Storage (`UserDefaults` Token Dump)
 
@@ -307,7 +310,7 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
      frida -U -n "VulnerableBankApp" -l frida_wcsession_hook.js
      ```
   3. Tekan tombol **Sync Balance to Watch** di iPhone 11.
-  4. Amati konsol Frida yang menyadap seluruh kamus data `{"action": "UPDATE_BALANCE", "amount": 888888.0}`.
+  4. Amati konsol Frida yang menyadap seluruh kamus data `{"action": "UPDATE_BALANCE", "amount": 888888000.0}`.
 - **Panduan Screenshot POC:**
   - `[POC-AP-2A]` Tangkapan layar iPhone 11 Companion menampilkan popup sukses `📶 BLE & WCSession Sync Dispatched`.
   - `[POC-AP-2B]` Terminal konsol Frida menampilkan struktur dictionary paket `WCSession` yang tersadap secara plaintext.
@@ -329,17 +332,17 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
 
 ---
 
-### Skenario 4: V-AP04 — High-Value ($50,000) Out-of-Band 2FA Transaction Hijack
+### Skenario 4: V-AP04 — High-Value (Rp 50.000.000) Out-of-Band 2FA Transaction Hijack
 
 - **Kategori:** Authorization & 2FA Bypasses (CWE-287, OWASP MASVS-AUTH)
-- **Ringkasan:** Otorisasi transfer bernilai tinggi (\$50,000) dimunculkan sebagai notifikasi interaktif di jam. Menekan tombol "APPROVE" hanya mengirimkan flag JSON sederhana tanpa tanda tangan kunci privat Secure Enclave atau otentikasi biometrik ulang.
+- **Ringkasan:** Otorisasi transfer bernilai tinggi (Rp 50.000.000) dimunculkan sebagai notifikasi interaktif di jam. Menekan tombol "APPROVE" hanya mengirimkan flag JSON sederhana tanpa tanda tangan kunci privat Secure Enclave atau otentikasi biometrik ulang.
 - **Langkah Eksploitasi:**
-  1. Buka iPhone 11 Companion App, tap kartu merah **Trigger High-Value 2FA ($50,000 Transfer)**.
-  2. Seketika layar Apple Watch bergetar dan memunculkan modal peringatan merah berkedip: `HIGH-VALUE 2FA: Wire Transfer $50,000 to OFFSHORE-SWIFT-991`.
+  1. Buka iPhone 11 Companion App, tap kartu merah **Trigger High-Value 2FA (Rp 50.000.000 Transfer)**.
+  2. Seketika layar Apple Watch bergetar dan memunculkan modal peringatan merah berkedip: `HIGH-VALUE 2FA: Wire Transfer Rp 50.000.000 to OFFSHORE-SWIFT-991`.
   3. Tekan tombol hijau **APPROVE** di Apple Watch.
   4. iPhone Companion dan backend relay langsung mengonfirmasi status transfer: `APPROVED (V-AP04 Exploited)`.
 - **Panduan Screenshot POC:**
-  - `[POC-AP-4A]` Tangkapan layar Apple Watch menampilkan modal darurat otorisasi transfer \$50,000.
+  - `[POC-AP-4A]` Tangkapan layar Apple Watch menampilkan modal darurat otorisasi transfer Rp 50.000.000.
   - `[POC-AP-4B]` Tangkapan layar iPhone 11 menampilkan konfirmasi approval tanpa cryptographic challenge.
 
 ---
@@ -378,20 +381,67 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
 ### Skenario 7: V-B01 — Remote Balance Injection over Wearable Bridge
 
 - **Kategori:** Integrity & Anti-Tampering (CWE-345, OWASP MASVS-NETWORK)
-- **Ringkasan:** Penyerang yang menyusupi koneksi BLE atau relay backend dapat menginjeksikan saldo palsu (\$888,888) ke tampilan jam tangan tanpa verifikasi otentikasi sekunder.
+- **Ringkasan:** Penyerang yang menyusupi koneksi BLE atau relay backend dapat menginjeksikan saldo palsu (Rp 888.888.000) ke tampilan jam tangan tanpa verifikasi otentikasi sekunder.
 - **Langkah Eksploitasi:**
   1. Buka iPhone 11 Companion App, tap tombol biru **Sync Balance to Watch (V-B01)**.
-  2. Perhatikan layar Apple Watch: dalam hitungan detik saldo yang awalnya `Rp 12.500.000` berubah menjadi `Rp 888.888`.
+  2. Perhatikan layar Apple Watch: dalam hitungan detik saldo yang awalnya `Rp 12.500.000` berubah menjadi `Rp 888.888.000`.
 - **Panduan Screenshot POC:**
   - `[POC-AP-7A]` Tombol injection di iPhone 11 Companion memicu paket update saldo.
   - `[POC-AP-7B]` Layar Apple Watch berubah menampilkan saldo yang telah dimanipulasi secara real-time.
 
 ---
 
-### Skenario 8: CISO Executive Scorecard — Audit Kepatuhan POJK 11, SNAP, & PCI-DSS
+### Skenario 8: V-L04 — ATM Cardless Cash-Out OTP Brute-Force & Race Condition
+
+- **Kategori:** Business Logic & Concurrency Flaws (CWE-307, CWE-362, OWASP MASVS-AUTH-1)
+- **Ringkasan:** Penarikan tunai tanpa kartu di ATM menghasilkan token OTP 6-digit dengan masa berlaku 15 menit. Endpoint `/api/atm/cardless-cash/verify` tidak memiliki rate limiting serta mengalami kondisi balapan (race condition/TOCTOU), memungkinkan double-dispense uang fisik di mesin ATM.
+- **Langkah Eksploitasi:**
+  1. Buka layar **Cardless ATM** di Apple Watch dan catat 6-digit withdrawal code yang muncul (`463544`).
+  2. Jalankan skrip eksploitasi multi-threaded python (`exploit_double_dispense.py`) untuk menembakkan request verifikasi secara simultan.
+  3. Amati dua respons HTTP 200 dengan status `DISPENSED` berhasil keluar, mendebit akun dua kali untuk satu kode penarikan.
+- **Panduan Screenshot POC:**
+  - `[POC-AP-8A]` Layar Apple Watch menampilkan kode penarikan tunai ATM 6-digit.
+  - `[POC-AP-8B]` Terminal eksekusi multi-threading menampilkan respons ganda sukses `DISPENSED` (double cash payout).
+
+---
+
+### Skenario 9: V-W09 — Emergency Wrist Card Kill-Switch Desynchronization
+
+- **Kategori:** Critical State Desynchronization (CWE-306, CWE-345, OWASP MASVS-RESILIENCE-1)
+- **Ringkasan:** Tombol kill-switch pemblokiran darurat kartu di Apple Watch memperbarui status UI lokal menjadi "FROZEN" secara optimis sebelum menerima konfirmasi dari server backend. Jika transmisi terputus atau di-drop proxy, kartu tetap aktif di core banking.
+- **Langkah Eksploitasi:**
+  1. Siapkan proxy Burp Suite untuk mencegat dan men-drop endpoint `/api/wearable/card-freeze`.
+  2. Tap tombol **FREEZE CARD** pada layar `CardFreezeView` di Apple Watch.
+  3. Layar Apple Watch seketika menampilkan kartu berstatus **FROZEN**.
+  4. Lakukan transaksi pembayaran belanja merchant via curl ke `/api/qris/checkout`: transaksi tetap sukses karena status kartu di database tetap aktif (`is_frozen = 0`).
+- **Panduan Screenshot POC:**
+  - `[POC-AP-9A]` Layar Apple Watch menampilkan kartu virtual terkunci (`FROZEN`).
+  - `[POC-AP-9B]` Terminal curl menunjukkan pembayaran tetap berhasil diproses (`PAYMENT_SUCCESS`).
+
+---
+
+### Skenario 10: V-07 — Client-Side iOS Jailbreak Anti-Tamper Detection Bypass
+
+- **Kategori:** Anti-Tamper Defense Bypass (CWE-693, OWASP MASVS-RESILIENCE-1)
+- **Ringkasan:** Modul proteksi integritas aplikasi (`SecurityCheckModule.swift`) hanya mengandalkan inspeksi path statis dan flag boolean yang tersimpan di `UserDefaults` plist sandboxed container, sehingga dapat dilumpuhkan dengan mudah via Frida atau modifikasi plist lokal.
+- **Langkah Eksploitasi:**
+  1. Jalankan aplikasi di perangkat jailbroken atau simulator dengan Frida aktif.
+  2. Buka layar Pentest Lab di Apple Watch dan amati deteksi integritas terpicu.
+  3. Jalankan skrip Frida `bypass_jailbreak.js` atau ubah flag `nexora_bypass_jailbreak_check` via perintah defaults write:
+     ```bash
+     defaults write org.reactjs.native.example.VulnerableBankApp.watchkitapp nexora_bypass_jailbreak_check -bool true
+     ```
+  4. Refresh status di smartwatch: seluruh deteksi anti-tamper langsung ter-bypass (`Integrity Clean`).
+- **Panduan Screenshot POC:**
+  - `[POC-AP-10A]` Layar Apple Watch sebelum bypass menampilkan peringatan deteksi jailbreak/Frida.
+  - `[POC-AP-10B]` Layar Apple Watch setelah injeksi Frida menampilkan status hijau bersih (`Bypassed via Client Flag ✓`).
+
+---
+
+### Skenario 11: CISO Executive Scorecard — Audit Kepatuhan POJK 11, SNAP, & PCI-DSS
 
 - **Kategori:** Regulatory Compliance & Governance
-- **Ringkasan:** Menampilkan hasil rekapitulasi audit kepatuhan terhadap 3 regulasi finansial utama secara otomatis di dalam layar jam.
+- **Ringkasan:** Menampilkan hasil rekapitulasi audit kepatuhan terhadap 3 regulasi finansial utama secara otomatis di dalam layar jam dan memberikan visualisasi matriks temuan risiko kritis kepada pemangku kepentingan.
 - **Langkah Demonstrasi:**
   1. Buka **Pentest Lab** di Apple Watch, scroll ke bagian bawah ke kartu **CISO Regulatory Audit Scorecard**.
   2. Tunjukkan status kegagalan kepatuhan kepada tim evaluator tender:
@@ -399,8 +449,8 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
      - `SNAP QRIS: NON-COMPLIANT`
      - `PCI-DSS v4.0 Req 3.5: FAIL`
 - **Panduan Screenshot POC:**
-  - `[POC-AP-8A]` Layar Apple Watch menampilkan CISO Regulatory Audit Scorecard.
-  - `[POC-AP-8B]` Dokumen tabel gap audit per pasal untuk lampiran laporan pengadaan.
+  - `[POC-AP-11A]` Layar Apple Watch menampilkan CISO Regulatory Audit Scorecard.
+  - `[POC-AP-11B]` Dokumen tabel gap audit per pasal untuk lampiran laporan pengadaan.
 
 ---
 
@@ -466,10 +516,15 @@ if (ObjC.available) {
 
 | Kode Temuan | Pelanggaran Regulasi | Resiko Bisnis | Rekomendasi Remedi (Fix) |
 |---|---|---|---|
-| **V-AP01** | **OJK POJK 11/2022 Pasal 19** & **PCI-DSS Req 3.5** | Pembajakan akun nasabah akibat pencurian token dari backup tidak terenkripsi. | Pindahkan penyimpanan ke **Apple Keychain Services** dengan aksesibilitas `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. |
-| **V-AP02** | **OJK POJK 11/2022 Pasal 24** & **PCI-DSS Req 4.1** | Penyadapan paket nirkabel Bluetooth LE di area publik. | Terapkan enkripsi lapis aplikasi **AES-GCM 256-bit** dengan pertukaran kunci ECDH sebelum dictionary dikirim ke `WCSession`. |
+| **V-AP01** | **OJK POJK 11/2022 Pasal 25** & **PCI-DSS Req 3.4** | Pembajakan akun nasabah akibat pencurian token dari backup tidak terenkripsi. | Pindahkan penyimpanan ke **Apple Keychain Services** dengan aksesibilitas `kSecAttrAccessibleWhenUnlockedThisDeviceOnly`. |
+| **V-AP02** | **OJK POJK 11/2022 Pasal 26** & **PCI-DSS Req 4.1** | Penyadapan paket nirkabel Bluetooth LE di area publik. | Terapkan enkripsi lapis aplikasi **AES-GCM 256-bit** dengan pertukaran kunci ECDH sebelum dictionary dikirim ke `WCSession`. |
 | **V-AP03** | **OJK POJK 11/2022 Pasal 21** & **PCI-DSS Req 8.3** | PIN 4-digit dapat ditebak secara otomatis dalam hitungan menit. | Terapkan pembatasan maksimal 3–5 kali percobaan dengan **Hardware Backoff Delay** bertahap (1m, 5m, 15m). |
-| **V-AP04** | **OJK POJK 11/2022 Pasal 22** | Transfer dana bernilai tinggi disetujui tanpa pembuktian identitas sah. | Wajibkan otentikasi **LocalAuthentication (FaceID/Passcode)** dan penandatanganan payload transaksi menggunakan kunci privat Secure Enclave. |
-| **V-AP05** | **OJK POJK 11/2022 Pasal 20** | Jam tangan yang dicuri dari korban tetap dapat mengakses saldo perbankan. | Gabungkan deteksi wrist-off dengan verifikasi biometrik berulang dan invalidasi sesi server secara seketika saat sensor lepas. |
-| **V-AP06** | **Bank Indonesia SNAP QRIS Bab IV** | Kerugian finansial akibat duplikasi kode bayar QRIS yang ditangkap foto. | Terapkan validasi **Nonce Sekali Pakai** dan validasi masa berlaku (maksimal 60 detik) terikat server timestamp. |
+| **V-AP04** | **OJK POJK 11/2022 Pasal 31** | Transfer dana bernilai tinggi disetujui tanpa pembuktian identitas sah. | Wajibkan otentikasi **LocalAuthentication (FaceID/Passcode)** dan penandatanganan payload transaksi menggunakan kunci privat Secure Enclave. |
+| **V-AP05** | **OJK POJK 11/2022 Pasal 25** | Jam tangan yang dicuri dari korban tetap dapat mengakses saldo perbankan. | Gabungkan deteksi wrist-off dengan verifikasi biometrik berulang dan invalidasi sesi server secara seketika saat sensor lepas. |
+| **V-AP06** | **Bank Indonesia PADG 24/1/PADG/2022** | Kerugian finansial akibat duplikasi kode bayar QRIS yang ditangkap foto. | Terapkan validasi **Nonce Sekali Pakai** dan validasi masa berlaku (maksimal 60 detik) terikat server timestamp. |
+| **V-B01** | **OJK POJK 11/2022 Pasal 25** | Tampilan saldo palsu di layar jam tangan mengelabui nasabah. | Terapkan session token validation dan HMAC request signing pada React Native Bridge. |
+| **V-L04** | **OJK POJK 11/2022 Pasal 25 & 31** & **PCI-DSS Req 6.2** | Penarikan ganda kas ATM fisik akibat race condition TOCTOU. | Terapkan distributed Redis mutex lock dan single-operation atomic state transition token. |
+| **V-W09** | **OJK POJK 11/2022 Pasal 25** & **PCI-DSS Req 4.1** | Desinkronisasi status kartu: jam menampilkan FROZEN sementara kartu fisik tetap aktif. | Terapkan protokol two-phase commit dengan cryptographic confirmation nonce sebelum update UI. |
+| **V-07** | **OJK POJK 11/2022 Pasal 25** & **PCI-DSS Req 10.5** | Pembobolan integritas aplikasi pada perangkat jailbroken melalui bypass client flag. | Migrasi ke Apple DeviceCheck dan App Attest (DCAppAttestService) berbasis Secure Enclave. |
+| **GOV-01** | **POJK 11/2022, SNAP QRIS, PCI-DSS v4.0** | Sanksi regulator, denda finansial, pencabutan lisensi produk digital. | Eksekusi roadmap perbaikan terprioritas 30-60-90 hari untuk penyimpanan, transmisi, dan otorisasi. |
 

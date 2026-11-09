@@ -238,5 +238,30 @@ class TestWatchOSParity(unittest.TestCase):
         except Exception as e:
             self.fail(f"Backend test failed: {e}")
 
+    def test_apple_watchos_guide_full_writeup_coverage(self):
+        """docs/APPLE_WATCHOS_GUIDE.md must provide complete writeups with PoC for all 11 scenarios."""
+        guide_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs", "APPLE_WATCHOS_GUIDE.md"))
+        with open(guide_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        self.assertIn("Master Writeup: 11 Apple iOS & watchOS Pentest Scenarios", content)
+        for sc_num in range(1, 12):
+            self.assertIn(f"Scenario {sc_num}:", content, f"Scenario {sc_num} missing in guide")
+        
+        # Verify scenarios 8 to 11 have full PoC commands and remediation
+        self.assertIn("curl -X POST", content, "Missing curl PoC in guide")
+        self.assertIn("POJK 11/POJK.03/2022", content, "Missing POJK 11 regulatory references")
+        self.assertIn("PCI-DSS v4.0", content, "Missing PCI-DSS references")
+        
+        # Ensure no lingering USD dollar amounts like "$50,000" or "$13,370,000"
+        dollar_matches = re.findall(r'\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)', content)
+        self.assertEqual(dollar_matches, [], f"Lingering USD dollar amounts in guide: {dollar_matches}")
+
+        tutorial_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "TUTORIAL-SETUP-DAN-WRITEUP-WATCHOS.md"))
+        with open(tutorial_path, "r", encoding="utf-8") as f:
+            tut_content = f.read()
+        tut_dollar_matches = re.findall(r'\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)', tut_content)
+        self.assertEqual(tut_dollar_matches, [], f"Lingering USD dollar amounts in tutorial: {tut_dollar_matches}")
+
 if __name__ == "__main__":
     unittest.main()
