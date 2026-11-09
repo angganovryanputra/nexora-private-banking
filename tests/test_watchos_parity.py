@@ -5,6 +5,9 @@ import urllib.request
 import json
 
 WATCHOS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "NexoraWatch"))
+IOS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "VulnerableBankApp"))
+DOCS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs"))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 REQUIRED_SWIFT_FILES = [
     "NexoraWatchApp.swift",
@@ -27,14 +30,16 @@ REQUIRED_SWIFT_FILES = [
 
 class TestWatchOSParity(unittest.TestCase):
     def test_watch_theme_haptic_support(self):
-        """WatchTheme must declare haptic playback helper for native Apple Watch feedback."""
+        """WatchTheme must declare haptic playback helper with WKInterfaceDevice for native Apple Watch feedback."""
         filepath = os.path.join(WATCHOS_DIR, "WatchTheme.swift")
         with open(filepath, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertIn("playHaptic", content, "WatchTheme missing playHaptic helper")
         self.assertIn("WKInterfaceDevice", content, "WatchTheme missing WatchKit haptic integration")
+        self.assertIn("HapticType", content, "WatchTheme missing HapticType definition")
+        self.assertIn("device.play", content, "WatchTheme missing device.play haptic trigger")
 
-        # Verify authentication views integrate haptic feedback
+        # Verify authentication and sensory views integrate haptic feedback
         pin_path = os.path.join(WATCHOS_DIR, "QuickPinPadView.swift")
         with open(pin_path, "r", encoding="utf-8") as f:
             pin_content = f.read()
@@ -51,7 +56,7 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("playHaptic", wrist_content, "WristLockoutView missing playHaptic integration")
 
     def test_transaction_views_haptic_and_workflow_polish(self):
-        """Core transaction views must utilize native haptics and contain polished status transitions."""
+        """Core transaction views must utilize native haptics and contain polished enterprise indicators."""
         for view_name in ["BalanceView.swift", "QRISPaymentView.swift", "CardlessCashView.swift", "CardFreezeView.swift"]:
             fpath = os.path.join(WATCHOS_DIR, view_name)
             with open(fpath, "r", encoding="utf-8") as f:
@@ -75,10 +80,17 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertTrue("chip" in freeze_content.lower() or "creditcard" in freeze_content, "CardFreezeView missing chip/card design")
 
     def test_required_files_exist(self):
-        """All 16 core watchOS Swift files must exist."""
+        """All 16 core watchOS Swift files and configuration assets must exist."""
         for filename in REQUIRED_SWIFT_FILES:
             filepath = os.path.join(WATCHOS_DIR, filename)
             self.assertTrue(os.path.exists(filepath), f"Missing required file: {filename}")
+        
+        # Also verify Info.plist and Assets
+        info_plist = os.path.join(WATCHOS_DIR, "Info.plist")
+        self.assertTrue(os.path.exists(info_plist), "Missing Info.plist in NexoraWatch")
+        
+        assets_dir = os.path.join(WATCHOS_DIR, "Assets.xcassets")
+        self.assertTrue(os.path.exists(assets_dir), "Missing Assets.xcassets in NexoraWatch")
 
     def test_insecure_storage(self):
         """InsecureStorage must use IDR defaults and enterprise customer Alexander Vance."""
@@ -98,15 +110,39 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("setCardFrozen", content, "setCardFrozen method missing")
 
     def test_currency_and_accounts_no_dangling_dollars(self):
-        """Ensure watchOS views use Indonesian Rupiah (Rp / IDR) and no lingering USD dollar signs."""
-        swift_files = [f for f in os.listdir(WATCHOS_DIR) if f.endswith(".swift")]
-        for fname in swift_files:
+        """Ensure watchOS views, iOS views, and markdown guides use Indonesian Rupiah (Rp / IDR) and 0 dangling USD signs."""
+        # 1. Check all watchOS Swift files
+        watch_swift_files = [f for f in os.listdir(WATCHOS_DIR) if f.endswith(".swift")]
+        for fname in watch_swift_files:
             fpath = os.path.join(WATCHOS_DIR, fname)
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
             # Match currency dollar like "$50k", "$75", "$\(" or "$999" (excluding Swift closure params $0, $1)
             dollar_matches = re.findall(r'\$(?:\(|[1-9][0-9]*)', content)
             self.assertEqual(len(dollar_matches), 0, f"Found dangling dollar signs in {fname}: {dollar_matches}")
+
+        # 2. Check all iOS Swift files
+        ios_swift_files = [f for f in os.listdir(IOS_DIR) if f.endswith(".swift")]
+        for fname in ios_swift_files:
+            fpath = os.path.join(IOS_DIR, fname)
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
+            dollar_matches = re.findall(r'\$(?:\(|[1-9][0-9]*)', content)
+            self.assertEqual(len(dollar_matches), 0, f"Found dangling dollar signs in {fname}: {dollar_matches}")
+
+        # 3. Check core documentation and markdown guides
+        markdown_files = [
+            os.path.join(DOCS_DIR, "APPLE_WATCHOS_GUIDE.md"),
+            os.path.join(PROJECT_ROOT, "BUILD-IOS-WATCHOS.md"),
+            os.path.join(PROJECT_ROOT, "TUTORIAL-SETUP-DAN-WRITEUP-WATCHOS.md"),
+        ]
+        for md_path in markdown_files:
+            if os.path.exists(md_path):
+                with open(md_path, "r", encoding="utf-8") as f:
+                    md_content = f.read()
+                # Matches numeric dollar amounts like "$50,000", "$75", "$13,370,000"
+                dangling = re.findall(r'\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)', md_content)
+                self.assertEqual(dangling, [], f"Found lingering USD dollar amounts in {os.path.basename(md_path)}: {dangling}")
 
     def test_network_manager(self):
         """WatchNetworkManager must provide direct HTTP methods matching backend API."""
@@ -123,6 +159,9 @@ class TestWatchOSParity(unittest.TestCase):
             "toggleCardFreeze",
             "authorize2FA",
             "pingBackend",
+            "quickPay",
+            "fetchTransactions",
+            "fetchCards",
         ]:
             self.assertIn(method, content, f"Missing method {method} in WatchNetworkManager.swift")
 
@@ -211,12 +250,15 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("V-07", content)
 
     def test_swift_syntax_and_braces(self):
-        """Verify balanced braces and parentheses across all Swift files."""
+        """Verify balanced curly braces, parentheses, and square brackets across all Swift files."""
         swift_files = [f for f in os.listdir(WATCHOS_DIR) if f.endswith(".swift")]
+        self.assertGreaterEqual(len(swift_files), 16, f"Expected at least 16 Swift files in {WATCHOS_DIR}, found {len(swift_files)}")
         for fname in swift_files:
             fpath = os.path.join(WATCHOS_DIR, fname)
             with open(fpath, "r", encoding="utf-8") as f:
                 content = f.read()
+
+            self.assertGreater(len(content.strip()), 50, f"File {fname} appears empty or truncated")
 
             open_curly = content.count('{')
             close_curly = content.count('}')
@@ -225,6 +267,10 @@ class TestWatchOSParity(unittest.TestCase):
             open_paren = content.count('(')
             close_paren = content.count(')')
             self.assertEqual(open_paren, close_paren, f"Unbalanced parentheses in {fname}: {open_paren} vs {close_paren}")
+
+            open_bracket = content.count('[')
+            close_bracket = content.count(']')
+            self.assertEqual(open_bracket, close_bracket, f"Unbalanced square brackets in {fname}: {open_bracket} vs {close_bracket}")
 
     def test_backend_contract_endpoints(self):
         """Backend must successfully respond to endpoints invoked by watchOS."""
@@ -240,32 +286,39 @@ class TestWatchOSParity(unittest.TestCase):
 
     def test_apple_watchos_guide_full_writeup_coverage(self):
         """docs/APPLE_WATCHOS_GUIDE.md must provide complete writeups with PoC for all 11 scenarios."""
-        guide_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs", "APPLE_WATCHOS_GUIDE.md"))
+        guide_path = os.path.abspath(os.path.join(DOCS_DIR, "APPLE_WATCHOS_GUIDE.md"))
         with open(guide_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         self.assertIn("Master Writeup: 11 Apple iOS & watchOS Pentest Scenarios", content)
-        for sc_num in range(1, 12):
-            self.assertIn(f"Scenario {sc_num}:", content, f"Scenario {sc_num} missing in guide")
         
-        # Verify scenarios 8 to 11 have full PoC commands and remediation
+        # Verify all 11 scenarios are explicitly documented
+        scenarios = [
+            ("Scenario 1", "V-AP02"),
+            ("Scenario 2", "V-AP01"),
+            ("Scenario 3", "V-AP03"),
+            ("Scenario 4", "V-AP04"),
+            ("Scenario 5", "V-AP05"),
+            ("Scenario 6", "V-AP06"),
+            ("Scenario 7", "V-B01"),
+            ("Scenario 8", "V-L04"),
+            ("Scenario 9", "V-W09"),
+            ("Scenario 10", "V-07"),
+            ("Scenario 11", "POJK 11"),
+        ]
+        for sc_name, vuln_id in scenarios:
+            self.assertIn(sc_name, content, f"{sc_name} missing from guide")
+            self.assertIn(vuln_id, content, f"{vuln_id} missing from guide under {sc_name}")
+
+        # Verify scenarios have full PoC commands, regulatory citations, and remediation
         self.assertIn("curl -X POST", content, "Missing curl PoC in guide")
         self.assertIn("POJK 11/POJK.03/2022", content, "Missing POJK 11 regulatory references")
         self.assertIn("PCI-DSS v4.0", content, "Missing PCI-DSS references")
-        
-        # Ensure no lingering USD dollar amounts like "$50,000" or "$13,370,000"
-        dollar_matches = re.findall(r'\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)', content)
-        self.assertEqual(dollar_matches, [], f"Lingering USD dollar amounts in guide: {dollar_matches}")
-
-        tutorial_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "TUTORIAL-SETUP-DAN-WRITEUP-WATCHOS.md"))
-        with open(tutorial_path, "r", encoding="utf-8") as f:
-            tut_content = f.read()
-        tut_dollar_matches = re.findall(r'\$([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)', tut_content)
-        self.assertEqual(tut_dollar_matches, [], f"Lingering USD dollar amounts in tutorial: {tut_dollar_matches}")
+        self.assertIn("Enterprise Remediation", content, "Missing Enterprise Remediation section in guide")
 
     def test_xcode_setup_tutorial_completeness(self):
         """docs/APPLE_WATCHOS_GUIDE.md and BUILD-IOS-WATCHOS.md must contain comprehensive Xcode and DB setup instructions."""
-        guide_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docs", "APPLE_WATCHOS_GUIDE.md"))
+        guide_path = os.path.abspath(os.path.join(DOCS_DIR, "APPLE_WATCHOS_GUIDE.md"))
         with open(guide_path, "r", encoding="utf-8") as f:
             content = f.read()
 
@@ -275,7 +328,7 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("NSAllowsArbitraryLoads", content, "App Transport Security explanation missing")
         self.assertIn("Pair Apple Watch", content, "Paired simulator instructions missing")
 
-        build_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "BUILD-IOS-WATCHOS.md"))
+        build_path = os.path.abspath(os.path.join(PROJECT_ROOT, "BUILD-IOS-WATCHOS.md"))
         with open(build_path, "r", encoding="utf-8") as f:
             build_content = f.read()
 
@@ -283,6 +336,18 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("nexora_vault.db", build_content, "nexora_vault.db missing from BUILD-IOS-WATCHOS.md")
         self.assertIn("com.nexorabank.omniwear.watchkitapp", build_content, "Watch bundle identifier missing from BUILD-IOS-WATCHOS.md")
         self.assertIn("NSAllowsArbitraryLoads", build_content, "NSAllowsArbitraryLoads missing from BUILD-IOS-WATCHOS.md")
+
+    def test_add_watch_target_ruby_automation(self):
+        """ios/add_watch_target.rb must automate target creation and bundle identifier alignment."""
+        rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "add_watch_target.rb"))
+        self.assertTrue(os.path.exists(rb_path), "ios/add_watch_target.rb does not exist")
+        with open(rb_path, "r", encoding="utf-8") as f:
+            rb_content = f.read()
+
+        self.assertIn("com.nexorabank.omniwear", rb_content)
+        self.assertIn("com.nexorabank.omniwear.watchkitapp", rb_content)
+        self.assertIn("Xcodeproj::Project", rb_content)
+        self.assertIn("add_file_references", rb_content)
 
 if __name__ == "__main__":
     unittest.main()

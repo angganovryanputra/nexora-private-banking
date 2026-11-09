@@ -29,6 +29,11 @@ class TestBackendDbIntegration(unittest.TestCase):
     def setUp(self):
         self.conn = sqlite3.connect(DB_PATH)
         self.cur = self.conn.cursor()
+        # Ensure Alexander Vance balance has sufficient liquidity for recurring automated integration tests
+        bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()
+        if bal and bal[0] < 100000000.0:
+            self.cur.execute("UPDATE users SET balance = 888888000.0 WHERE account_number='NX-8492014'")
+            self.conn.commit()
 
     def tearDown(self):
         self.conn.close()
@@ -44,7 +49,7 @@ class TestBackendDbIntegration(unittest.TestCase):
         self.assertAlmostEqual(data.get("balance"), db_bal, places=2)
 
     def test_qris_checkout_mutates_db(self):
-        """SNAP QRIS checkout must deduct user balance and insert an audit row in transactions."""
+        """SNAP QRIS checkout must deduct user balance, insert an audit row, and emit wearable packet/event."""
         initial_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
         payload = {
             "account_number": "NX-8492014",
@@ -55,18 +60,34 @@ class TestBackendDbIntegration(unittest.TestCase):
         }
         res, status = post_json("/api/qris/checkout", payload)
         self.assertEqual(status, 200)
+        self.assertIn(res.get("status"), ["APPROVED", "SUCCESS"])
 
         new_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
         self.assertAlmostEqual(new_bal, initial_bal - 75000.0, places=2)
 
+        # Verify transaction table
         tx = self.cur.execute(
             "SELECT amount, description FROM transactions WHERE from_account='NX-8492014' AND description LIKE '%TEST MERCH INTEGRATION%' ORDER BY id DESC LIMIT 1"
         ).fetchone()
         self.assertIsNotNone(tx, "Transaction record not found in SQLite transactions table")
         self.assertAlmostEqual(tx[0], 75000.0, places=2)
 
+        # Verify wearable_packets emission
+        packet = self.cur.execute(
+            "SELECT action, payload FROM wearable_packets WHERE action='QRIS_DEBIT_ACK' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        self.assertIsNotNone(packet, "QRIS_DEBIT_ACK packet not found in wearable_packets")
+        self.assertIn("TEST MERCH INTEGRATION", packet[1])
+
+        # Verify wearable_events balance update
+        event = self.cur.execute(
+            "SELECT action, payload FROM wearable_events WHERE action='UPDATE_BALANCE' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        self.assertIsNotNone(event, "UPDATE_BALANCE event not found in wearable_events")
+
     def test_atm_cardless_cash_lifecycle(self):
-        """Generate ATM OTP, verify in DB, then verify/dispense and check DB transaction."""
+        """Generate ATM OTP, verify in DB, then verify/dispense and check DB transaction and balance debit."""
+        initial_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
         gen_payload = {
             "account_number": "NX-8492014",
             "amount": 100000.0,
@@ -77,34 +98,56 @@ class TestBackendDbIntegration(unittest.TestCase):
         token = gen_res.get("token")
         self.assertIsNotNone(token)
 
-        # Check DB row
+        # Check DB row status ACTIVE
         db_token = self.cur.execute("SELECT status, amount FROM cardless_cash_tokens WHERE token=?", (token,)).fetchone()
         self.assertIsNotNone(db_token)
         self.assertIn(db_token[0], ["ACTIVE", "PENDING"])
+        self.assertAlmostEqual(db_token[1], 100000.0, places=2)
 
         # Verify / Dispense
         verify_payload = {"token": token, "atm_id": "ATM-JKT-INTEGRATION-01"}
         ver_res, ver_status = post_json("/api/atm/cardless-cash/verify", verify_payload)
         self.assertEqual(ver_status, 200)
+        self.assertEqual(ver_res.get("status"), "DISPENSED")
 
         # Check DB updated to DISPENSED
         updated_status = self.cur.execute("SELECT status FROM cardless_cash_tokens WHERE token=?", (token,)).fetchone()[0]
         self.assertEqual(updated_status, "DISPENSED")
 
+        # Check transactions table has cardless cash debit record
+        tx = self.cur.execute(
+            "SELECT amount, description FROM transactions WHERE from_account='NX-8492014' AND description LIKE '%Cardless Cash Withdrawal%' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        self.assertIsNotNone(tx, "Cardless cash withdrawal record missing in transactions")
+        self.assertAlmostEqual(tx[0], 100000.0, places=2)
+
+        # Check user balance deducted
+        new_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
+        self.assertAlmostEqual(new_bal, initial_bal - 100000.0, places=2)
+
     def test_card_freeze_mutates_db(self):
-        """Card freeze toggle must update virtual_cards.is_frozen in SQLite."""
+        """Card freeze toggle must update virtual_cards.is_frozen and log wearable packet in SQLite."""
         # Freeze card 1
-        post_json("/api/wearable/card-freeze", {"card_id": 1, "frozen": True, "device_id": "watch_apple_01"})
+        res1, s1 = post_json("/api/wearable/card-freeze", {"card_id": 1, "frozen": True, "device_id": "watch_apple_01"})
+        self.assertEqual(s1, 200)
         f1 = self.cur.execute("SELECT is_frozen FROM virtual_cards WHERE id=1").fetchone()[0]
         self.assertEqual(f1, 1)
 
+        # Verify wearable_packets record
+        packet = self.cur.execute(
+            "SELECT action, payload FROM wearable_packets WHERE action='EMERGENCY_CARD_FREEZE_TOGGLED' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        self.assertIsNotNone(packet, "EMERGENCY_CARD_FREEZE_TOGGLED packet not recorded")
+        self.assertIn('"is_frozen": 1', packet[1])
+
         # Unfreeze card 1
-        post_json("/api/wearable/card-freeze", {"card_id": 1, "frozen": False, "device_id": "watch_apple_01"})
+        res0, s0 = post_json("/api/wearable/card-freeze", {"card_id": 1, "frozen": False, "device_id": "watch_apple_01"})
+        self.assertEqual(s0, 200)
         f0 = self.cur.execute("SELECT is_frozen FROM virtual_cards WHERE id=1").fetchone()[0]
         self.assertEqual(f0, 0)
 
     def test_2fa_wire_transfer_mutates_db(self):
-        """Authorize 2FA must debit balance and record wire transfer in transactions."""
+        """Authorize 2FA must debit balance and record wire transfer in transactions and wearable_events."""
         initial_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
         payload = {
             "tx_id": "TX-WIRE-INTEGRATION-01",
@@ -114,6 +157,7 @@ class TestBackendDbIntegration(unittest.TestCase):
         }
         res, status = post_json("/api/wearable/authorize_2fa", payload)
         self.assertEqual(status, 200)
+        self.assertIn(res.get("status"), ["APPROVED", "SUCCESS"])
 
         new_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
         self.assertAlmostEqual(new_bal, initial_bal - 50000000.0, places=2)
@@ -122,21 +166,38 @@ class TestBackendDbIntegration(unittest.TestCase):
             "SELECT amount, description FROM transactions WHERE description LIKE '%TX-WIRE-INTEGRATION-01%' ORDER BY id DESC LIMIT 1"
         ).fetchone()
         self.assertIsNotNone(tx)
+        self.assertAlmostEqual(tx[0], 50000000.0, places=2)
+
+        # Verify wearable_events has UPDATE_BALANCE
+        event = self.cur.execute(
+            "SELECT action, payload FROM wearable_events WHERE action='UPDATE_BALANCE' AND payload LIKE '%TX-WIRE-INTEGRATION-01%' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        self.assertIsNotNone(event, "UPDATE_BALANCE wearable event not found for 2FA wire")
 
     def test_quick_pay_mutates_db(self):
-        """Quick pay transfer must record transfer in transactions table."""
-        initial_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
+        """Quick pay transfer must debit sender balance, credit recipient balance, and record in transactions."""
+        initial_sender = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
+        initial_recipient = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-7391048'").fetchone()[0]
         payload = {
-            "sender_account": "NX-8492014",
-            "recipient_account": "NX-7391048",
+            "from_account": "NX-8492014",
+            "to_account": "NX-7391048",
             "amount": 50000.0,
-            "note": "Watch Quick Pay Integration"
+            "description": "Watch Quick Pay Integration"
         }
         res, status = post_json("/transfer", payload)
         self.assertEqual(status, 200)
+        self.assertEqual(res.get("status"), "success")
 
-        new_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
-        self.assertAlmostEqual(new_bal, initial_bal - 50000.0, places=2)
+        new_sender = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-8492014'").fetchone()[0]
+        new_recipient = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-7391048'").fetchone()[0]
+        self.assertAlmostEqual(new_sender, initial_sender - 50000.0, places=2)
+        self.assertAlmostEqual(new_recipient, initial_recipient + 50000.0, places=2)
+
+        tx = self.cur.execute(
+            "SELECT amount, description FROM transactions WHERE from_account='NX-8492014' AND to_account='NX-7391048' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        self.assertIsNotNone(tx, "Transfer record missing from transactions table")
+        self.assertAlmostEqual(tx[0], 50000.0, places=2)
 
     def test_watch_quick_pay(self):
         """WatchNetworkManager and WatchSessionManager must support quickPay."""
