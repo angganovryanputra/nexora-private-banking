@@ -68,7 +68,7 @@ jobs:
   # =========================================================================
   build-ios-watchos:
     name: Build iOS IPA & watchOS Bundle
-    runs-on: macos-14
+    runs-on: macos-13
 
     steps:
       - name: Checkout Repository
@@ -191,9 +191,9 @@ jobs:
       - name: Publish Official GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.3.0' }}
           target_commitish: ${{ github.sha }}
-          name: "Nexora OmniWear Suite ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0' }} — Enterprise Wearable Banking Security Lab"
+          name: "Nexora OmniWear Suite ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.3.0' }} — Enterprise Wearable Banking Security Lab"
           body_path: RELEASE_NOTES.md
           draft: false
           prerelease: false
