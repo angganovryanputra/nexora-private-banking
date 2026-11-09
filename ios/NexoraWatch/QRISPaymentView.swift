@@ -181,10 +181,8 @@ public struct QRISPaymentView: View {
                     let cur = InsecureStorage.shared.getBalance()
                     InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
                 case .failure:
-                    WatchTheme.playHaptic(.success)
-                    let cur = InsecureStorage.shared.getBalance()
-                    InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
-                    self.statusMessage = "Offline Paid: Rp 75.000"
+                    WatchTheme.playHaptic(.failure)
+                    self.statusMessage = "Transaksi Gagal: Backend Offline"
                 }
             }
             

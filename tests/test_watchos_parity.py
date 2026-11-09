@@ -341,6 +341,24 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("com.nexorabank.omniwear.watchkitapp", build_content, "Watch bundle identifier missing from BUILD-IOS-WATCHOS.md")
         self.assertIn("NSAllowsArbitraryLoads", build_content, "NSAllowsArbitraryLoads missing from BUILD-IOS-WATCHOS.md")
 
+    def test_qris_offline_fallback_and_deep_link(self):
+        """QRISPaymentView must not optimistically deduct balance on failure, and Info.plist/ContentView must support nexorabank URL scheme."""
+        qris_path = os.path.join(WATCHOS_DIR, "QRISPaymentView.swift")
+        with open(qris_path, "r", encoding="utf-8") as f:
+            qris_content = f.read()
+        self.assertNotIn("Offline Paid: Rp 75.000", qris_content, "QRISPaymentView must not optimistically mark payment as paid on offline failure")
+        self.assertIn("Transaksi Gagal", qris_content, "QRISPaymentView must display realistic transaction failure message")
+
+        plist_path = os.path.join(WATCHOS_DIR, "Info.plist")
+        with open(plist_path, "r", encoding="utf-8") as f:
+            plist_content = f.read()
+        self.assertIn("nexorabank", plist_content, "Info.plist missing nexorabank custom URL scheme")
+
+        app_path = os.path.join(WATCHOS_DIR, "ContentView.swift")
+        with open(app_path, "r", encoding="utf-8") as f:
+            app_content = f.read()
+        self.assertIn("onOpenURL", app_content, "ContentView missing onOpenURL deep link handler")
+
     def test_add_watch_target_ruby_automation(self):
         """ios/add_watch_target.rb must automate target creation and bundle identifier alignment."""
         rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "add_watch_target.rb"))

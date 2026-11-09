@@ -39,5 +39,25 @@ public struct ContentView: View {
                 }
             }
         }
+        .onOpenURL { url in
+            handleIncomingURL(url)
+        }
+    }
+    
+    private func handleIncomingURL(_ url: URL) {
+        // Deep Link Handler (e.g. nexorabank://account?num=NX-7391048)
+        // [V-AP07 / BOLA]: Directly loads arbitrary target account without session authentication check
+        guard url.scheme == "nexorabank" else { return }
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+           let queryItems = components.queryItems {
+            for item in queryItems {
+                if item.name == "num", let targetAcct = item.value {
+                    InsecureStorage.shared.saveAccountNumber(targetAcct)
+                    // Auto-authenticate and route to balance to show BOLA exposure
+                    isAuthenticated = true
+                    currentScreen = "balance"
+                }
+            }
+        }
     }
 }
