@@ -64,6 +64,13 @@ The Nexora Apple banking ecosystem features a hybrid architecture: **React Nativ
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### 📁 Struktur Direktori & Klarifikasi Penamaan Project iOS
+Ekosistem iOS pada repository ini memiliki pembagian folder modular sebagai berikut:
+- **`ios/VulnerableBankApp/` & `ios/VulnerableBankApp.xcodeproj`**:
+  Wadah native project untuk **Aplikasi iOS Companion (iPhone)** berbasis React Native. Di dalamnya terdapat modul jembatan antarmuka (`WatchBridge.swift` / `WatchBridge.m`), modul deteksi iOS jailbreak (`SecurityCheck.swift`), dan file konfigurasi `Info.plist`. Nama display aplikasi pada layar iPhone telah 100% menggunakan **"Nexora Bank"** dan identifier resmi **`com.nexorabank.omniwear`**. Nama folder project Xcode dipertahankan agar kompatibilitas CocoaPods (`pod install`) dan React Native native module autolinking tetap terjaga tanpa risiko cache corruption.
+- **`ios/NexoraWatch/`**:
+  Wadah source code native SwiftUI khusus untuk **Aplikasi Smartwatch (watchOS)**. Modul ini 100% independen dari dependensi React Native, berisi seluruh layar perbankan jam tangan (`BalanceView`, `QRISPaymentView`, `CardlessCashView`, `TwoFactorApprovalView`, `AuditLabView`), dan dikompilasi langsung ke target binary `NexoraWatch.app`.
+
 ### Official Release Binaries
 All binaries can be downloaded directly from the [**GitHub Releases Tab**](https://github.com/angganovryanputra/nexora-private-banking/releases/latest):
 
@@ -132,7 +139,10 @@ Smartwatch berkomunikasi langsung via HTTP REST (`WatchNetworkManager.swift`) ke
    {"accountNumber":"NX-8492014","balance":888888000.0,"currency":"IDR"}
    ```
 
-#### A.3 Membuka & Menjalankan Skema Standalone `NexoraWatch` di Xcode
+#### A.3 Membuka, Build & Instalasi Aplikasi di watchOS Emulator
+Peneliti dapat mengompilasi dan menginstal aplikasi ke Apple Watch Simulator melalui dua metode berikut:
+
+##### Metode 1: Menggunakan Xcode GUI (Rekomendasi Cepat)
 1. Buka workspace di Xcode:
    ```bash
    open ios/VulnerableBankApp.xcworkspace
@@ -140,6 +150,42 @@ Smartwatch berkomunikasi langsung via HTTP REST (`WatchNetworkManager.swift`) ke
 2. Pada selector scheme di toolbar atas Xcode (sebelah tombol Run ▶️), pilih scheme **`NexoraWatch`** (bukan `VulnerableBankApp`).
 3. Pilih destination simulator watchOS mandiri, misalnya: **Apple Watch Series 9 (45mm)** atau **Apple Watch Ultra 2 (49mm)**.
 4. Tekan **Cmd + R** untuk build dan jalankan. Simulator Apple Watch akan terbuka dan langsung menampilkan antarmuka perbankan Nexora.
+
+##### Metode 2: CLI Otomatis via Terminal macOS (Tanpa GUI Xcode)
+Jika Anda bekerja dari Terminal Mac atau menjalankan skrip automation testing, gunakan utilitas bawaan `xcodebuild` dan `simctl`:
+1. **Daftar & Boot Simulator Apple Watch**:
+   ```bash
+   # Cari nama atau UDID simulator watchOS yang tersedia
+   xcrun simctl list devices watchOS
+   
+   # Boot simulator Apple Watch Ultra 2
+   xcrun simctl boot "Apple Watch Ultra 2 (49mm)"
+   
+   # Buka jendela Simulator di layar Mac
+   open -a Simulator
+   ```
+2. **Kompilasi Target NexoraWatch ke Format .app**:
+   ```bash
+   cd ios
+   xcodebuild -workspace VulnerableBankApp.xcworkspace \
+     -scheme NexoraWatch \
+     -configuration Debug \
+     -sdk watchsimulator \
+     -derivedDataPath build_watch
+   cd ..
+   ```
+3. **Instal & Jalankan Binary NexoraWatch di Emulator**:
+   ```bash
+   # Pasang aplikasi ke emulator yang sedang booted
+   xcrun simctl install booted ios/build_watch/Build/Products/Debug-watchsimulator/NexoraWatch.app
+   
+   # Jalankan aplikasi langsung dari Terminal
+   xcrun simctl launch booted com.nexorabank.omniwear.watchkitapp
+   ```
+4. **Live Stream Log Console untuk Analisis Telemetri**:
+   ```bash
+   xcrun simctl spawn booted log stream --predicate 'subsystem == "com.nexorabank.omniwear"'
+   ```
 
 #### A.4 Konfigurasi Proxy Burp Suite untuk watchOS HTTP Traffic
 1. Buka Burp Suite di Mac, pastikan Proxy Listener aktif pada `0.0.0.0:8080`.
