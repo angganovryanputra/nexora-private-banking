@@ -379,6 +379,27 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("Standalone", lab_content, "WatchPentestLabView missing Standalone pentest indicators")
         self.assertIn("NX-7391048", lab_content, "WatchPentestLabView missing IDOR target account trigger")
 
+    def test_apple_watchos_guide_scenarios_5_6_7_deep_writeups(self):
+        """Scenarios 5, 6, and 7 must feature publication-grade writeups with CVSS v4.0, Root Cause, PoC, and Remediation."""
+        guide_path = os.path.abspath(os.path.join(DOCS_DIR, "APPLE_WATCHOS_GUIDE.md"))
+        with open(guide_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        # Scenario 5
+        self.assertIn("Scenario 5: Sensor Wrist-Off Lockout Spoofing & Heart Rate Leak (V-AP05)", content)
+        self.assertIn("isWristAttachedToBody", content, "Scenario 5 missing isWristAttachedToBody hook reference")
+        self.assertIn("frida_bypass_wrist.js", content, "Scenario 5 missing Frida script PoC")
+
+        # Scenario 6
+        self.assertIn("Scenario 6: Contactless Dynamic SNAP QRIS Static Replay (V-AP06)", content)
+        self.assertIn("/api/qris/checkout", content, "Scenario 6 missing QRIS endpoint reference")
+        self.assertIn("00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2", content, "Scenario 6 missing QRIS payload")
+
+        # Scenario 7
+        self.assertIn("Scenario 7: Remote Balance Injection via Insecure WatchBridge & Standalone IDOR (V-B01 / V-AP07)", content)
+        self.assertIn("NX-7391048", content, "Scenario 7 missing Evelyn Sterling target IDOR account")
+        self.assertIn("nexorabank://account?num=NX-7391048", content, "Scenario 7 missing deep link PoC")
+
     def test_add_watch_target_ruby_automation(self):
         """ios/add_watch_target.rb must automate target creation and bundle identifier alignment."""
         rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "add_watch_target.rb"))

