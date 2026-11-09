@@ -61,5 +61,8 @@ struct WristLockoutView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(WatchTheme.bgDark)
         }
+        .onAppear {
+            WatchTheme.playHaptic(.warning)
+        }
     }
 }

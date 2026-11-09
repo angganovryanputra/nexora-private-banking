@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(WatchKit)
+import WatchKit
+#endif
 
 /// Luxury private-banking design tokens + continuous responsive scaling for
 /// Apple watchOS. The scale is derived from the device's shortest side so the
@@ -60,5 +63,27 @@ public struct WatchTheme {
         formatter.maximumFractionDigits = 0
         let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
         return "Rp \(formatted)"
+    }
+
+    // MARK: - Native WatchKit Haptics
+    public enum HapticType {
+        case click
+        case success
+        case failure
+        case warning
+        case notification
+    }
+
+    public static func playHaptic(_ type: HapticType = .click) {
+        #if os(watchOS)
+        let device = WKInterfaceDevice.current()
+        switch type {
+        case .click: device.play(.click)
+        case .success: device.play(.success)
+        case .failure: device.play(.failure)
+        case .warning: device.play(.retry)
+        case .notification: device.play(.notification)
+        }
+        #endif
     }
 }

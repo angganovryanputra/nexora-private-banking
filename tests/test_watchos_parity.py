@@ -26,6 +26,30 @@ REQUIRED_SWIFT_FILES = [
 ]
 
 class TestWatchOSParity(unittest.TestCase):
+    def test_watch_theme_haptic_support(self):
+        """WatchTheme must declare haptic playback helper for native Apple Watch feedback."""
+        filepath = os.path.join(WATCHOS_DIR, "WatchTheme.swift")
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("playHaptic", content, "WatchTheme missing playHaptic helper")
+        self.assertIn("WKInterfaceDevice", content, "WatchTheme missing WatchKit haptic integration")
+
+        # Verify authentication views integrate haptic feedback
+        pin_path = os.path.join(WATCHOS_DIR, "QuickPinPadView.swift")
+        with open(pin_path, "r", encoding="utf-8") as f:
+            pin_content = f.read()
+        self.assertIn("playHaptic", pin_content, "QuickPinPadView missing playHaptic integration")
+
+        twofa_path = os.path.join(WATCHOS_DIR, "TwoFactorApprovalView.swift")
+        with open(twofa_path, "r", encoding="utf-8") as f:
+            twofa_content = f.read()
+        self.assertIn("playHaptic", twofa_content, "TwoFactorApprovalView missing playHaptic integration")
+
+        wrist_path = os.path.join(WATCHOS_DIR, "WristLockoutView.swift")
+        with open(wrist_path, "r", encoding="utf-8") as f:
+            wrist_content = f.read()
+        self.assertIn("playHaptic", wrist_content, "WristLockoutView missing playHaptic integration")
+
     def test_required_files_exist(self):
         """All 16 core watchOS Swift files must exist."""
         for filename in REQUIRED_SWIFT_FILES:

@@ -65,6 +65,7 @@ struct QuickPinPadView: View {
                     
                     // Clear button
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         enteredPin = ""
                         errorMessage = ""
                     }) {
@@ -92,6 +93,7 @@ struct QuickPinPadView: View {
                     
                     // Demo Autofill (1234)
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         enteredPin = "1234"
                         verify()
                     }) {
@@ -116,6 +118,7 @@ struct QuickPinPadView: View {
     }
     
     private func appendDigit(_ digit: String) {
+        WatchTheme.playHaptic(.click)
         if enteredPin.count < 4 {
             enteredPin.append(digit)
             if enteredPin.count == 4 {
@@ -127,12 +130,14 @@ struct QuickPinPadView: View {
     private func verify() {
         attemptCount += 1
         if InsecureStorage.shared.verifyPin(enteredPin) {
+            WatchTheme.playHaptic(.success)
             // V-AP03 → real backend sign-in: fetch a live JWT + account number so
             // the watch reads the SAME SQLite ledger as the phone/Wear OS app.
             // (No mock session; the token is cached in insecure UserDefaults.)
             WatchNetworkManager.shared.login(username: "alexander.vance", password: "Password123!") { _ in }
             isAuthenticated = true
         } else {
+            WatchTheme.playHaptic(.failure)
             errorMessage = "Invalid PIN (\(attemptCount))"
             enteredPin = ""
         }

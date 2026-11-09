@@ -55,6 +55,7 @@ public struct TwoFactorApprovalView: View {
                         // Action Buttons
                         HStack(spacing: 5) {
                             Button(action: {
+                                WatchTheme.playHaptic(.success)
                                 sessionManager.approvePendingTransaction()
                             }) {
                                 Text("APPROVE")
@@ -85,6 +86,9 @@ public struct TwoFactorApprovalView: View {
                     }
                     .padding(.horizontal, 4)
                 }
+            }
+            .onAppear {
+                WatchTheme.playHaptic(.notification)
             }
         }
     }
