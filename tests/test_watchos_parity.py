@@ -400,6 +400,17 @@ class TestWatchOSParity(unittest.TestCase):
         self.assertIn("NX-7391048", content, "Scenario 7 missing Evelyn Sterling target IDOR account")
         self.assertIn("nexorabank://account?num=NX-7391048", content, "Scenario 7 missing deep link PoC")
 
+    def test_standalone_watchos_mac_guide_presence(self):
+        """Guide must contain dedicated section for standalone watchOS and Mac pentesting without companion."""
+        guide_path = os.path.abspath(os.path.join(DOCS_DIR, "APPLE_WATCHOS_GUIDE.md"))
+        with open(guide_path, "r", encoding="utf-8") as f:
+            guide = f.read()
+        self.assertIn("Panduan Pentest Standalone watchOS + Mac (Tanpa Companion iPhone)", guide)
+        self.assertIn("xcrun simctl get_app_container", guide)
+        self.assertIn("xcrun simctl openurl", guide)
+        self.assertIn("nexorabank://account?num=NX-7391048", guide)
+        self.assertIn("exploit_double_dispense.py", guide)
+
     def test_add_watch_target_ruby_automation(self):
         """ios/add_watch_target.rb must automate target creation and bundle identifier alignment."""
         rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "add_watch_target.rb"))

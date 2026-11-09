@@ -35,8 +35,9 @@
    - [Skenario 9: V-W09 — Emergency Wrist Card Kill-Switch Desynchronization](#skenario-9-v-w09--emergency-wrist-card-kill-switch-desynchronization)
    - [Skenario 10: V-07 — Client-Side iOS Jailbreak Anti-Tamper Detection Bypass](#skenario-10-v-07--client-side-ios-jailbreak-anti-tamper-detection-bypass)
    - [Skenario 11: CISO Executive Scorecard — Audit Kepatuhan POJK 11, SNAP, & PCI-DSS](#skenario-11-ciso-executive-scorecard--audit-kepatuhan-pojk-11-snap--pci-dss)
-4. [Koleksi Skrip Frida Khusus watchOS & iOS](#4-koleksi-skrip-frida-khusus-watchos--ios)
-5. [Tabel Pemetaan Regulasi & Rekomendasi Remedi](#5-tabel-pemetaan-regulasi--rekomendasi-remedi)
+4. [Panduan Pentest Standalone watchOS + Mac (Tanpa Companion)](#4-panduan-pentest-standalone-watchos--mac-tanpa-companion)
+5. [Koleksi Skrip Frida Khusus watchOS & iOS](#5-koleksi-skrip-frida-khusus-watchos--ios)
+6. [Tabel Pemetaan Regulasi & Rekomendasi Remedi](#6-tabel-pemetaan-regulasi--rekomendasi-remedi)
 
 ---
 
@@ -454,7 +455,23 @@ Metode ini memungkinkan Anda menginstal aplikasi ke iPhone 11 fisik langsung dar
 
 ---
 
-## 💻 4. Koleksi Skrip Frida Khusus watchOS & iOS
+## ⌚ 4. Panduan Pentest Standalone watchOS + Mac (Tanpa Companion)
+
+Untuk pengujian keamanan mandiri yang hanya menggunakan **Apple Watch (Simulator/Fisik)** dan **Laptop Mac**, tanpa perlu menjalankan companion iPhone:
+
+1. **Jalankan Skema NexoraWatch**: Di Xcode, pilih scheme `NexoraWatch` dan target simulator `Apple Watch Series 9 (45mm)`. Tekan `Cmd + R`.
+2. **Koneksi Core Backend**: Smartwatch terhubung langsung via HTTP REST (`WatchNetworkManager.swift`) ke `http://127.0.0.1:5000` (atau IP LAN Mac).
+3. **5 Standalone Challenge**:
+   - **Challenge 1 (Forensic Plist Dump)**: Jalankan `xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data` lalu baca `plutil -p Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist`.
+   - **Challenge 2 (Cleartext Wi-Fi HTTP MITM)**: Intercept traffic watch di Burp Suite port 8080 dan ubah nilai balance JSON response.
+   - **Challenge 3 (Runtime Memory Swizzling)**: Jalankan `frida -n NexoraWatch -l scripts/frida_bypass_wrist.js` atau gunakan LLDB `breakpoint set -n "-[WristSensorManager isWristAttachedToBody]"`.
+   - **Challenge 4 (ATM Double-Dispense Race Condition)**: Generate OTP di jam, lalu jalankan `python scripts/exploit_double_dispense.py <OTP>`.
+   - **Challenge 5 (Wrist BOLA / IDOR Account Peeking)**: Eksekusi `xcrun simctl openurl booted "nexorabank://account?num=NX-7391048"` dari Terminal Mac untuk membuka akun Evelyn Sterling langsung di layar jam.
+   - Panduan lengkap, parameter request, serta kode skrip tersedia di [docs/APPLE_WATCHOS_GUIDE.md](docs/APPLE_WATCHOS_GUIDE.md#6-panduan-pentest-standalone-watchos--mac-tanpa-companion-iphone).
+
+---
+
+## 💻 5. Koleksi Skrip Frida Khusus watchOS & iOS
 
 Simpan skrip di bawah ini dengan nama `frida_watchos_suite.js`:
 
@@ -512,7 +529,7 @@ if (ObjC.available) {
 
 ---
 
-## 📊 5. Tabel Pemetaan Regulasi & Rekomendasi Remedi
+## 📊 6. Tabel Pemetaan Regulasi & Rekomendasi Remedi
 
 | Kode Temuan | Pelanggaran Regulasi | Resiko Bisnis | Rekomendasi Remedi (Fix) |
 |---|---|---|---|

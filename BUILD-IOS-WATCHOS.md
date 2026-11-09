@@ -220,4 +220,23 @@ Lakukan uji transaksi langsung dari Apple Watch untuk memastikan sinkronisasi da
 
 - **iOS Companion App**: React Native (berbagi core logic finansial & autentikasi dengan versi Android) + Native Bridge `WatchBridge.swift` (`WCSession`).
 - **watchOS App (`NexoraWatch`)**: SwiftUI native mandiri; menggunakan `WatchNetworkManager` (`URLSession`) untuk HTTP REST langsung ke backend Flask, serta `WatchSessionManager` (`WatchConnectivity`) untuk sinkronisasi token dan status kartu dari iPhone.
-- **Enterprise Ledger & Storage**: Backend Flask menyimpan data secara persisten di `backend/nexora_vault.db`, menjamin konsistensi saldo dan audit trail di seluruh channel mobile & smartwatch.
+---
+
+## 11. Pengujian Standalone watchOS & Mac (Tanpa Companion iPhone)
+
+Bagi pengujian keamanan dan simulasi yang **hanya menggunakan Apple Watch dan Laptop Mac** (tanpa memerlukan emulator/perangkat iPhone):
+
+1. **Jalankan Skema NexoraWatch Langsung di Xcode**:
+   - Di Xcode scheme selector (sebelah tombol Run ▶️), pilih scheme **`NexoraWatch`** (bukan `VulnerableBankApp`).
+   - Pilih destination simulator watchOS mandiri, misal: **Apple Watch Series 9 (45mm)** atau **Apple Watch Ultra 2 (49mm)**.
+   - Tekan **Cmd + R** untuk build dan jalankan. Simulator Apple Watch akan terbuka dan langsung menampilkan antarmuka perbankan Nexora.
+2. **Koneksi Langsung ke Backend**:
+   - Smartwatch berkomunikasi secara mandiri via HTTP REST (`WatchNetworkManager.swift`) ke `http://127.0.0.1:5000`.
+   - Pastikan backend aktif: `cd backend && python3 server.py`.
+3. **Eksekusi 5 Standalone Challenge**:
+   - **Challenge 1 (Forensic Plist & Cache)**: `xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data`.
+   - **Challenge 2 (Cleartext Wi-Fi MITM)**: Intercept traffic watch di Burp Suite port 8080.
+   - **Challenge 3 (Runtime Memory Swizzling)**: `frida -n NexoraWatch -l scripts/frida_bypass_wrist.js` atau LLDB `breakpoint set -n "-[WristSensorManager isWristAttachedToBody]"`.
+   - **Challenge 4 (ATM Cash Double-Dispense Race)**: `python3 scripts/exploit_double_dispense.py <OTP-TOKEN>`.
+   - **Challenge 5 (Wrist BOLA / IDOR)**: `xcrun simctl openurl booted "nexorabank://account?num=NX-7391048"`.
+   - Detail panduan lengkap dapat dilihat di [docs/APPLE_WATCHOS_GUIDE.md](docs/APPLE_WATCHOS_GUIDE.md#6-panduan-pentest-standalone-watchos--mac-tanpa-companion-iphone).
