@@ -50,6 +50,30 @@ class TestWatchOSParity(unittest.TestCase):
             wrist_content = f.read()
         self.assertIn("playHaptic", wrist_content, "WristLockoutView missing playHaptic integration")
 
+    def test_transaction_views_haptic_and_workflow_polish(self):
+        """Core transaction views must utilize native haptics and contain polished status transitions."""
+        for view_name in ["BalanceView.swift", "QRISPaymentView.swift", "CardlessCashView.swift", "CardFreezeView.swift"]:
+            fpath = os.path.join(WATCHOS_DIR, view_name)
+            with open(fpath, "r", encoding="utf-8") as f:
+                content = f.read()
+            self.assertIn("playHaptic", content, f"{view_name} missing playHaptic integration")
+        
+        # BalanceView specifics: WIB timestamp and masked account
+        with open(os.path.join(WATCHOS_DIR, "BalanceView.swift"), "r", encoding="utf-8") as f:
+            balance_content = f.read()
+        self.assertIn("WIB", balance_content, "BalanceView missing WIB timestamp indicator")
+        self.assertIn("••••", balance_content, "BalanceView missing account number masking")
+
+        # QRISPaymentView specifics: NMID
+        with open(os.path.join(WATCHOS_DIR, "QRISPaymentView.swift"), "r", encoding="utf-8") as f:
+            qris_content = f.read()
+        self.assertIn("ID1020021189360", qris_content, "QRISPaymentView missing NMID")
+
+        # CardFreezeView specifics: EMV chip icon or brand badge
+        with open(os.path.join(WATCHOS_DIR, "CardFreezeView.swift"), "r", encoding="utf-8") as f:
+            freeze_content = f.read()
+        self.assertTrue("chip" in freeze_content.lower() or "creditcard" in freeze_content, "CardFreezeView missing chip/card design")
+
     def test_required_files_exist(self):
         """All 16 core watchOS Swift files must exist."""
         for filename in REQUIRED_SWIFT_FILES:

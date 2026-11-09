@@ -11,7 +11,9 @@ struct BalanceView: View {
     
     @State private var balance: Double = InsecureStorage.shared.getBalance()
     @State private var isBalanceMasked: Bool = false
+    @State private var isAccountMasked: Bool = true
     @State private var isRefreshing: Bool = false
+    @State private var lastUpdatedText: String = "Updated 21:45 WIB"
     
     var body: some View {
         GeometryReader { geometry in
@@ -49,7 +51,10 @@ struct BalanceView: View {
                                 .tracking(0.5)
                             Spacer()
                             Button(action: {
-                                isBalanceMasked.toggle()
+                                WatchTheme.playHaptic(.click)
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isBalanceMasked.toggle()
+                                }
                             }) {
                                 Image(systemName: isBalanceMasked ? "eye.slash.fill" : "eye.fill")
                                     .font(.system(size: 7.5))
@@ -67,10 +72,15 @@ struct BalanceView: View {
                                 refreshBalance()
                             }
                         
+                        // Maskable Account Number & Holder
                         HStack(spacing: 3) {
-                            Text(InsecureStorage.shared.getAccountNumber())
+                            Text(isAccountMasked ? "NX-••••014" : InsecureStorage.shared.getAccountNumber())
                                 .font(.system(size: 6.5, design: .monospaced))
                                 .foregroundColor(WatchTheme.textLight)
+                                .onTapGesture {
+                                    WatchTheme.playHaptic(.click)
+                                    isAccountMasked.toggle()
+                                }
                             Text("•")
                                 .font(.system(size: 6.5))
                                 .foregroundColor(WatchTheme.textMuted)
@@ -79,6 +89,18 @@ struct BalanceView: View {
                                 .foregroundColor(WatchTheme.emerald)
                                 .lineLimit(1)
                         }
+                        
+                        // Last Synchronized Timestamp
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 5.5))
+                                .foregroundColor(WatchTheme.textMuted)
+                                .rotationEffect(.degrees(isRefreshing ? 360 : 0))
+                            Text(lastUpdatedText)
+                                .font(.system(size: 6, weight: .medium))
+                                .foregroundColor(WatchTheme.textMuted)
+                        }
+                        .padding(.top, 1)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, isSmallWatch ? 3 : 5)
@@ -109,6 +131,7 @@ struct BalanceView: View {
                     
                     // 1. SNAP QRIS Payment
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         currentScreen = "qris"
                     }) {
                         HStack(spacing: 4) {
@@ -125,7 +148,10 @@ struct BalanceView: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     // Transfer
-                    Button(action: { currentScreen = "transfer" }) {
+                    Button(action: {
+                        WatchTheme.playHaptic(.click)
+                        currentScreen = "transfer"
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.right.circle.fill").font(.system(size: 9))
                             Text("Transfer").font(.system(size: 8.5, weight: .bold))
@@ -138,7 +164,10 @@ struct BalanceView: View {
                     .buttonStyle(PlainButtonStyle())
 
                     // Transaction History
-                    Button(action: { currentScreen = "transactions" }) {
+                    Button(action: {
+                        WatchTheme.playHaptic(.click)
+                        currentScreen = "transactions"
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "list.bullet.rectangle.portrait.fill").font(.system(size: 9))
                             Text("History").font(.system(size: 8.5, weight: .bold))
@@ -151,7 +180,10 @@ struct BalanceView: View {
                     .buttonStyle(PlainButtonStyle())
 
                     // Loans
-                    Button(action: { currentScreen = "loans" }) {
+                    Button(action: {
+                        WatchTheme.playHaptic(.click)
+                        currentScreen = "loans"
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "building.columns.fill").font(.system(size: 9))
                             Text("Loans").font(.system(size: 8.5, weight: .bold))
@@ -165,6 +197,7 @@ struct BalanceView: View {
 
                     // 2. Cardless ATM Withdrawal
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         currentScreen = "cardless"
                     }) {
                         HStack(spacing: 4) {
@@ -182,6 +215,7 @@ struct BalanceView: View {
                     
                     // 3. Emergency Card Kill-Switch
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         currentScreen = "cards"
                     }) {
                         HStack(spacing: 4) {
@@ -199,6 +233,7 @@ struct BalanceView: View {
                     
                     // 4. Security Audit Lab
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         currentScreen = "lab"
                     }) {
                         HStack(spacing: 4) {
@@ -216,6 +251,7 @@ struct BalanceView: View {
                     
                     // 5. Test Wrist Lock
                     Button(action: {
+                        WatchTheme.playHaptic(.warning)
                         wristManager.triggerWristOff()
                     }) {
                         HStack(spacing: 4) {
@@ -233,6 +269,7 @@ struct BalanceView: View {
                     
                     // Lock Screen
                     Button(action: {
+                        WatchTheme.playHaptic(.click)
                         isAuthenticated = false
                     }) {
                         Text("Lock Screen")
@@ -250,14 +287,32 @@ struct BalanceView: View {
         }
         .onReceive(sessionManager.$lastReceivedPacket) { _ in
             balance = InsecureStorage.shared.getBalance()
+            updateLastSyncTime()
         }
     }
     
+    private func updateLastSyncTime() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let timeStr = formatter.string(from: Date())
+        lastUpdatedText = "Updated \(timeStr) WIB"
+    }
+    
     private func refreshBalance() {
+        WatchTheme.playHaptic(.click)
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isRefreshing = true
+        }
         balance = InsecureStorage.shared.getBalance()
+        updateLastSyncTime()
         WatchNetworkManager.shared.checkBalance { result in
-            if case .success(let b) = result {
-                self.balance = b
+            DispatchQueue.main.async {
+                self.isRefreshing = false
+                if case .success(let b) = result {
+                    WatchTheme.playHaptic(.success)
+                    self.balance = b
+                    self.updateLastSyncTime()
+                }
             }
         }
     }

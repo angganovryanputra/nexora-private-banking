@@ -11,6 +11,7 @@ public struct QRISPaymentView: View {
     @State private var timer: Timer?
     @State private var statusMessage: String = "Merchant: NEXORA DIGITAL MERCH 001"
     @State private var isProcessing: Bool = false
+    @State private var scanBeamOffset: CGFloat = -25
     
     public init(currentScreen: Binding<String>) {
         self._currentScreen = currentScreen
@@ -26,6 +27,7 @@ public struct QRISPaymentView: View {
                 VStack(spacing: 5) {
                     HStack {
                         Button(action: {
+                            WatchTheme.playHaptic(.click)
                             currentScreen = "balance"
                         }) {
                             Image(systemName: "chevron.left")
@@ -44,7 +46,7 @@ public struct QRISPaymentView: View {
                         Spacer()
                     }
                     
-                    // QR Code Card
+                    // Dynamic QR Code Card with Matrix Scanner Effect
                     ZStack {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color.white)
@@ -60,13 +62,29 @@ public struct QRISPaymentView: View {
                                 .foregroundColor(.black)
                                 .tracking(0.5)
                         }
+                        
+                        // Scanner Beam Simulation
+                        Rectangle()
+                            .fill(LinearGradient(
+                                colors: [Color.clear, WatchTheme.ruby.opacity(0.6), Color.clear],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ))
+                            .frame(width: qrBoxSize - 8, height: 2)
+                            .offset(y: scanBeamOffset)
                     }
                     .padding(.vertical, 2)
                     
-                    Text(statusMessage)
-                        .font(.system(size: 7, weight: .medium))
-                        .foregroundColor(WatchTheme.textLight)
-                        .multilineTextAlignment(.center)
+                    // Official National Merchant ID (NMID) Badge
+                    VStack(spacing: 1) {
+                        Text("NMID: ID1020021189360")
+                            .font(.system(size: 6.5, weight: .bold, design: .monospaced))
+                            .foregroundColor(WatchTheme.gold)
+                        Text(statusMessage)
+                            .font(.system(size: 7, weight: .medium))
+                            .foregroundColor(WatchTheme.textLight)
+                            .multilineTextAlignment(.center)
+                    }
                     
                     // Timer & Status Pill
                     HStack(spacing: 3) {
@@ -123,9 +141,16 @@ public struct QRISPaymentView: View {
         }
         .onAppear {
             startCountdown()
+            startBeamAnimation()
         }
         .onDisappear {
             timer?.invalidate()
+        }
+    }
+    
+    private func startBeamAnimation() {
+        withAnimation(Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            scanBeamOffset = 25
         }
     }
     
@@ -141,21 +166,26 @@ public struct QRISPaymentView: View {
     }
     
     private func executeQrisPayment() {
+        WatchTheme.playHaptic(.click)
         isProcessing = true
         statusMessage = "Processing POS transaction Rp 75.000..."
         
         WatchNetworkManager.shared.checkoutQRIS(amount: 75000.0, qrPayload: qrisString) { result in
-            isProcessing = false
-            switch result {
-            case .success(let data):
-                let status = data["status"] as? String ?? "PAID"
-                statusMessage = "POS: \(status) (Rp 75.000) ✓"
-                let cur = InsecureStorage.shared.getBalance()
-                InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
-            case .failure:
-                let cur = InsecureStorage.shared.getBalance()
-                InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
-                statusMessage = "Offline Paid: Rp 75.000"
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                switch result {
+                case .success(let data):
+                    WatchTheme.playHaptic(.success)
+                    let status = data["status"] as? String ?? "PAID"
+                    self.statusMessage = "POS: \(status) (Rp 75.000) ✓"
+                    let cur = InsecureStorage.shared.getBalance()
+                    InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
+                case .failure:
+                    WatchTheme.playHaptic(.success)
+                    let cur = InsecureStorage.shared.getBalance()
+                    InsecureStorage.shared.saveBalance(max(0.0, cur - 75000.0))
+                    self.statusMessage = "Offline Paid: Rp 75.000"
+                }
             }
             
             // Broadcast payment to iPhone bridge
@@ -165,7 +195,7 @@ public struct QRISPaymentView: View {
                     "amount": 75000.0,
                     "currency": "IDR",
                     "merchant": "NEXORA DIGITAL MERCH 001",
-                    "qr_payload": qrisString
+                    "qr_payload": self.qrisString
                 ]
             ]
             if WatchSessionManager.shared.isReachable {
@@ -177,15 +207,18 @@ public struct QRISPaymentView: View {
     }
     
     private func triggerQrisReplayExploit() {
+        WatchTheme.playHaptic(.click)
         statusMessage = "Replaying captured static QR token..."
         // Fires duplicate transaction using identical QR payload (Skenario 6 POC)
         WatchNetworkManager.shared.checkoutQRIS(amount: 75000.0, qrPayload: qrisString) { res in
             DispatchQueue.main.async {
                 switch res {
                 case .success:
-                    statusMessage = "[V-W15 EXPLOIT] Token Replay Accepted!"
+                    WatchTheme.playHaptic(.warning)
+                    self.statusMessage = "[V-W15 EXPLOIT] Token Replay Accepted!"
                 case .failure:
-                    statusMessage = "[V-W15] Token Replay Dispatched."
+                    WatchTheme.playHaptic(.warning)
+                    self.statusMessage = "[V-W15] Token Replay Dispatched."
                 }
             }
         }

@@ -11,6 +11,7 @@ public struct CardlessCashView: View {
     @State private var countdown: Int = 900 // 15 minutes
     @State private var statusMessage: String = "Present code at any Nexora ATM"
     @State private var isProcessing: Bool = false
+    @State private var isDispensing: Bool = false
     @State private var timer: Timer?
     
     public init(currentScreen: Binding<String>) {
@@ -27,6 +28,7 @@ public struct CardlessCashView: View {
                     // Header Bar
                     HStack {
                         Button(action: {
+                            WatchTheme.playHaptic(.click)
                             currentScreen = "balance"
                         }) {
                             Image(systemName: "chevron.left")
@@ -66,6 +68,21 @@ public struct CardlessCashView: View {
                                 .font(.system(size: 7, weight: .semibold))
                                 .foregroundColor(WatchTheme.emerald)
                         }
+                        
+                        // Visual Countdown Progress Bar (15 minutes)
+                        GeometryReader { barGeo in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(WatchTheme.surfaceElevated)
+                                    .frame(height: 3)
+                                RoundedRectangle(cornerRadius: 1.5)
+                                    .fill(countdown > 120 ? WatchTheme.emerald : WatchTheme.ruby)
+                                    .frame(width: max(0, barGeo.size.width * CGFloat(countdown) / 900.0), height: 3)
+                            }
+                        }
+                        .frame(height: 3)
+                        .padding(.horizontal, 4)
+                        .padding(.top, 2)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(5)
@@ -75,6 +92,17 @@ public struct CardlessCashView: View {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(WatchTheme.surfaceElevated, lineWidth: 1)
                     )
+                    
+                    // ATM Terminal Sound Simulation Cue
+                    HStack(spacing: 3) {
+                        Image(systemName: isDispensing ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
+                            .font(.system(size: 6.5))
+                            .foregroundColor(isDispensing ? WatchTheme.gold : WatchTheme.emerald)
+                        Text(isDispensing ? "ATM Dispense Chime: Playing..." : "ATM Chime Simulation: Active")
+                            .font(.system(size: 6, weight: .medium))
+                            .foregroundColor(WatchTheme.textMuted)
+                    }
+                    .padding(.vertical, 1)
                     
                     // Status Pill
                     Text(statusMessage)
@@ -168,44 +196,54 @@ public struct CardlessCashView: View {
     }
     
     private func generateNewOtp() {
+        WatchTheme.playHaptic(.click)
         isProcessing = true
         statusMessage = "Requesting ATM Token from Core..."
         WatchNetworkManager.shared.generateCardlessOtp(amount: 100000.0) { result in
-            isProcessing = false
-            switch result {
-            case .success(let data):
-                if let token = data["token"] as? String {
-                    otpCode = token
-                    countdown = 900
-                    statusMessage = "Token issued: Rp 100.000"
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                switch result {
+                case .success(let data):
+                    WatchTheme.playHaptic(.success)
+                    if let token = data["token"] as? String {
+                        self.otpCode = token
+                        self.countdown = 900
+                        self.statusMessage = "Token issued: Rp 100.000"
+                    }
+                case .failure(let err):
+                    WatchTheme.playHaptic(.failure)
+                    self.otpCode = ""
+                    self.statusMessage = "Backend unreachable — \(err.localizedDescription)"
                 }
-            case .failure(let err):
-                // No mock fallback token — surface the real backend state.
-                otpCode = ""
-                statusMessage = "Backend unreachable — \(err.localizedDescription)"
             }
         }
     }
     
     private func simulateAtmWithdrawal() {
+        WatchTheme.playHaptic(.click)
         isProcessing = true
+        isDispensing = true
         statusMessage = "Submitting OTP \(otpCode) to ATM..."
         WatchNetworkManager.shared.verifyCardlessOtp(token: otpCode) { result in
-            isProcessing = false
-            switch result {
-            case .success(let data):
-                let status = data["status"] as? String ?? "DISPENSED"
-                statusMessage = "ATM: \(status)! Rp 100.000 dispensed."
-                // Reflect the real post-debit balance from the backend ledger
-                // (avoids a client-side guess / double-decrement).
-                WatchNetworkManager.shared.checkBalance { _ in }
-            case .failure(let err):
-                statusMessage = "ATM Error: \(err.localizedDescription)"
+            DispatchQueue.main.async {
+                self.isProcessing = false
+                self.isDispensing = false
+                switch result {
+                case .success(let data):
+                    WatchTheme.playHaptic(.success)
+                    let status = data["status"] as? String ?? "DISPENSED"
+                    self.statusMessage = "ATM: \(status)! Rp 100.000 dispensed."
+                    WatchNetworkManager.shared.checkBalance { _ in }
+                case .failure(let err):
+                    WatchTheme.playHaptic(.failure)
+                    self.statusMessage = "ATM Error: \(err.localizedDescription)"
+                }
             }
         }
     }
     
     private func triggerRaceConditionExploit() {
+        WatchTheme.playHaptic(.click)
         statusMessage = "Firing concurrent double-dispense threads..."
         // Fires two parallel requests simulating simultaneous ATM withdrawal race condition (Skenario 21)
         let token = otpCode
@@ -217,13 +255,14 @@ public struct CardlessCashView: View {
                 DispatchQueue.main.async {
                     switch res {
                     case .success:
-                        statusMessage = "[V-L04 EXPLOIT] Double-Dispense Succeeded!"
+                        WatchTheme.playHaptic(.warning)
+                        self.statusMessage = "[V-L04 EXPLOIT] Double-Dispense Succeeded!"
                     case .failure:
-                        statusMessage = "[V-L04] Race execution triggered."
+                        WatchTheme.playHaptic(.warning)
+                        self.statusMessage = "[V-L04] Race execution triggered."
                     }
                 }
             }
         }
     }
 }
-
