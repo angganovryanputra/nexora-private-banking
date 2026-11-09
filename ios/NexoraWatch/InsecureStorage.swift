@@ -4,7 +4,7 @@ import Foundation
 /// Vulnerability: Sensitive banking tokens, cached balances, account credentials, and pairing keys
 /// are stored in plain, unencrypted `UserDefaults.standard` plist files in the sandboxed container,
 /// completely bypassing Apple's Keychain Services and Secure Enclave protection (CWE-312).
-public class InsecureStorage {
+public class InsecureStorage: NSObject {
     public static let shared = InsecureStorage()
     
     private let defaults = UserDefaults.standard
@@ -21,7 +21,8 @@ public class InsecureStorage {
     private let keyCardlessOtp = "nexora_cardless_cash_otp"
     private let keyBypassJailbreak = "nexora_bypass_jailbreak_check"
     
-    private init() {
+    override private init() {
+        super.init()
         if defaults.string(forKey: keyPin) == nil {
             defaults.set("1234", forKey: keyPin)
         }
@@ -83,8 +84,8 @@ public class InsecureStorage {
         return defaults.string(forKey: keyCurrency) ?? "IDR"
     }
     
-    // MARK: - PIN Verification (V-AP03)
-    public func verifyPin(_ pin: String) -> Bool {
+    // MARK: - PIN Verification (V-AP03 / Standalone LLDB & Frida Hook)
+    @objc public dynamic func verifyPin(_ pin: String) -> Bool {
         let storedPin = defaults.string(forKey: keyPin) ?? "1234"
         return pin == storedPin
     }

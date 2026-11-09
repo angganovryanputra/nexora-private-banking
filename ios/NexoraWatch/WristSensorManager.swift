@@ -6,7 +6,7 @@ import Combine
 /// Vulnerability: The banking app relies on a purely client-side boolean flag
 /// `isWristAttached` that can be spoofed or bypassed using Frida / runtime method swizzling
 /// (`WKInterfaceDevice.current().isWristDetectEnabled`).
-public class WristSensorManager: ObservableObject {
+public class WristSensorManager: NSObject, ObservableObject {
     public static let shared = WristSensorManager()
     
     @Published public var isWristAttached: Bool = true
@@ -16,8 +16,15 @@ public class WristSensorManager: ObservableObject {
     
     private var timer: Timer?
     
-    private init() {
+    override private init() {
+        super.init()
         startTelemetrySimulation()
+    }
+    
+    /// Target for LLDB and Frida runtime instrumentation
+    /// e.g. thread return 1 / Interceptor.replace(ObjC.classes.WristSensorManager['- isWristAttachedToBody']...)
+    @objc public dynamic func isWristAttachedToBody() -> Bool {
+        return bypassActive ? true : isWristAttached
     }
     
     public func startTelemetrySimulation() {

@@ -359,6 +359,26 @@ class TestWatchOSParity(unittest.TestCase):
             app_content = f.read()
         self.assertIn("onOpenURL", app_content, "ContentView missing onOpenURL deep link handler")
 
+    def test_standalone_pentest_lab_and_runtime_hooks(self):
+        """WristSensorManager and InsecureStorage must support @objc dynamic hooks, and WatchPentestLabView must expose standalone triggers."""
+        wrist_path = os.path.join(WATCHOS_DIR, "WristSensorManager.swift")
+        with open(wrist_path, "r", encoding="utf-8") as f:
+            wrist_content = f.read()
+        self.assertIn("@objc", wrist_content, "WristSensorManager missing @objc dynamic hook declaration")
+        self.assertIn("isWristAttachedToBody", wrist_content, "WristSensorManager missing isWristAttachedToBody method")
+
+        storage_path = os.path.join(WATCHOS_DIR, "InsecureStorage.swift")
+        with open(storage_path, "r", encoding="utf-8") as f:
+            storage_content = f.read()
+        self.assertIn("@objc", storage_content, "InsecureStorage missing @objc dynamic verifyPin declaration")
+        self.assertIn("verifyPin", storage_content, "InsecureStorage missing verifyPin method")
+
+        lab_path = os.path.join(WATCHOS_DIR, "WatchPentestLabView.swift")
+        with open(lab_path, "r", encoding="utf-8") as f:
+            lab_content = f.read()
+        self.assertIn("Standalone", lab_content, "WatchPentestLabView missing Standalone pentest indicators")
+        self.assertIn("NX-7391048", lab_content, "WatchPentestLabView missing IDOR target account trigger")
+
     def test_add_watch_target_ruby_automation(self):
         """ios/add_watch_target.rb must automate target creation and bundle identifier alignment."""
         rb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ios", "add_watch_target.rb"))
