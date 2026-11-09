@@ -73,6 +73,13 @@ public class InsecureStorage: NSObject {
 
     public func saveAccountNumber(_ account: String) {
         defaults.set(account, forKey: keyAccountNumber)
+        if account == "NX-7391048" {
+            defaults.set("Evelyn Sterling", forKey: keyAccountHolder)
+        } else if account == "NX-9201482" {
+            defaults.set("Marcus Holloway", forKey: keyAccountHolder)
+        } else if account == "NX-8492014" {
+            defaults.set("Alexander Vance", forKey: keyAccountHolder)
+        }
         defaults.synchronize()
     }
     

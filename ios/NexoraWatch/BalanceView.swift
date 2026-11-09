@@ -74,7 +74,7 @@ struct BalanceView: View {
                         
                         // Maskable Account Number & Holder
                         HStack(spacing: 3) {
-                            Text(isAccountMasked ? "NX-••••014" : InsecureStorage.shared.getAccountNumber())
+                            Text(maskedAccountDisplay())
                                 .font(.system(size: 6.5, design: .monospaced))
                                 .foregroundColor(WatchTheme.textLight)
                                 .onTapGesture {
@@ -289,6 +289,15 @@ struct BalanceView: View {
             balance = InsecureStorage.shared.getBalance()
             updateLastSyncTime()
         }
+    }
+    
+    private func maskedAccountDisplay() -> String {
+        let acct = InsecureStorage.shared.getAccountNumber()
+        if isAccountMasked {
+            let suffix = acct.count >= 3 ? String(acct.suffix(3)) : "014"
+            return "NX-••••\(suffix)"
+        }
+        return acct
     }
     
     private func updateLastSyncTime() {

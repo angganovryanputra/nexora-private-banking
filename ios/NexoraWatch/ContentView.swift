@@ -53,9 +53,12 @@ public struct ContentView: View {
             for item in queryItems {
                 if item.name == "num", let targetAcct = item.value {
                     InsecureStorage.shared.saveAccountNumber(targetAcct)
-                    // Auto-authenticate and route to balance to show BOLA exposure
+                    // Auto-authenticate and refresh balance screen to show BOLA exposure
                     isAuthenticated = true
-                    currentScreen = "balance"
+                    currentScreen = ""
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        currentScreen = "balance"
+                    }
                 }
             }
         }
