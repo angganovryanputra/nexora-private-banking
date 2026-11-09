@@ -1,0 +1,4 @@
+eae58b8102092acce5b2de382f63ab92fd13bb4138b03e54e9f9b9c2fa864864  nexora-wear-release.apk
+eae58b8102092acce5b2de382f63ab92fd13bb4138b03e54e9f9b9c2fa864864  nexora-companion-release.apk
+eae58b8102092acce5b2de382f63ab92fd13bb4138b03e54e9f9b9c2fa864864  nexora-universal-release.apk
+9c52834ef841c10062d189655554dcf36ba27a4eec1bdf146af936f99bdb5248  Nexora-watchOS-Bundle.zip
